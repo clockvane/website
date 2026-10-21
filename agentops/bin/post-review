@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Record a review verdict from inside an agentops review run.
+#
+#   agentops/bin/post-review <pr> <approve|changes> <body-file | ->
+#
+# Posts the review as a PR comment-review and sets commit status `agent-review/<role>` on the
+# exact commit that was reviewed. Role, commit and repo come from the runner's environment, so an
+# agent cannot record a verdict for another role or for a commit it did not review.
+set -euo pipefail
+
+pr="${1:?usage: post-review <pr> <approve|changes> <body-file|->}"
+verdict="${2:?usage: post-review <pr> <approve|changes> <body-file|->}"
+src="${3:--}"
+role="${AGENTOPS_ROLE:?post-review only works inside an agentops run}"
+sha="${AGENTOPS_HEAD_SHA:?missing AGENTOPS_HEAD_SHA}"
+repo="${AGENTOPS_REPO:?missing AGENTOPS_REPO}"
+
+[[ "${AGENTOPS_ACTION:-}" == "review" ]] || { echo "post-review: only valid in ACTION=review" >&2; exit 2; }
+[[ "$pr" == "${AGENTOPS_PR:-}" ]] || { echo "post-review: this work order is for PR #${AGENTOPS_PR:-?}" >&2; exit 2; }
+
+case "$verdict" in
+  approve) state=success; word="APPROVED"; icon="✅" ;;
+  changes) state=failure; word="CHANGES REQUESTED"; icon="🔴" ;;
+  *) echo "post-review: verdict must be approve or changes" >&2; exit 2 ;;
+esac
+
+current="$(gh pr view "$pr" --repo "$repo" --json headRefOid --jq .headRefOid)"
+if [[ "$current" != "$sha" ]]; then
+  echo "post-review: PR head moved to ${current:0:12} after the review started; verdict not recorded" >&2
+  exit 3
+fi
+
+body="$(mktemp)"
+trap 'rm -f "$body"' EXIT
+{
+  printf '<!-- agentops:review role=%s verdict=%s sha=%s -->\n' "$role" "$verdict" "$sha"
+  printf '## %s %s — `%s` on `%s`\n\n' "$icon" "$word" "$role" "${sha:0:12}"
+  if [[ "$src" == "-" ]]; then cat; else cat -- "$src"; fi
+  printf '\n\n<sub>Agent review by `%s` · recorded as commit status `agent-review/%s`</sub>\n' "$role" "$role"
+} > "$body"
+
+# A comment-type review is allowed even though every PR is opened from the owner's account.
+gh pr review "$pr" --repo "$repo" --comment --body-file "$body" >/dev/null \
+  || gh pr comment "$pr" --repo "$repo" --body-file "$body" >/dev/null
+
+gh api -X POST "repos/$repo/statuses/$sha" \
+  -f state="$state" -f context="agent-review/$role" -f description="$role: $word" >/dev/null
+
+echo "recorded: $role $word on ${sha:0:12}"

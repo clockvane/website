@@ -1,0 +1,39 @@
+{
+  "_readme": "Which roles must approve a PR. Rules match changed file paths (fnmatch globs, ** allowed) and PR labels. Every matched role must approve the PR head commit. Order = review order (cheapest/most fundamental first).",
+  "order": [
+    "code-reviewer", "security-reviewer", "qa-engineer", "ux-designer",
+    "devops-lead", "tech-lead", "product-owner", "eng-manager"
+  ],
+  "path_rules": [
+    {"name": "product-docs",  "paths": ["docs/product/**", "docs/content/**", "docs/sdlc/**"], "reviewers": ["product-owner"]},
+    {"name": "design-docs",   "paths": ["docs/design/**"], "reviewers": ["product-owner", "tech-lead"]},
+    {"name": "arch-docs",     "paths": ["docs/adr/**", "docs/architecture/**", "docs/engineering/**", "docs/qa/**"], "reviewers": ["tech-lead"]},
+    {"name": "devops-docs",   "paths": ["docs/devops/**", "docs/releases/**"], "reviewers": ["devops-lead"]},
+    {"name": "security-docs", "paths": ["docs/security/**"], "reviewers": ["devops-lead", "tech-lead"]},
+    {"name": "pipelines",     "paths": [".github/workflows/**", ".github/actions/**", ".github/dependabot.yml", "infra/**", "deploy/**", "**/*.tf", "Dockerfile*", "**/Dockerfile*", ".dockerignore", "docker-compose*", "renovate.json"], "reviewers": ["devops-lead", "security-reviewer"]},
+    {"name": "dependencies",  "paths": ["package.json", "**/package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lockb"], "reviewers": ["security-reviewer"]},
+    {"name": "server-ish",    "paths": ["**/api/**", "**/server/**", "**/functions/**", "**/middleware*", "**/_headers", "**/*headers*", "**/csp*"], "reviewers": ["security-reviewer"]},
+    {"name": "app-code",      "paths": ["src/**", "app/**", "components/**", "pages/**", "layouts/**", "lib/**", "styles/**", "public/**", "content/**", "tests/**", "e2e/**", "*.config.*", "site.config.*", "tsconfig*.json"], "reviewers": ["code-reviewer", "qa-engineer"]}
+  ],
+  "label_rules": {
+    "arch-impact": ["tech-lead"],
+    "security-sensitive": ["security-reviewer"],
+    "ui-review": ["ux-designer"],
+    "gate:1": ["product-owner"],
+    "gate:2": ["product-owner", "tech-lead"],
+    "gate:3": ["devops-lead", "qa-engineer", "security-reviewer"]
+  },
+  "fallback_reviewers": ["code-reviewer"],
+  "docs_only_globs": ["docs/**", "*.md", ".github/ISSUE_TEMPLATE/**", ".github/pull_request_template.md"],
+  "author_substitutes": {
+    "_readme": "If the PR author's role is a required reviewer, this role reviews instead.",
+    "product-owner": "eng-manager",
+    "tech-lead": "code-reviewer",
+    "devops-lead": "tech-lead",
+    "security-reviewer": "devops-lead",
+    "qa-engineer": "code-reviewer",
+    "code-reviewer": "tech-lead",
+    "ux-designer": "product-owner",
+    "eng-manager": "product-owner"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "_readme": "Human-owned. Agents cannot edit agentops/. Percentages are of YOUR WHOLE Claude plan (all your work), not just this team.",
+  "repo": "clockvane/website",
+  "default_branch": "main",
+  "timezone": "Asia/Kolkata",
+  "plan": "pro",
+  "usage": {
+    "_readme": "The team starts no new run when estimated plan usage is at/above these numbers (after the safety margin). The team may use up to 50% of the weekly plan itself; the 85% total stop keeps at least 15% of every week for you, whatever happens.",
+    "five_hour_stop_pct": 75,
+    "seven_day_stop_pct": 85,
+    "team_seven_day_share_pct": 50,
+    "safety_margin_pct": 8,
+    "snapshot_stale_hours": 6,
+    "stale_snapshot_extra_margin_pct": 7,
+    "uncalibrated_max_runs_per_5h": 2,
+    "cooldown_minutes_on_throttle": 30
+  },
+  "idle": {
+    "_readme": "Agents only run when you are not using Claude Code yourself: no activity in any of your other Claude Code sessions for `quiet_minutes`.",
+    "quiet_minutes": 20,
+    "block_while_interactive_session_open": false,
+    "transcript_dirs": [
+      "~/.claude/projects"
+    ],
+    "ignore_claude_args": [
+      "remote-control",
+      "mcp",
+      "--bg",
+      "daemon",
+      "supervisor",
+      "update",
+      "doctor",
+      "setup-token"
+    ],
+    "check_windows_processes": false,
+    "windows_busy_processes": []
+  },
+  "schedule": {
+    "_readme": "mode 'on-demand': agents work only after you run `agents start` (until `agents stop`, or for --hours / --until). mode 'always': any time inside allowed_hours (local time, 24h, comma-separated). Both modes are still idle- and usage-gated.",
+    "mode": "on-demand",
+    "allowed_hours": "00:00-24:00",
+    "blocked_weekdays": [],
+    "max_runs_per_day": 12,
+    "min_minutes_between_runs": 25
+  },
+  "run": {
+    "max_turns": {
+      "implement": 70,
+      "fix": 45,
+      "review": 35,
+      "plan": 30
+    },
+    "max_budget_usd": {
+      "implement": 4.0,
+      "fix": 2.5,
+      "review": 1.5,
+      "plan": 1.0
+    },
+    "_max_budget_readme": "Per-run size cap using Claude Code's client-side cost ESTIMATE. On a subscription you are not billed this; it just stops runaway runs.",
+    "timeout_minutes": 45,
+    "max_attempts_per_issue": 2,
+    "max_review_rounds": 3,
+    "plan_cooldown_minutes": 180,
+    "ci_grace_minutes": 10,
+    "extra_claude_args": [
+      "--permission-prompts",
+      "none"
+    ]
+  },
+  "merge": {
+    "auto_merge": true,
+    "method": "squash"
+  },
+  "paths": {
+    "_readme": "Personal overrides (any key in this file) go in ~/.claude/agentops/config.local.json — it survives the agents clone reset.",
+    "state_dir": "~/.claude/agentops/clockvane-website",
+    "snapshot_file": "~/.claude/agentops/usage-snapshot.json",
+    "pause_file": "~/.claude/agentops/PAUSE",
+    "window_file": "~/.claude/agentops/RUN_WINDOW.json"
+  },
+  "claude_bin": "claude",
+  "gh_bin": "gh"
+}

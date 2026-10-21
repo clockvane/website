@@ -1,0 +1,22 @@
+# agentops runtime
+.agentops-clone
+.agentops-scratch/
+.claude/agent-memory-local/
+.claude/settings.local.json
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# common build output (the stack's own ignores are added by the scaffold ticket)
+node_modules/
+dist/
+build/
+.out/
+coverage/
+playwright-report/
+test-results/
+.lighthouseci/
+*.log
+.DS_Store
