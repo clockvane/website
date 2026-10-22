@@ -340,8 +340,18 @@ def analyze(command: str, root: str, cwd: str = "", action: str = ""):
                     raise Complex(f"shell syntax {tok!r}")
                 words.append(tok)
                 i += 1
-            if words and words[0] in ("if", "then", "else", "elif", "fi", "for", "while", "until", "do",
-                                      "done", "case", "esac", "function", "{", "}", "[["):
+            # simple `for x in a b; do …; done` and `if …; then …; fi` blocks: check each inner command
+            if words and words[0] == "for":
+                if len(words) < 3 or words[2] != "in" or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", words[1]):
+                    raise Complex("unusual for-loop")
+                continue
+            if words and words[0] in ("done", "fi"):
+                if len(words) > 1:
+                    raise Complex("shell control flow")
+                continue
+            if words and words[0] in ("do", "then", "else", "if", "elif"):
+                words = words[1:]
+            if words and words[0] in ("while", "until", "case", "esac", "function", "{", "}", "[[", "select"):
                 raise Complex("shell control flow")
             _check_words(words, ctx)
     except Blocked as exc:

@@ -159,6 +159,23 @@ provides the 30-minute clock through Task Scheduler.
 | `agents start --hours 2 --session-limit 90` | Same, with a different session limit for this start only. |
 | `agents limits --session 96` | Set how far into your plan the agents may go (saved; see §6). `agents limits` shows them. |
 | `agents status` | Started or not, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
+| `agents dashboard` | Opens a live dashboard in your browser (see below). |
+
+### The dashboard
+
+`agents dashboard` (in its own Ubuntu tab) opens **http://localhost:8765** in your Windows browser:
+
+- **Right now:** which agent is working, on which ticket or PR, for how long, and each step it
+  takes (files read and edited, commands, web searches, refused commands) as it happens. When
+  nobody is working: why (spacing, your limit, stopped) and who goes next.
+- **Plan usage:** session and weekly bars with your limit marked, and how big a run usually is.
+- **Work board:** Ready, In progress, In review (with each reviewer's verdict), **Needs you**,
+  Waiting (and what for), Done. Cards link to GitHub.
+- **Team:** all 12 agents: working now, last run, or not used yet. **Recent runs:** result,
+  time, turns, usage; click a run to replay its steps.
+
+It only reads: your laptop's agent logs, and GitHub (refreshed every minute). It listens only on
+your own computer. Closing it does not affect the agents.
 
 Even when started, a run only begins if you're not using Claude Code yourself (unless `--now`)
 and the run fits under your usage limits (§6). Prefer a fixed timetable instead? Set
@@ -242,6 +259,7 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 |---------|-----|
 | Nothing happens at all | `agents status` — most likely "not started": run `agents start`. It also shows the last planning result and refused commands. |
 | "would pass your limit" | Working as intended: the next run doesn't fit under your limit. Raise it (`agents limits --session 96`) or wait for the reset time shown. |
+| Dashboard page doesn't load | Is `agents dashboard` still running in an Ubuntu tab? Try http://127.0.0.1:8765. Another port: `agents dashboard --port 8800`. |
 | Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh` (opens, approves and merges a governance PR as you, then refreshes the agents' copy). |
 | `status` says "owner active" all the time | A Claude Code session of yours keeps writing. Close it, or lower `idle.quiet_minutes`. |
 | Gate says "usage unknown" | Configure the status line (step 5) and send one message in Claude Code. |

