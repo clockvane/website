@@ -11,13 +11,13 @@
 ## 1. Context (C4 level 1)
 ```mermaid
 flowchart LR
-  visitor([Visitor<br/>browser])
-  owner([Owner<br/>@MohammedAbdulFarhan08])
-  site[Clockvane website<br/>static HTML/CSS + minimal JS]
-  handler[Enquiry handler<br/>portable TS function]
-  channel[(Enquiry destination<br/>config value — PRD Q4)]
-  analytics[(Privacy-friendly analytics<br/>optional — PRD Q10)]
-  search([Search engines / social previews])
+  visitor(["Visitor<br/>browser"])
+  owner(["Owner<br/>@MohammedAbdulFarhan08"])
+  site["Clockvane website<br/>static HTML/CSS + minimal JS"]
+  handler["Enquiry handler<br/>portable TS function"]
+  channel[("Enquiry destination<br/>config value — PRD Q4")]
+  analytics[("Privacy-friendly analytics<br/>optional — PRD Q10")]
+  search(["Search engines / social previews"])
 
   visitor -->|HTTPS GET| site
   visitor -->|POST enquiry| handler
