@@ -158,6 +158,7 @@ provides the 30-minute clock through Task Scheduler.
 | `agents stop --kill` | Also end the run in progress now (its unpushed work is dropped and redone later). |
 | `agents start --hours 2 --session-limit 90` | Same, with a different session limit for this start only. |
 | `agents limits --session 96` | Set how far into your plan the agents may go (saved; see §6). `agents limits` shows them. |
+| `agents limits --runs-per-day 80` | Most agent runs per day (with back-to-back runs this is the main brake). |
 | `agents status` | Started or not, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
 | `agents dashboard` | Opens a live dashboard in your browser (see below). |
 
@@ -176,6 +177,12 @@ provides the 30-minute clock through Task Scheduler.
 
 It only reads: your laptop's agent logs, and GitHub (refreshed every minute). It listens only on
 your own computer. Closing it does not affect the agents.
+
+**Back-to-back runs:** a check (every 10 min) keeps starting the next job right after the previous
+one finishes, while there is ready work and room under your limits — up to 8 runs or 25 minutes per
+check, and always finished before 55 minutes (Windows stops a scheduled task after an hour). It stops
+the chain after a failed run and leaves that to the next check. **Auto-unblock:** when every
+`Depends on #N` of a blocked ticket is closed, agentops marks it ready itself (no manager run).
 
 Even when started, a run only begins if you're not using Claude Code yourself (unless `--now`)
 and the run fits under your usage limits (§6). Prefer a fixed timetable instead? Set
@@ -212,8 +219,10 @@ reset and needs no PR.
 | `usage.live.max_age_minutes` | 15 | How old a usage reading may be; older → one tiny check request first (~$0.001) |
 | `run.plan_retry_minutes` / `run.max_plan_failures` | 30 / 3 | A failed planning run is retried after 30 min, at most 3 times per GitHub state |
 | `usage.safety_margin_pct`, `uncalibrated_max_runs_per_5h` | 8, 2 | Only used if no live reading can be taken |
-| `schedule.max_runs_per_day` | 12 | Hard daily cap |
-| `schedule.min_minutes_between_runs` | 25 | Spacing between runs |
+| `schedule.max_runs_per_day` | 40 | Hard daily cap (`agents limits --runs-per-day N`) |
+| `schedule.min_minutes_between_runs` | 10 | Gap between checks that start runs; not applied inside a back-to-back chain |
+| `run.max_runs_per_tick` / `run.chain_minutes` | 8 / 25 | How long one check keeps going back-to-back |
+| `run.tick_hard_limit_minutes` | 55 | Every run ends before this (a run near the end gets a shorter timeout) |
 | `schedule.allowed_hours` | 00:00-24:00 | Only used in `always` mode, e.g. `"23:00-07:30"` (IST) |
 | `run.max_budget_usd.*` | 1-4 | Per-run size cap from Claude Code's *estimate* (you are not billed this on a subscription) |
 | `run.max_turns.*` | 30-70 | Per-run turn cap |
@@ -260,7 +269,7 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 | Nothing happens at all | `agents status` — most likely "not started": run `agents start`. It also shows the last planning result and refused commands. |
 | "would pass your limit" | Working as intended: the next run doesn't fit under your limit. Raise it (`agents limits --session 96`) or wait for the reset time shown. |
 | Dashboard page doesn't load | Is `agents dashboard` still running in an Ubuntu tab? Try http://127.0.0.1:8765. Another port: `agents dashboard --port 8800`. |
-| Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh` (opens, approves and merges a governance PR as you, then refreshes the agents' copy). |
+| Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh`. It opens, approves and merges a governance PR as you, then refreshes the agents' copy. Your own edits to kit files (e.g. a note in `CLAUDE.md`) are kept: each file is merged three ways against the last kit install. If you and the kit changed the same lines, it stops and changes nothing. |
 | `status` says "owner active" all the time | A Claude Code session of yours keeps writing. Close it, or lower `idle.quiet_minutes`. |
 | Gate says "usage unknown" | Configure the status line (step 5) and send one message in Claude Code. |
 | A PR sits forever | `python3 agentops/agentops.py next` shows why: CI pending, `needs-human`, or a gate PR waiting for you. |

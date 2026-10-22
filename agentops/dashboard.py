@@ -189,6 +189,24 @@ class Dashboard:
         self.local_cache: Dict[str, Any] = {"at": 0.0, "data": None}
         self.steps_cache: Dict[str, Any] = {}
         self.refresh_requested = threading.Event()
+        self._sched: Optional[tuple] = None
+
+    def scheduler_minutes(self, cfg) -> float:
+        """The real interval of the Windows scheduled task (falls back to the config value)."""
+        now = time.time()
+        if self._sched and now - self._sched[0] < 600:
+            return self._sched[1]
+        minutes = float(cfg.get("schedule", "tick_minutes", default=10))
+        with contextlib.suppress(Exception):
+            out = subprocess.run(["schtasks.exe", "/query", "/tn", "AgentOps-Clockvane", "/xml"],
+                                 capture_output=True, timeout=15).stdout
+            utf16 = out[:2] in (b"\xff\xfe", b"\xfe\xff") or b"\x00" in out[:200]
+            text = out.decode("utf-16") if utf16 else out.decode("utf-8", "ignore")
+            m = re.search(r"<Interval>PT(?:(\d+)H)?(?:(\d+)M)?</Interval>", text)
+            if m and (m.group(1) or m.group(2)):
+                minutes = float(int(m.group(1) or 0) * 60 + int(m.group(2) or 0))
+        self._sched = (now, minutes)
+        return minutes
 
     # --- GitHub -------------------------------------------------------------
     def fetch_github(self) -> Dict[str, Any]:
@@ -289,12 +307,12 @@ class Dashboard:
                          "last": {k: last.get(k) for k in ("started", "action", "issue", "pr", "outcome")} if last else None})
         tick_log = ao.xp("~/.claude/agentops/tick.log")
         last_tick = tick_log.stat().st_mtime if tick_log.exists() else None
-        every = float(cfg.get("schedule", "tick_minutes", default=30))
+        every = self.scheduler_minutes(cfg)
         expected = {a: ao.expected_run_pct(cfg, state, a)[0] for a in ("implement", "fix", "review", "plan")}
         out_runs = []
         for r in runs[-30:]:
             item = {k: r.get(k) for k in ("started", "ended", "role", "action", "issue", "pr", "outcome", "turns",
-                                          "cost_estimate_usd", "denials_total")}
+                                          "cost_estimate_usd", "denials_total", "chained")}
             item["final"] = ao.final_line(r.get("final", ""))[:220]
             item["session_pct"] = (r.get("usage_delta") or {}).get("five_hour")
             item["log"] = Path(r["log"]).name if r.get("log") else None

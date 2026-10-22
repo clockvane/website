@@ -643,7 +643,7 @@ def in_allowed_hours(spec: str, local: dt.datetime) -> bool:
 
 def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] = None,
          check_idle: bool = True, live: Optional[Dict[str, Any]] = None, action: Optional[str] = None,
-         probe: bool = False) -> Tuple[bool, List[str], Dict[str, Any]]:
+         probe: bool = False, skip_spacing: bool = False) -> Tuple[bool, List[str], Dict[str, Any]]:
     reasons: List[str] = []
     info: Dict[str, Any] = {}
     local = dt.datetime.fromtimestamp(now, cfg.tz)
@@ -679,7 +679,7 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
     if len(runs_today) >= sched.get("max_runs_per_day", 8):
         reasons.append(f"daily cap reached ({len(runs_today)} runs)")
     recent = state.ledger(now - sched.get("min_minutes_between_runs", 25) * 60)
-    if any(r.get("kind") == "run" for r in recent):
+    if not skip_spacing and any(r.get("kind") == "run" for r in recent):
         reasons.append("last run was too recent")
 
     idle_cfg = cfg.get("idle", default={})
@@ -1033,6 +1033,26 @@ class Dispatcher:
                 dep_cache[n] = self.gh.issue_state(n)
             return dep_cache[n] != "closed"
 
+        # 0) unblock tickets whose "Depends on #N" are all closed — housekeeping, no AI run needed.
+        #    Once per ticket: if it gets blocked again, the EM looks at it.
+        for issue in issues:
+            labels = label_names(issue)
+            n = issue["number"]
+            if "status:blocked" not in labels or "needs-human" in labels:
+                continue
+            deps = dependencies(issue.get("body") or "")
+            if not deps or self.state.attempts(f"unblock:{n}") >= 1 or any(dep_open(d) for d in deps):
+                continue
+            done = ", ".join(f"#{d}" for d in deps)
+            self._do(f"#{n}: unblocked ({done} done)", self.gh.add_labels, n, ["status:ready"])
+            self._do(f"#{n}: drop status:blocked", self.gh.remove_label, n, "status:blocked")
+            self._do(f"#{n}: comment", self.gh.comment, n,
+                     f"Unblocked: {done} {'is' if len(deps) == 1 else 'are'} done, so this is ready. — agentops")
+            if self.apply:
+                self.state.bump(f"unblock:{n}")
+            issue["labels"] = [lb for lb in issue.get("labels", []) if (lb.get("name") if isinstance(lb, dict) else lb)
+                               != "status:blocked"] + [{"name": "status:ready"}]
+
         # 1) resume in-progress issues that lost their run (crash/timeout) and have no PR
         for issue in sorted(issues, key=lambda i: i["number"]):
             labels = label_names(issue)
@@ -1156,7 +1176,8 @@ def set_limit_cooldown(cfg: Config, state: State, limit_text: str, resets_at: Op
 
 
 def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = False,
-               limits: Optional[Dict[str, float]] = None, budget: Optional[float] = None) -> Dict[str, Any]:
+               limits: Optional[Dict[str, float]] = None, budget: Optional[float] = None,
+               timeout_s: Optional[float] = None) -> Dict[str, Any]:
     rcfg = cfg.get("run", default={})
     prompt = render_prompt(work, phase, cfg["repo"])
     cmd = [cfg.get("claude_bin", default="claude"), "-p", prompt,
@@ -1183,7 +1204,7 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
     stamp = dt.datetime.fromtimestamp(started).strftime("%Y%m%d-%H%M%S")
     log_path = state.dir / "logs" / f"{stamp}-{work.role}-{work.action}.jsonl"
     rec["log"] = str(log_path)
-    timeout = rcfg.get("timeout_minutes", 45) * 60
+    timeout = min(rcfg.get("timeout_minutes", 45) * 60, timeout_s) if timeout_s else rcfg.get("timeout_minutes", 45) * 60
     throttles, result, limit_text = 0, None, ""
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=logf,
@@ -1350,75 +1371,107 @@ def tick_lock(state: State):
 
 
 def cmd_tick(args: argparse.Namespace) -> int:
+    """One check. Runs work back-to-back while there is work, the gate is open and time is left."""
     cfg = Config.load()
     state = State(cfg)
     if not CLONE_MARKER.exists() and not args.dry_run:
         raise SystemExit(f"Refusing to run: {CLONE_MARKER.name} not found. Run agentops only in the dedicated "
                          "agents clone created by bootstrap (it resets local changes).")
     with tick_lock(state):
-        now = time.time()
-        branch = cfg.get("default_branch", default="main")
-        main_sha = sync_clone(branch) if not args.dry_run else git("rev-parse", "HEAD", check=False)
-        gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
-        disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run)
-        work = disp.choose(read_phase(), main_sha)
-        for a in disp.actions:
-            log(f"housekeeping: {a}")
-        if disp.actions and not args.dry_run:
-            state.append_ledger({"kind": "housekeeping", "started": now, "actions": disp.actions})
-        if not work:
-            log("nothing to do (waiting for the owner or for CI)")
-            return 0
-        log(f"next: {work.role} {work.action} issue={work.issue} pr={work.pr} — {work.note[:90]}")
-        ok, reasons, info = gate(cfg, state, now, action=work.action, probe=not args.dry_run) \
-            if not args.force else (True, [], {})
-        if not ok:
-            log("gated: " + "; ".join(reasons))
-            return 0
-        if args.dry_run:
-            log("dry-run: would run now")
-            return 0
-        if any(a.endswith("squash-merge") for a in disp.actions):
-            main_sha = sync_clone(branch)
-        phase = read_phase()
-        limits = effective_limits(cfg, read_window(cfg, now))
-        budget = run_budget(cfg, state, work.action, info.get("live"), limits)
-        if work.attempt_key:
-            state.bump(work.attempt_key)
-        if work.action == "implement" and work.issue:
-            with contextlib.suppress(RuntimeError):
-                gh.add_labels(work.issue, ["status:in-progress"])
-                gh.remove_label(work.issue, "status:ready")
-        live = info.get("live") or {}
-        log(f"running {work.role} ({work.action}) … session usage {live.get('five_hour', '?')}%, "
-            f"your limit {limits['session']:.0f}%, budget ${budget}")
-        try:
-            rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget)
-        finally:
-            with contextlib.suppress(FileNotFoundError):
-                (state.dir / "current_run.json").unlink()
-        if rec.get("outcome") in LIMIT_OUTCOMES and work.attempt_key:
-            state.bump(work.attempt_key, -1)  # stopped for usage: not the agent's failure
-        if work.action == "plan" and rec.get("outcome") not in LIMIT_OUTCOMES:
-            result = plan_result(rec)
-            last = state.doc("last_plan")
-            failures = ((last.get("failures", 0) if last.get("world") == work.world else 0) + 1) \
-                if result == "failed" else 0
-            state.put("last_plan", {"world": work.world, "at": now, "result": result, "failures": failures,
-                                    "final": (rec.get("final") or "")[-300:]})
-        learn_run_cost(state, rec)
-        if work.action == "fix" and work.pr and "owner-fix" in work.attempt_key:
-            with contextlib.suppress(RuntimeError):
-                if gh.head_sha(work.pr) != work.head_sha:
-                    gh.remove_label(work.pr, "owner-feedback")
-                    gh.remove_label(work.pr, "needs-human")
-        state.append_ledger(rec)
-        used = (rec.get("usage_delta") or {}).get("five_hour")
-        log(f"run finished: {rec.get('outcome')} turns={rec.get('turns')} est=${rec.get('cost_estimate_usd')} "
-            f"session+{used if used is not None else '?'}% log={rec.get('log')}")
-        if rec.get("denials"):
-            log(f"refused tool calls ({rec.get('denials_total')}): " + " | ".join(rec["denials"]))
+        tick_start = time.time()
+        runs = 0
+        while True:
+            rcfg = cfg.get("run", default={})
+            rec = tick_step(args, cfg, state, chained=runs > 0, tick_start=tick_start)
+            if rec is None:
+                break
+            runs += 1
+            if rec.get("outcome") != "success":
+                break  # after a failure or a usage stop, let the next check decide
+            if runs >= int(rcfg.get("max_runs_per_tick", 8)):
+                log(f"back-to-back: {runs} runs in this check (the most allowed); the next check continues")
+                break
+            if time.time() - tick_start > float(rcfg.get("chain_minutes", 25)) * 60:
+                log(f"back-to-back: {runs} runs, time is up for this check; the next check continues")
+                break
+            cfg = Config.load()  # pick up limit changes made meanwhile
         return 0
+
+
+def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool, tick_start: float) -> Optional[Dict[str, Any]]:
+    """Housekeeping + at most one agent run. Returns the run record, or None if nothing ran."""
+    now = time.time()
+    rcfg = cfg.get("run", default={})
+    branch = cfg.get("default_branch", default="main")
+    main_sha = sync_clone(branch) if not args.dry_run else git("rev-parse", "HEAD", check=False)
+    gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
+    disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run)
+    work = disp.choose(read_phase(), main_sha)
+    for a in disp.actions:
+        log(f"housekeeping: {a}")
+    if disp.actions and not args.dry_run:
+        state.append_ledger({"kind": "housekeeping", "started": now, "actions": disp.actions})
+    if not work:
+        log("nothing to do (waiting for the owner or for CI)" if not chained else "back-to-back: no more ready work")
+        return None
+    if args.dry_run and chained:
+        return None
+    log(f"next: {work.role} {work.action} issue={work.issue} pr={work.pr} — {work.note[:90]}")
+    ok, reasons, info = gate(cfg, state, now, action=work.action, probe=not args.dry_run, skip_spacing=chained) \
+        if not args.force else (True, [], {})
+    if not ok:
+        log("gated: " + "; ".join(reasons))
+        return None
+    if args.dry_run:
+        log("dry-run: would run now")
+        return None
+    # every run must end before the check's hard limit (Windows stops a scheduled task after 1 h)
+    left = float(rcfg.get("tick_hard_limit_minutes", 55)) * 60 - (time.time() - tick_start)
+    if left < float(rcfg.get("min_run_minutes", 8)) * 60:
+        log("not enough time left in this check for another run; the next check continues")
+        return None
+    if any(a.endswith("squash-merge") for a in disp.actions):
+        main_sha = sync_clone(branch)
+    phase = read_phase()
+    limits = effective_limits(cfg, read_window(cfg, now))
+    budget = run_budget(cfg, state, work.action, info.get("live"), limits)
+    if work.attempt_key:
+        state.bump(work.attempt_key)
+    if work.action == "implement" and work.issue:
+        with contextlib.suppress(RuntimeError):
+            gh.add_labels(work.issue, ["status:in-progress"])
+            gh.remove_label(work.issue, "status:ready")
+    live = info.get("live") or {}
+    log(f"running {work.role} ({work.action}){' back-to-back' if chained else ''} … session usage "
+        f"{live.get('five_hour', '?')}%, your limit {limits['session']:.0f}%, budget ${budget}")
+    try:
+        rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget, timeout_s=left)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            (state.dir / "current_run.json").unlink()
+    rec["chained"] = chained
+    if rec.get("outcome") in LIMIT_OUTCOMES and work.attempt_key:
+        state.bump(work.attempt_key, -1)  # stopped for usage: not the agent's failure
+    if work.action == "plan" and rec.get("outcome") not in LIMIT_OUTCOMES:
+        result = plan_result(rec)
+        last = state.doc("last_plan")
+        failures = ((last.get("failures", 0) if last.get("world") == work.world else 0) + 1) \
+            if result == "failed" else 0
+        state.put("last_plan", {"world": work.world, "at": now, "result": result, "failures": failures,
+                                "final": (rec.get("final") or "")[-300:]})
+    learn_run_cost(state, rec)
+    if work.action == "fix" and work.pr and "owner-fix" in work.attempt_key:
+        with contextlib.suppress(RuntimeError):
+            if gh.head_sha(work.pr) != work.head_sha:
+                gh.remove_label(work.pr, "owner-feedback")
+                gh.remove_label(work.pr, "needs-human")
+    state.append_ledger(rec)
+    used = (rec.get("usage_delta") or {}).get("five_hour")
+    log(f"run finished: {rec.get('outcome')} turns={rec.get('turns')} est=${rec.get('cost_estimate_usd')} "
+        f"session+{used if used is not None else '?'}% log={rec.get('log')}")
+    if rec.get("denials"):
+        log(f"refused tool calls ({rec.get('denials_total')}): " + " | ".join(rec["denials"]))
+    return rec
 
 
 def final_line(text: str) -> str:
@@ -1639,6 +1692,15 @@ def cmd_limits(args: argparse.Namespace) -> int:
                 raise SystemExit(f"--{attr.replace('_', '-')} must be between 1 and 100")
             usage[key] = v
             changed = True
+    if getattr(args, "runs_per_day", None) is not None:
+        if not 1 <= args.runs_per_day <= 500:
+            raise SystemExit("--runs-per-day must be between 1 and 500")
+        local.setdefault("schedule", {})["max_runs_per_day"] = int(args.runs_per_day)
+        changed = True
+    if args.reset and isinstance(local.get("schedule"), dict):
+        changed |= local["schedule"].pop("max_runs_per_day", None) is not None
+        if not local["schedule"]:
+            local.pop("schedule")
     if not usage:
         local.pop("usage")
     if changed:
@@ -1650,11 +1712,13 @@ def cmd_limits(args: argparse.Namespace) -> int:
     print(f"  session (5-hour) usage  {lim['session']:.0f}%")
     print(f"  weekly usage            {lim['weekly']:.0f}%")
     print(f"  team share of the week  {lim['team_share']:.0f}%  (what the agents themselves may use in 7 days)")
+    print(f"  runs per day            {cfg.get('schedule', 'max_runs_per_day', default=12)}")
     print("A run that reaches a limit while working is stopped and picked up again later.")
     win = read_window(cfg, time.time())
     if win and win.get("limits"):
         print(f"The current start window overrides: {win['limits']}")
-    print("Change:  agents limits --session 96 --weekly 90 --team-share 60    Defaults:  agents limits --reset")
+    print("Change:  agents limits --session 96 --weekly 90 --team-share 60 --runs-per-day 80")
+    print("Defaults:  agents limits --reset")
     return 0
 
 
@@ -1783,6 +1847,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     s.add_argument("--session", type=float, help="session (5-hour) usage limit in %%, e.g. 96")
     s.add_argument("--weekly", type=float, help="weekly usage limit in %%, e.g. 90")
     s.add_argument("--team-share", dest="team_share", type=float, help="max %% of the week the agents may use")
+    s.add_argument("--runs-per-day", dest="runs_per_day", type=int, help="most agent runs per day, e.g. 80")
     s.add_argument("--reset", action="store_true", help="back to the kit defaults")
     s.set_defaults(fn=cmd_limits)
     s = sub.add_parser("stop", help="stop starting new runs")

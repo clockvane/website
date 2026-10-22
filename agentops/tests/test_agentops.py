@@ -706,5 +706,69 @@ class DashboardSteps(unittest.TestCase):
             self.assertFalse(dashboard.LOG_NAME.match("../../etc/passwd"))
 
 
+class AutoUnblock(unittest.TestCase):
+    def test_unblocks_once_when_dependencies_are_closed(self):
+        with tempfile.TemporaryDirectory() as t:
+            cfg = make_cfg(Path(t))
+            st = ao.State(cfg)
+            L = lambda *n: [{"name": x} for x in n]
+            issues = [{"number": 3, "labels": L("status:blocked", "agent:product-owner", "phase:initiation"), "body": "Depends on #2"},
+                      {"number": 4, "labels": L("status:blocked", "agent:product-owner", "phase:initiation"), "body": "Depends on #3"}]
+            gh = FakeGH(issues=issues, states={2: "closed", 3: "open"})
+            w = ao.Dispatcher(cfg, gh, st, NOW, apply=True).choose("initiation", "m")
+            self.assertEqual((w.role, w.action, w.issue), ("product-owner", "implement", 3))
+            self.assertIn(("label", 3, ["status:ready"]), gh.calls)
+            self.assertIn(("unlabel", 3, "status:blocked"), gh.calls)
+            self.assertFalse(any(c[1] == 4 for c in gh.calls if c[0] in ("label", "unlabel")))
+            # blocked again later (e.g. the agent hit a problem): agentops leaves it to the EM
+            gh2 = FakeGH(issues=[dict(issues[0], labels=L("status:blocked", "agent:product-owner"))], states={2: "closed"})
+            ao.Dispatcher(cfg, gh2, st, NOW, apply=True).choose("initiation", "m")
+            self.assertFalse(any(c[0] == "label" for c in gh2.calls))
+
+
+class BackToBack(unittest.TestCase):
+    def run_tick(self, issues, outcomes, **cfg_over):
+        from unittest import mock
+        import io, contextlib
+        t = tempfile.TemporaryDirectory()
+        self.addCleanup(t.cleanup)
+        tmp = Path(t.name)
+        (tmp / "projects").mkdir()
+        cfg = make_cfg(tmp, **cfg_over)
+        ao.save_reading(cfg, {"five_hour": {"pct": 10.0, "resets_at": time.time() + 9000},
+                              "seven_day": {"pct": 20.0, "resets_at": time.time() + 400000}}, "test")
+        gh = FakeGH(issues=issues)
+        ran = []
+
+        def fake_run(cfg_, state, work, phase, **kw):
+            ran.append((work.role, work.action, work.issue))
+            gh.issues = [i for i in gh.issues if i["number"] != work.issue]
+            out = outcomes.pop(0) if outcomes else "success"
+            return {"kind": "run", "started": time.time(), "role": work.role, "action": work.action,
+                    "issue": work.issue, "outcome": out, "final": "PLANNED: x" if work.action == "plan" else "DONE: x"}
+        marker = tmp / ".agentops-clone"
+        marker.touch()
+        with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: cfg)), \
+                mock.patch.object(ao, "GH", lambda *a: gh), mock.patch.object(ao, "sync_clone", lambda b: "sha"), \
+                mock.patch.object(ao, "run_claude", fake_run), mock.patch.object(ao, "read_phase", lambda root=None: "build"), \
+                mock.patch.object(ao, "CLONE_MARKER", marker), contextlib.redirect_stdout(io.StringIO()):
+            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})())
+        return ran
+
+    def issues(self, *nums):
+        return [{"number": n, "labels": [{"name": x} for x in ("status:ready", "agent:sde2", "phase:build")], "body": ""}
+                for n in nums]
+
+    def test_runs_continue_back_to_back_until_no_work(self):
+        ran = self.run_tick(self.issues(21, 22, 23), [])
+        self.assertEqual([r[2] for r in ran[:3]], [21, 22, 23])  # no 10-min spacing inside one check
+        self.assertEqual(ran[3][:2], ("eng-manager", "plan"))   # then the EM plans once
+        self.assertEqual(len(ran), 4)
+
+    def test_chain_stops_at_cap_and_after_a_failure(self):
+        self.assertEqual(len(self.run_tick(self.issues(21, 22, 23), [], **{"run.max_runs_per_tick": 2})), 2)
+        self.assertEqual(len(self.run_tick(self.issues(21, 22, 23), ["error_max_turns"])), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
