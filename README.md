@@ -156,10 +156,12 @@ provides the 30-minute clock through Task Scheduler.
 | `agents start --now` | Same, but don't wait for the 20-minute quiet period after your own Claude use. |
 | `agents stop` | No new runs. A run in progress finishes (max 45 min). |
 | `agents stop --kill` | Also end the run in progress now (its unpushed work is dropped and redone later). |
-| `agents status` | Started or not, usage estimate, last runs. |
+| `agents start --hours 2 --session-limit 90` | Same, with a different session limit for this start only. |
+| `agents limits --session 96` | Set how far into your plan the agents may go (saved; see §6). `agents limits` shows them. |
+| `agents status` | Started or not, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
 
 Even when started, a run only begins if you're not using Claude Code yourself (unless `--now`)
-and your usage is below the limits in §6. Prefer a fixed timetable instead? Set
+and the run fits under your usage limits (§6). Prefer a fixed timetable instead? Set
 `"schedule": {"mode": "always", "allowed_hours": "23:00-07:30"}` in your local config (§6).
 
 ## 5. Your job as the owner
@@ -185,21 +187,27 @@ reset and needs no PR.
 |---------|---------|---------|
 | `schedule.mode` | on-demand | Agents work only after `agents start`. `always` = any time inside `allowed_hours` |
 | `idle.quiet_minutes` | 20 | No agent run while any of your other Claude Code sessions was active in the last 20 min |
-| `usage.team_seven_day_share_pct` | **50** | The website team stops once *it* has used ~50% of your weekly plan |
-| `usage.seven_day_stop_pct` | 85 | Stop when the whole week (you + agents) reaches ~85% — always keeps ≥ 15% for you |
-| `usage.five_hour_stop_pct` | 75 | Stop when the current 5-hour window reaches ~75%, so you can still work if you come back |
-| `usage.safety_margin_pct` | 8 | Added to every estimate (+7 more when the status-line snapshot is older than 6 h) |
-| `usage.uncalibrated_max_runs_per_5h` | 2 | Until a status-line snapshot exists, at most 2 runs per 5 h |
+| `usage.five_hour_stop_pct` | 75 | **Your session limit.** `agents limits --session 96` |
+| `usage.seven_day_stop_pct` | 85 | **Your weekly limit** (you + agents). `agents limits --weekly 90` |
+| `usage.team_seven_day_share_pct` | **50** | Most of the week the agents *themselves* may use. `agents limits --team-share 60` |
+| `usage.expected_run_pct.*` | implement 20, fix 10, review 8, plan 5 | Starting guess of how much of a session one run uses; replaced by measured values after a few runs |
+| `usage.stop_runs_at_limit` | true | A run that reaches your limit while working is stopped (picked up again later) |
+| `usage.live.max_age_minutes` | 15 | How old a usage reading may be; older → one tiny check request first (~$0.001) |
+| `run.plan_retry_minutes` / `run.max_plan_failures` | 30 / 3 | A failed planning run is retried after 30 min, at most 3 times per GitHub state |
+| `usage.safety_margin_pct`, `uncalibrated_max_runs_per_5h` | 8, 2 | Only used if no live reading can be taken |
 | `schedule.max_runs_per_day` | 12 | Hard daily cap |
 | `schedule.min_minutes_between_runs` | 25 | Spacing between runs |
 | `schedule.allowed_hours` | 00:00-24:00 | Only used in `always` mode, e.g. `"23:00-07:30"` (IST) |
 | `run.max_budget_usd.*` | 1-4 | Per-run size cap from Claude Code's *estimate* (you are not billed this on a subscription) |
 | `run.max_turns.*` | 30-70 | Per-run turn cap |
 
-How the estimate works: the status line gives the real server-side percentages whenever you use
-Claude Code. Between snapshots, agentops reads local Claude Code transcripts, weights tokens by
-model, and calibrates "% per unit" against the last snapshot. If a run still hits a limit,
-agentops reads the reset time from the error and sleeps until then.
+How usage is measured: every Claude request returns your plan's real usage — including what you
+use on claude.ai, the desktop app or other machines. agentops saves the newest reading from agent
+runs, from the status line, or from a one-word check request on the smallest model when the last
+reading is older than 15 minutes. A run starts only if **current usage + its expected size ≤ your
+limit**, its spending cap is lowered to fit, and it is stopped if usage reaches the limit anyway.
+How much each kind of run costs is measured after every run, so the expected sizes become your
+real numbers. If Claude itself reports a limit, agentops waits until the reset time.
 
 Check any time: `python3 agentops/agentops.py status`.
 
@@ -232,7 +240,9 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 
 | Symptom | Fix |
 |---------|-----|
-| Nothing happens at all | `agents status` — most likely "not started": run `agents start`. |
+| Nothing happens at all | `agents status` — most likely "not started": run `agents start`. It also shows the last planning result and refused commands. |
+| "would pass your limit" | Working as intended: the next run doesn't fit under your limit. Raise it (`agents limits --session 96`) or wait for the reset time shown. |
+| Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh` (opens, approves and merges a governance PR as you, then refreshes the agents' copy). |
 | `status` says "owner active" all the time | A Claude Code session of yours keeps writing. Close it, or lower `idle.quiet_minutes`. |
 | Gate says "usage unknown" | Configure the status line (step 5) and send one message in Claude Code. |
 | A PR sits forever | `python3 agentops/agentops.py next` shows why: CI pending, `needs-human`, or a gate PR waiting for you. |

@@ -5,7 +5,7 @@
   "timezone": "Asia/Kolkata",
   "plan": "pro",
   "usage": {
-    "_readme": "The team starts no new run when estimated plan usage is at/above these numbers (after the safety margin). The team may use up to 50% of the weekly plan itself; the 85% total stop keeps at least 15% of every week for you, whatever happens.",
+    "_readme": "Owner limits: the team starts a run only if session (5-hour) usage plus the run's expected size stays under five_hour_stop_pct, and weekly usage under seven_day_stop_pct; a run that reaches a limit is stopped. Set them with `agents limits --session 96` (saved in ~/.claude/agentops/config.local.json). Usage is read live from Claude (includes your claude.ai use). safety_margin/snapshot/uncalibrated keys apply only when no live reading is possible.",
     "five_hour_stop_pct": 75,
     "seven_day_stop_pct": 85,
     "team_seven_day_share_pct": 50,
@@ -13,7 +13,19 @@
     "snapshot_stale_hours": 6,
     "stale_snapshot_extra_margin_pct": 7,
     "uncalibrated_max_runs_per_5h": 2,
-    "cooldown_minutes_on_throttle": 30
+    "cooldown_minutes_on_throttle": 30,
+    "live": {
+      "probe": true,
+      "max_age_minutes": 15,
+      "probe_model": "haiku"
+    },
+    "expected_run_pct": {
+      "implement": 20,
+      "fix": 10,
+      "review": 8,
+      "plan": 5
+    },
+    "stop_runs_at_limit": true
   },
   "idle": {
     "_readme": "Agents only run when you are not using Claude Code yourself: no activity in any of your other Claude Code sessions for `quiet_minutes`.",
@@ -65,7 +77,9 @@
     "extra_claude_args": [
       "--permission-prompts",
       "none"
-    ]
+    ],
+    "plan_retry_minutes": 30,
+    "max_plan_failures": 3
   },
   "merge": {
     "auto_merge": true,
