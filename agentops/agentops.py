@@ -13,7 +13,7 @@ Runs on the owner's WSL laptop, one unit of work per tick:
      the owner's limit, record the run in a ledger and learn how much a run costs.
 
 Python 3.9+ stdlib only. Human-owned: agents cannot edit this folder.
-Usage:  python3 agentops/agentops.py {start,stop,limits,status,tick,gate,next,doctor,selftest}
+Usage:  python3 agentops/agentops.py {start,stop,limits,status,dashboard,tick,gate,next,doctor,selftest}
 """
 from __future__ import annotations
 
@@ -94,8 +94,11 @@ def parse_iso(ts: str) -> Optional[float]:
         return None
 
 
+LOG_TZ: Optional[dt.tzinfo] = None  # set from config, so tick.log uses your local time
+
+
 def log(msg: str) -> None:
-    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    stamp = dt.datetime.now(LOG_TZ).strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{stamp}] {msg}", flush=True)
 
 
@@ -143,6 +146,8 @@ class Config:
         override = load_json(local)
         if isinstance(override, dict):
             data = deep_merge(data, override)
+        global LOG_TZ
+        LOG_TZ = get_tz(data.get("timezone", "UTC"))
         return cls(data, matrix)
 
     def __getitem__(self, key: str) -> Any:
@@ -485,15 +490,22 @@ def learn_run_cost(state: "State", rec: Dict[str, Any]) -> None:
         old = costs.get("usd_per_pct")
         costs["usd_per_pct"] = round(usd / five if not old else 0.5 * old + 0.5 * usd / five, 4)
     seven = (rec.get("usage_delta") or {}).get("seven_day")
-    if seven is not None and five >= 2:
-        old = costs.get("seven_per_five")
-        costs["seven_per_five"] = round(seven / five if old is None else 0.5 * old + 0.5 * seven / five, 3)
+    if seven is not None:
+        tot = costs.setdefault("totals", {"five": 0.0, "seven": 0.0})
+        tot["five"], tot["seven"] = round(tot["five"] + five, 1), round(tot["seven"] + seven, 1)
+        if tot["five"] >= 20:
+            costs["seven_per_five"] = round(tot["seven"] / tot["five"], 3)
     state.put("run_costs", costs)
 
 
 def team_share_live(state: "State", now: float) -> float:
-    return round(sum((r.get("usage_delta") or {}).get("seven_day") or 0.0
-                     for r in state.ledger(now - 7 * DAY) if r.get("kind") == "run"), 1)
+    """% of the weekly plan the agents used in 7 days. Weekly readings move in 1% steps, so once
+    the session-to-week ratio is measured, session deltas (larger, smoother) are used instead."""
+    runs = [r for r in state.ledger(now - 7 * DAY) if r.get("kind") == "run" and r.get("usage_delta")]
+    ratio = state.doc("run_costs").get("seven_per_five")
+    if ratio is not None:
+        return round(sum((r["usage_delta"].get("five_hour") or 0.0) for r in runs) * float(ratio), 1)
+    return round(sum((r["usage_delta"].get("seven_day") or 0.0) for r in runs), 1)
 
 
 def run_budget(cfg: "Config", state: "State", action: str, live: Optional[Dict[str, Any]],
@@ -1176,6 +1188,9 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=logf,
                                 stdin=subprocess.DEVNULL, start_new_session=True)
+        state.put("current_run", {"role": work.role, "action": work.action, "issue": work.issue, "pr": work.pr,
+                                  "note": work.note, "started": started, "log": str(log_path), "pid": proc.pid,
+                                  "budget_usd": rec["budget_usd"]})
         sel = selectors.DefaultSelector()
         sel.register(proc.stdout, selectors.EVENT_READ)
         fd = proc.stdout.fileno()
@@ -1201,10 +1216,16 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
                 line = raw.decode("utf-8", "replace")
                 if not line.strip():
                     continue
-                logf.write(line + "\n")
                 try:
                     ev = json.loads(line)
                 except json.JSONDecodeError:
+                    logf.write(line + "\n")
+                    continue
+                if isinstance(ev, dict):
+                    ev["_ts"] = round(time.time(), 1)
+                    logf.write(json.dumps(ev, ensure_ascii=False) + "\n")
+                else:
+                    logf.write(line + "\n")
                     continue
                 etype, sub = ev.get("type"), ev.get("subtype")
                 if etype == "system" and sub == "init":
@@ -1264,8 +1285,9 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
         denials = result.get("permission_denials") or []
         if denials:
             rec["denials_total"] = len(denials)
-            rec["denials"] = [f"{d.get('tool_name')}: " + str((d.get("tool_input") or {}).get("command")
-                                                              or d.get("tool_input"))[:160] for d in denials[:3]]
+            rec["denials"] = [f"{d.get('tool_name')}: " + " ⏎ ".join(str((d.get("tool_input") or {}).get("command")
+                                                              or d.get("tool_input")).splitlines())[:160]
+                              for d in denials[:3]]
     else:
         rec["outcome"] = killed or "no-result"
     if killed:
@@ -1370,7 +1392,11 @@ def cmd_tick(args: argparse.Namespace) -> int:
         live = info.get("live") or {}
         log(f"running {work.role} ({work.action}) … session usage {live.get('five_hour', '?')}%, "
             f"your limit {limits['session']:.0f}%, budget ${budget}")
-        rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget)
+        try:
+            rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget)
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                (state.dir / "current_run.json").unlink()
         if rec.get("outcome") in LIMIT_OUTCOMES and work.attempt_key:
             state.bump(work.attempt_key, -1)  # stopped for usage: not the agent's failure
         if work.action == "plan" and rec.get("outcome") not in LIMIT_OUTCOMES:
@@ -1587,7 +1613,7 @@ def cmd_status(args: argparse.Namespace) -> int:
               f"#{r.get('issue') or r.get('pr') or '-':<4} → {r.get('outcome')}, {r.get('turns')} turns, "
               f"est ${r.get('cost_estimate_usd')}{f', session +{used:.0f}%' if used is not None else ''}")
         if r.get("denials"):
-            print(f"       refused: {r['denials'][0][:110]}")
+            print(f"       refused: {' ⏎ '.join(r['denials'][0].splitlines())[:110]}")
         if r.get("outcome") != "success" or "BLOCKED" in final_line(r.get("final", "")):
             if r.get("final"):
                 print(f"       ↳ {final_line(r['final'])[:120]}")
@@ -1630,6 +1656,12 @@ def cmd_limits(args: argparse.Namespace) -> int:
         print(f"The current start window overrides: {win['limits']}")
     print("Change:  agents limits --session 96 --weekly 90 --team-share 60    Defaults:  agents limits --reset")
     return 0
+
+
+def cmd_dashboard(args: argparse.Namespace) -> int:
+    sys.path.insert(0, str(HERE))
+    import dashboard
+    return dashboard.serve(sys.modules[__name__], port=args.port, open_page=not args.no_open)
 
 
 def cmd_gate(args: argparse.Namespace) -> int:
@@ -1758,6 +1790,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     s.set_defaults(fn=cmd_stop)
     sub.add_parser("setup-statusline", help="connect Claude Code's status line (shows plan usage)").set_defaults(
         fn=cmd_setup_statusline)
+    s = sub.add_parser("dashboard", help="live view of the team in your browser (read-only)")
+    s.add_argument("--port", type=int, default=8765)
+    s.add_argument("--no-open", action="store_true", help="don't open the browser")
+    s.set_defaults(fn=cmd_dashboard)
     s = sub.add_parser("status", help="plan usage, limits, gate state, recent runs")
     s.add_argument("--live", action="store_true", help="check plan usage now (one tiny request, ~$0.001)")
     s.set_defaults(fn=cmd_status)

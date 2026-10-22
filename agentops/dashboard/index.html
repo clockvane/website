@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clockvane Agents</title>
+<style>
+:root {
+  --bg: #f4f5f7; --surface: #ffffff; --surface-2: #f1f3f6; --text: #14161b; --muted: #5a6170;
+  --faint: #8790a0; --border: #e1e4ea; --accent: #0f766e; --accent-soft: #e3f3f1;
+  --ok: #15803d; --ok-soft: #e7f5ec; --warn: #a15c07; --warn-soft: #fdf2e1; --bad: #b42318; --bad-soft: #fdeceb;
+  --idle: #6b7280; --idle-soft: #eef0f3;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .06);
+  --c-purple: #7c3aed; --c-blue: #2563eb; --c-red: #dc2626; --c-yellow: #ca8a04; --c-orange: #ea580c;
+  --c-cyan: #0891b2; --c-green: #16a34a; --c-pink: #db2777; --c-gray: #64748b;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0f13; --surface: #151920; --surface-2: #1c212a; --text: #e8eaee; --muted: #a3abb9;
+    --faint: #6e7686; --border: #262c37; --accent: #2dd4bf; --accent-soft: #10302c;
+    --ok: #4ade80; --ok-soft: #12291a; --warn: #fbbf24; --warn-soft: #2c2410; --bad: #f87171; --bad-soft: #2e1616;
+    --idle: #9ca3af; --idle-soft: #1f242d; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+
+header {
+  display: flex; align-items: center; gap: 20px; padding: 14px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand b { font-size: 16px; letter-spacing: -.01em; }
+.brand span { color: var(--muted); }
+.phases { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; }
+.phase { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; color: var(--faint);
+  white-space: nowrap; font-size: 13px; }
+.phase.done { color: var(--muted); }
+.phase.current { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.phase .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .7; }
+.gatepill { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px dashed var(--border); color: var(--faint); white-space: nowrap; }
+.gatepill.wait { border: 1px solid var(--warn); color: var(--warn); background: var(--warn-soft); }
+.gatepill.passed { border-style: solid; color: var(--muted); }
+.statepill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  font-weight: 600; font-size: 13px; background: var(--idle-soft); color: var(--idle); }
+.statepill.working { background: var(--ok-soft); color: var(--ok); }
+.statepill.waiting { background: var(--accent-soft); color: var(--accent); }
+.updated { color: var(--faint); font-size: 12px; }
+
+main { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 16px; padding: 20px 24px 40px;
+  max-width: 1480px; margin: 0 auto; align-items: start;
+  grid-template-areas: "now usage" "board board" "runs team"; }
+#now { grid-area: now; } #usage { grid-area: usage; } #boardcard { grid-area: board; }
+#teamcard { grid-area: team; } #runscard { grid-area: runs; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 18px 20px; min-width: 0; }
+.card h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.span-all { grid-column: 1 / -1; }
+
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700;
+  color: #fff; flex: none; letter-spacing: .02em; }
+.avatar.lg { width: 44px; height: 44px; font-size: 14px; }
+.now-head { display: flex; gap: 14px; align-items: center; }
+.now-title { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+.now-sub { color: var(--muted); margin-top: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: pulse 1.8s infinite; flex: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+.steps { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--border); }
+.steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.steps li:last-child { border-bottom: none; }
+.steps .ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; background: var(--surface-2); color: var(--muted); font-weight: 700; }
+.steps .k-edit .ic { background: var(--accent-soft); color: var(--accent); }
+.steps .k-run .ic { background: var(--surface-2); color: var(--text); font-family: var(--mono); }
+.steps .k-web .ic { color: var(--c-blue); }
+.steps .k-say .ic { color: var(--c-purple); }
+.steps .k-done .ic { background: var(--ok-soft); color: var(--ok); }
+.steps .err .ic { background: var(--bad-soft); color: var(--bad); }
+.steps .txt { overflow-wrap: anywhere; }
+.steps .k-say .txt { color: var(--muted); font-style: italic; }
+.steps .k-run .txt { font-family: var(--mono); font-size: 12.5px; }
+.steps .why { color: var(--bad); font-size: 12px; margin-top: 2px; }
+.steps time { color: var(--faint); font-size: 12px; white-space: nowrap; }
+.more { margin-top: 8px; }
+button.link { background: none; border: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; }
+button.ghost { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 8px; font: inherit; font-size: 12px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+
+.idle-title { font-size: 18px; font-weight: 600; }
+.reasons { margin: 10px 0 0; padding: 0; list-style: none; }
+.reasons li { padding: 6px 0; color: var(--muted); display: flex; gap: 8px; }
+.reasons li::before { content: "•"; color: var(--faint); }
+.next { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); display: flex; gap: 12px; align-items: center; }
+.next small { display: block; color: var(--muted); }
+.hint { margin-top: 12px; color: var(--muted); }
+
+.meter { margin-bottom: 16px; }
+.meter-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.meter-top b { font-size: 22px; letter-spacing: -.02em; }
+.meter-top span { color: var(--muted); font-size: 12px; }
+.bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 999px; margin: 8px 0 4px; overflow: visible; }
+.bar .fill { height: 100%; border-radius: 999px; background: var(--accent); }
+.bar .fill.near { background: var(--warn); }
+.bar .fill.over { background: var(--bad); }
+.bar .limit { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text); opacity: .55; border-radius: 1px; }
+.meter small { color: var(--faint); font-size: 12px; }
+.sizes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-top: 6px; font-size: 13px; }
+.sizes div { display: flex; justify-content: space-between; color: var(--muted); }
+.share { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); padding: 10px 0; border-top: 1px solid var(--border); }
+.share b { color: var(--text); white-space: nowrap; }
+.sizes b { color: var(--text); font-weight: 600; }
+.note { color: var(--faint); font-size: 12px; margin-top: 12px; }
+
+.board { display: grid; grid-template-columns: repeat(6, minmax(180px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+.col h3 { font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; }
+.col h3 span { color: var(--faint); font-weight: 500; }
+.col.you h3 { color: var(--warn); }
+.tcard { display: block; background: var(--surface-2); border: 1px solid transparent; border-radius: 10px; padding: 10px 11px; margin-bottom: 8px; }
+.tcard:hover { border-color: var(--border); text-decoration: none; }
+.tcard.live { border-color: var(--ok); background: var(--ok-soft); }
+.tcard.you { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.tcard .num { color: var(--faint); font-size: 12px; }
+.tcard .ttl { display: block; margin: 2px 0 8px; font-weight: 500; overflow-wrap: anywhere; }
+.tcard .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mini { width: 18px; height: 18px; font-size: 8.5px; }
+.tag { font-size: 11px; color: var(--muted); }
+.rv { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); white-space: nowrap; }
+.rv.approved { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.rv.changes { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.rv.waiting { color: var(--muted); }
+.empty { color: var(--faint); font-size: 12.5px; padding: 8px 2px; }
+
+.team { list-style: none; margin: 0; padding: 0; }
+.team li { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.team li:last-child { border-bottom: none; }
+.team .who { flex: 1; min-width: 0; }
+.team .who b { font-weight: 600; }
+.team .who small { display: block; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team li.working .who small { color: var(--ok); }
+.model { font-size: 11px; color: var(--faint); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr.run { cursor: pointer; }
+tr.run:hover td { background: var(--surface-2); }
+td.num { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+.badge.idle { background: var(--idle-soft); color: var(--idle); }
+.final { color: var(--muted); font-size: 12.5px; margin-top: 3px; overflow-wrap: anywhere; }
+tr.detail td { background: var(--surface-2); padding: 4px 16px 12px; }
+.agentcell { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+.banner { grid-column: 1 / -1; padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); }
+footer { text-align: center; color: var(--faint); font-size: 12px; padding: 0 24px 28px; }
+
+@media (max-width: 980px) {
+  main { grid-template-columns: minmax(0, 1fr); padding: 16px; grid-template-areas: "now" "usage" "board" "runs" "team"; }
+  header { padding: 12px 16px; gap: 12px; }
+  .phases { order: 3; flex-basis: 100%; }
+}
+@media (max-width: 1200px) { .hide-md { display: none; } }
+@media (max-width: 560px) {
+  .hide-sm { display: none; }
+  .board { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+  .tablewrap table { min-width: 600px; }
+  .card { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>Clockvane</b><span>Agent team</span></div>
+  <nav class="phases" id="phases" aria-label="SDLC phases"></nav>
+  <div id="statepill" class="statepill">Loading…</div>
+  <div class="updated" id="updated"></div>
+</header>
+<main id="main">
+  <section class="card" id="now" aria-live="polite"><h2>Right now</h2><p class="empty">Loading…</p></section>
+  <section class="card" id="usage"><h2>Plan usage</h2></section>
+  <section class="card" id="boardcard"><h2>Work board</h2></section>
+  <section class="card" id="teamcard"><h2>Team</h2></section>
+  <section class="card" id="runscard"><h2>Recent runs</h2></section>
+</main>
+<footer id="footer">Read-only view · nothing on this page changes anything</footer>
+
+<script>
+"use strict";
+const ROLE = {
+  "product-owner": ["Product Owner", "PO"], "eng-manager": ["Engineering Manager", "EM"], "tech-lead": ["Tech Lead", "TL"],
+  "sde3": ["SDE 3", "S3"], "sde2": ["SDE 2", "S2"], "ux-designer": ["UX Designer", "UX"], "content-writer": ["Content Writer", "CW"],
+  "qa-engineer": ["QA Engineer", "QA"], "code-reviewer": ["Code Reviewer", "CR"], "security-reviewer": ["Security Reviewer", "SR"],
+  "devops-lead": ["DevOps Lead", "DL"], "devops-engineer": ["DevOps Engineer", "DE"],
+};
+const ACTION = { implement: "working on", fix: "fixing", review: "reviewing", plan: "planning the next step" };
+const ACTION_SHORT = { implement: "Work", fix: "Fix", review: "Review", plan: "Plan" };
+const ICON = { read: "R", edit: "✎", run: "$", web: "W", say: "“", skill: "★", plan: "≡", done: "✓", other: "·" };
+let S = null, colors = {}, openRun = null, runCache = {}, showAllSteps = false;
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return el;
+}
+const $ = (id) => document.getElementById(id);
+const fmtTime = (t) => t ? new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }) : "—";
+function fmtWhen(t) {
+  if (!t) return "—";
+  const d = new Date(t * 1000), today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  return sameDay ? fmtTime(t) : d.toLocaleDateString([], { weekday: "short" }) + " " + fmtTime(t);
+}
+function ago(t) {
+  if (!t) return "";
+  const s = Math.max(0, Date.now() / 1000 - t);
+  if (s < 45) return "just now";
+  if (s < 3600) return Math.round(s / 60) + " min ago";
+  if (s < 86400) return Math.round(s / 3600) + " h ago";
+  return Math.round(s / 86400) + " d ago";
+}
+function dur(sec) {
+  if (sec == null) return "—";
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`;
+}
+const title = (r) => (ROLE[r] || [r || "?"])[0];
+function avatar(role, cls) {
+  const c = colors[role] || "gray";
+  return h("span", { class: "avatar " + (cls || ""), style: `background: var(--c-${c}, var(--c-gray))`, "aria-hidden": "true" }, (ROLE[role] || ["", "?"])[1]);
+}
+function issueTitle(n) {
+  const gh = S && S.github || {};
+  const i = (gh.issues || []).find((x) => x.number === n) || (gh.prs || []).find((x) => x.number === n);
+  return i ? i.title : "";
+}
+function ghUrl(kind, n) { return `https://github.com/${S.repo}/${kind === "pr" ? "pull" : "issues"}/${n}`; }
+function itemLink(issue, pr) {
+  if (pr) return h("a", { href: ghUrl("pr", pr), target: "_blank", rel: "noopener" }, `PR #${pr}`);
+  if (issue) return h("a", { href: ghUrl("issue", issue), target: "_blank", rel: "noopener" }, `#${issue}`);
+  return "—";
+}
+function outcomeBadge(r) {
+  const o = r.outcome || "", f = r.final || "";
+  if (/usage-limit|throttled/.test(o)) return h("span", { class: "badge idle" }, "Stopped at limit");
+  if (o === "success" && /^BLOCKED/.test(f)) return h("span", { class: "badge warn" }, "Blocked");
+  if (o === "success") return h("span", { class: "badge ok" }, "Done");
+  if (o === "timeout") return h("span", { class: "badge bad" }, "Timed out");
+  if (/max_turns|max_budget/.test(o)) return h("span", { class: "badge warn" }, "Ran out of " + (o.includes("turns") ? "turns" : "budget"));
+  return h("span", { class: "badge bad" }, o || "Failed");
+}
+function plainReason(r) {
+  if (/last run was too recent/.test(r)) return `Spacing: runs start at least ${S.min_gap_minutes} min apart`;
+  if (/not started/.test(r)) return "The team is stopped";
+  if (/owner active/.test(r)) return r.replace("owner active in Claude Code", "You used Claude Code") + " — agents give you room";
+  return r.charAt(0).toUpperCase() + r.slice(1);
+}
+
+// ---------------------------------------------------------------- header
+function renderHeader() {
+  const nav = $("phases"); nav.replaceChildren();
+  const idx = S.phases.indexOf(S.phase);
+  const openGates = new Set(((S.github || {}).prs || []).filter((p) => p.state === "OPEN" && p.gate).map((p) => p.gate));
+  S.phases.forEach((p, i) => {
+    nav.append(h("span", { class: "phase " + (i < idx ? "done" : i === idx ? "current" : "") },
+      h("span", { class: "dot" }), (i < idx ? "✓ " : "") + p[0].toUpperCase() + p.slice(1)));
+    const g = `gate:${i + 1}`;
+    if (S.gates[g]) {
+      const passed = i < idx, waiting = openGates.has(g);
+      nav.append(h("span", { class: "gatepill " + (waiting ? "wait" : passed ? "passed" : ""),
+        title: S.gates[g] }, waiting ? `Gate ${i + 1}: your turn` : `Gate ${i + 1}`));
+    }
+  });
+  const pill = $("statepill");
+  if (S.current) { pill.className = "statepill working"; pill.replaceChildren(h("span", { class: "pulse" }), "Working"); }
+  else if (S.window) { pill.className = "statepill waiting"; pill.replaceChildren("Started · waiting"); }
+  else { pill.className = "statepill"; pill.replaceChildren("Stopped"); }
+  const gh = S.github || {};
+  $("updated").textContent = `Updated ${fmtTime(S.now)}` + (gh.at ? ` · GitHub ${ago(gh.at)}` : "");
+}
+
+// ---------------------------------------------------------------- now
+function stepList(steps, newestFirst, limit) {
+  const list = newestFirst ? [...steps].reverse() : steps;
+  const shown = limit ? list.slice(0, limit) : list;
+  return h("ul", { class: "steps" }, shown.map((s) => h("li", { class: `k-${s.kind}` + (s.error ? " err" : "") },
+    h("span", { class: "ic", "aria-hidden": "true" }, s.error ? "!" : ICON[s.kind] || "·"),
+    h("div", {}, h("div", { class: "txt", title: s.detail || "" }, s.text),
+      s.error ? h("div", { class: "why" }, (s.error === "refused" ? "Refused: " : "Failed: ") + (s.why || "")) : null),
+    h("time", {}, s.t ? ago(s.t) : ""))));
+}
+function renderNow() {
+  const card = $("now"); const c = S.current;
+  const kids = [h("h2", {}, "Right now")];
+  if (c) {
+    const item = c.pr ? `PR #${c.pr}` : c.issue ? `#${c.issue}` : "";
+    const t = issueTitle(c.pr || c.issue);
+    kids.push(h("div", { class: "now-head" }, avatar(c.role, "lg"),
+      h("div", {}, h("div", { class: "now-title" }, `${title(c.role)} is ${ACTION[c.action] || c.action}`),
+        h("div", { class: "now-sub" }, item ? itemLink(c.issue, c.pr) : null, t ? ` · ${t}` : (c.action === "plan" ? "Looks at GitHub and creates the next tickets" : "")))));
+    kids.push(h("div", { class: "chips" },
+      h("span", { class: "chip", id: "elapsed", "data-start": c.started }, "Running " + dur(S.now - c.started)),
+      h("span", { class: "chip" }, `${c.turns || 0} turns`),
+      c.model ? h("span", { class: "chip" }, c.model.replace("claude-", "")) : null,
+      c.budget_usd ? h("span", { class: "chip" }, `budget $${Number(c.budget_usd).toFixed(2)}`) : null,
+      c.last_at ? h("span", { class: "chip" }, `last step ${ago(c.last_at)}`) : null));
+    const steps = c.steps || [];
+    if (!steps.length) kids.push(h("p", { class: "hint" }, "Starting up…"));
+    else {
+      kids.push(stepList(steps, true, showAllSteps ? 0 : 10));
+      if (steps.length > 10) kids.push(h("div", { class: "more" }, h("button", { class: "link", onclick: () => { showAllSteps = !showAllSteps; render(); } },
+        showAllSteps ? "Show fewer steps" : `Show all ${steps.length} steps`)));
+    }
+  } else {
+    const gh = S.github || {}, next = gh.next && gh.next.work;
+    if (!S.window) {
+      kids.push(h("div", { class: "idle-title" }, "The team is stopped"));
+      kids.push(h("p", { class: "hint" }, "Start it in Ubuntu: ", h("code", {}, "agents start --now --hours 3")));
+    } else {
+      kids.push(h("div", { class: "idle-title" }, "No agent is working at this moment"));
+      const until = S.window.until ? ` until ${fmtTime(S.window.until)}` : "";
+      let nextCheck = S.last_tick ? S.last_tick + S.tick_minutes * 60 : null;
+      if (nextCheck && nextCheck < S.now) nextCheck = null;
+      kids.push(h("p", { class: "hint" }, `The team is started${until}. `,
+        nextCheck ? `Next check around ${fmtTime(nextCheck)}.` : "The next check is due any moment."));
+      if (S.gate && S.gate.reasons.length) kids.push(h("ul", { class: "reasons" }, S.gate.reasons.map((r) => h("li", {}, plainReason(r)))));
+    }
+    if (next) {
+      const t = issueTitle(next.pr || next.issue);
+      kids.push(h("div", { class: "next" }, avatar(next.role),
+        h("div", {}, h("b", {}, `Next up: ${title(next.role)} — ${ACTION_SHORT[next.action] || next.action} `), itemLink(next.issue, next.pr),
+          h("small", {}, t || (next.action === "plan" ? "No ready tickets, so the manager plans the next ones" : "")))));
+    } else if (gh.at) {
+      kids.push(h("div", { class: "next" }, h("div", {}, h("b", {}, "Nothing to pick up"),
+        h("small", {}, "Waiting for you (a gate or a needs-human item) or for CI."))));
+    }
+    const last = S.runs[0];
+    if (last) kids.push(h("p", { class: "hint" }, `Last run: ${title(last.role)} — ${(ACTION_SHORT[last.action] || last.action).toLowerCase()} `,
+      itemLink(last.issue, last.pr), ` · finished ${ago(last.ended || last.started)} · `, outcomeBadge(last)));
+  }
+  card.replaceChildren(...kids);
+}
+
+// ---------------------------------------------------------------- usage
+function meter(label, pct, limit, resets) {
+  const cls = pct == null ? "" : pct >= limit ? "over" : pct >= limit - 10 ? "near" : "";
+  return h("div", { class: "meter" },
+    h("div", { class: "meter-top" }, h("div", {}, h("b", {}, pct == null ? "—" : `${Math.round(pct)}%`), " ", h("span", {}, label)),
+      h("span", {}, `limit ${Math.round(limit)}%`)),
+    h("div", { class: "bar", role: "img", "aria-label": `${label}: ${pct == null ? "unknown" : Math.round(pct) + "%"} of the plan, limit ${Math.round(limit)}%` },
+      h("div", { class: "fill " + cls, style: `width:${Math.min(100, pct || 0)}%` }),
+      h("div", { class: "limit", style: `left:calc(${Math.min(100, limit)}% - 1px)` })),
+    h("small", {}, resets ? `resets ${fmtWhen(resets)}` : ""));
+}
+function renderUsage() {
+  const u = S.usage, l = u.limits, live = u.live;
+  const kids = [h("h2", {}, "Plan usage")];
+  kids.push(meter("of this session (5 h)", live ? live.five_hour : null, l.session, live && live.five_hour_resets));
+  kids.push(meter("of this week", live ? live.seven_day : null, l.weekly, live && live.seven_day_resets));
+  kids.push(h("div", { class: "share" }, "Agents' own share of this week",
+    h("b", {}, `${Math.round(u.team_week_pct || 0)}% of ${Math.round(l.team_share)}% allowed`)));
+  kids.push(h("p", { class: "note" }, "A run starts only if it fits under your limit. Typical size of one run:"));
+  kids.push(h("div", { class: "sizes" }, Object.entries(u.expected).map(([a, p]) =>
+    h("div", {}, ACTION_SHORT[a] || a, h("b", {}, `~${Math.round(p)}%`)))));
+  kids.push(h("p", { class: "note" }, live ? `Reading from ${live.source}, ${ago(S.now - live.age_min * 60)}. Change limits: ` : "No fresh reading yet; the next run takes one. Change limits: ",
+    h("code", {}, "agents limits --session N")));
+  $("usage").replaceChildren(...kids);
+}
+
+// ---------------------------------------------------------------- board
+function renderBoard() {
+  const gh = S.github || {};
+  const kids = [h("h2", {}, "Work board", h("button", { class: "ghost", onclick: () => poll(true) }, "Refresh from GitHub"))];
+  if (gh.error) kids.push(h("p", { class: "empty" }, gh.error));
+  const issues = gh.issues || [], prs = gh.prs || [];
+  const openPrs = prs.filter((p) => p.state === "OPEN");
+  const prForIssue = new Map(openPrs.filter((p) => p.issue).map((p) => [p.issue, p]));
+  const cols = { ready: [], progress: [], review: [], you: [], waiting: [], done: [] };
+  const cur = S.current || {};
+  const isLive = (n, pr) => (pr ? cur.pr === n : cur.issue === n && !cur.pr);
+  for (const p of openPrs) {
+    const you = p.gate || p.labels.includes("needs-human") || p.labels.includes("owner-feedback");
+    (you ? cols.you : cols.review).push({ pr: p, live: cur.pr === p.number });
+  }
+  for (const i of issues) {
+    if (i.state !== "OPEN") { cols.done.push({ issue: i }); continue; }
+    if (prForIssue.has(i.number)) continue;
+    const L = i.labels;
+    if (L.includes("needs-human")) cols.you.push({ issue: i });
+    else if (L.includes("status:in-progress") || isLive(i.number)) cols.progress.push({ issue: i, live: isLive(i.number) });
+    else if (L.includes("status:ready")) cols.ready.push({ issue: i });
+    else cols.waiting.push({ issue: i });
+  }
+  cols.done.sort((a, b) => (b.issue.closed_at || 0) - (a.issue.closed_at || 0));
+  const doneCount = cols.done.length; cols.done = cols.done.slice(0, 8);
+  const label = (L, prefix) => (L.find((x) => x.startsWith(prefix)) || "").slice(prefix.length);
+  function cardFor(x, col) {
+    if (x.pr) {
+      const p = x.pr;
+      return h("a", { class: "tcard" + (x.live ? " live" : "") + (col === "you" ? " you" : ""), href: p.url, target: "_blank", rel: "noopener" },
+        h("span", { class: "num" }, `PR #${p.number}` + (p.issue ? ` · for #${p.issue}` : "")),
+        h("span", { class: "ttl" }, p.title),
+        h("div", { class: "row" }, p.author_role ? avatar(p.author_role, "mini") : null,
+          p.gate ? h("span", { class: "tag" }, `${p.gate.replace(":", " ")} — merge to approve`) : null,
+          p.ci && p.ci !== "success" ? h("span", { class: "rv " + (p.ci === "failure" ? "changes" : "waiting") }, `CI ${p.ci}`) : null,
+          (p.reviews || []).map((r) => h("span", { class: "rv " + r.state, title: `${title(r.role)}: ${r.state}` },
+            (r.state === "approved" ? "✓ " : r.state === "changes" ? "✕ " : "• ") + (ROLE[r.role] || [r.role, r.role])[1]))));
+    }
+    const i = x.issue, L = i.labels;
+    const deps = i.deps && i.deps.length && col === "waiting" ? `waits for ${i.deps.map((d) => "#" + d).join(", ")}` : "";
+    return h("a", { class: "tcard" + (x.live ? " live" : "") + (col === "you" ? " you" : ""), href: i.url, target: "_blank", rel: "noopener" },
+      h("span", { class: "num" }, `#${i.number}`), h("span", { class: "ttl" }, i.title),
+      h("div", { class: "row" }, i.role ? avatar(i.role, "mini") : null, i.role ? h("span", { class: "tag" }, title(i.role)) : null,
+        label(L, "priority:") ? h("span", { class: "tag" }, "· " + label(L, "priority:").toUpperCase()) : null,
+        deps ? h("span", { class: "tag" }, "· " + deps) : null));
+  }
+  const spec = [["ready", "Ready"], ["progress", "In progress"], ["review", "In review"], ["you", "Needs you"], ["waiting", "Waiting"], ["done", "Done"]];
+  kids.push(h("div", { class: "board" }, spec.map(([k, name]) => h("div", { class: "col " + (k === "you" && cols.you.length ? "you" : "") },
+    h("h3", {}, name, h("span", {}, String(k === "done" ? doneCount : cols[k].length))),
+    cols[k].length ? cols[k].map((x) => cardFor(x, k)) : h("div", { class: "empty" }, k === "you" ? "Nothing for you" : "—")))));
+  if (!gh.at && !gh.error) kids.push(h("p", { class: "empty" }, "Loading from GitHub…"));
+  $("boardcard").replaceChildren(...kids);
+}
+
+// ---------------------------------------------------------------- team
+function renderTeam() {
+  const kids = [h("h2", {}, "Team")];
+  kids.push(h("ul", { class: "team" }, S.team.map((m) => {
+    let sub = "Not used yet";
+    if (m.working) sub = `Working now — ${ACTION[S.current.action] || S.current.action}`;
+    else if (m.last) sub = `Last: ${fmtWhen(m.last.started)} · ${(ACTION_SHORT[m.last.action] || m.last.action).toLowerCase()}` +
+      (m.last.pr ? ` PR #${m.last.pr}` : m.last.issue ? ` #${m.last.issue}` : "");
+    return h("li", { class: m.working ? "working" : "" }, avatar(m.role),
+      h("div", { class: "who" }, h("b", {}, m.title), h("small", {}, sub)),
+      m.working ? h("span", { class: "pulse", title: "working" }) : null,
+      m.model ? h("span", { class: "model hide-sm" }, m.model) : null);
+  })));
+  $("teamcard").replaceChildren(...kids);
+}
+
+// ---------------------------------------------------------------- runs
+async function toggleRun(r) {
+  openRun = openRun === r.log ? null : r.log;
+  if (openRun && !runCache[openRun]) {
+    renderRuns();
+    try { runCache[openRun] = await (await fetch(`/api/run?log=${encodeURIComponent(openRun)}`)).json(); }
+    catch (e) { runCache[openRun] = { error: String(e) }; }
+  }
+  renderRuns();
+}
+function renderRuns() {
+  const kids = [h("h2", {}, "Recent runs", h("span", { class: "updated" }, "Click a run to see its steps"))];
+  if (!S.runs.length) { kids.push(h("p", { class: "empty" }, "No runs yet.")); $("runscard").replaceChildren(...kids); return; }
+  const rows = [];
+  for (const r of S.runs) {
+    const showFinal = r.final && (r.outcome !== "success" || /^BLOCKED/.test(r.final));
+    rows.push(h("tr", { class: "run", tabindex: "0", onclick: () => toggleRun(r), onkeydown: (e) => { if (e.key === "Enter") toggleRun(r); } },
+      h("td", { class: "num" }, fmtWhen(r.started)),
+      h("td", {}, h("div", { class: "agentcell" }, avatar(r.role, "mini"), title(r.role))),
+      h("td", {}, ACTION_SHORT[r.action] || r.action),
+      h("td", {}, itemLink(r.issue, r.pr), h("div", { class: "final hide-sm" }, issueTitle(r.pr || r.issue))),
+      h("td", {}, outcomeBadge(r), showFinal ? h("div", { class: "final" }, r.final) : null,
+        r.denials_total ? h("div", { class: "final" }, `${r.denials_total} command(s) refused`) : null),
+      h("td", { class: "num hide-sm" }, dur((r.ended || r.started) - r.started)),
+      h("td", { class: "num hide-sm" }, r.turns ?? "—"),
+      h("td", { class: "num hide-sm hide-md" }, r.cost_estimate_usd != null ? `$${Number(r.cost_estimate_usd).toFixed(2)}` : "—"),
+      h("td", { class: "num" }, r.session_pct != null ? `+${r.session_pct}%` : "—")));
+    if (openRun && openRun === r.log) {
+      const d = runCache[r.log];
+      rows.push(h("tr", { class: "detail" }, h("td", { colspan: "9" },
+        !d ? h("p", { class: "empty" }, "Loading steps…") : d.error ? h("p", { class: "empty" }, d.error) :
+          d.steps.length ? stepList(d.steps, false, 0) : h("p", { class: "empty" }, "No steps recorded."))));
+    }
+  }
+  kids.push(h("div", { class: "tablewrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["When", "Agent", "Did", "Item", "Result"].map((x) => h("th", {}, x)),
+      ["Time", "Turns"].map((x) => h("th", { class: "hide-sm" }, x)), h("th", { class: "hide-sm hide-md" }, "Est. cost"), h("th", {}, "Session"))),
+    h("tbody", {}, rows))));
+  $("runscard").replaceChildren(...kids);
+}
+
+// ---------------------------------------------------------------- loop
+function render() {
+  colors = Object.fromEntries(S.team.map((m) => [m.role, m.color]));
+  renderHeader(); renderNow(); renderUsage(); renderBoard(); renderTeam(); renderRuns();
+  $("footer").textContent = `Read-only view of ${S.repo} · kit ${S.kit} · times in your computer's time zone`;
+}
+let polling = false;
+async function poll(refresh) {
+  if (polling) return; polling = true;
+  try {
+    const res = await fetch("/api/state" + (refresh ? "?refresh=1" : ""), { cache: "no-store" });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    S = data; render();
+    document.querySelector(".banner")?.remove();
+  } catch (e) {
+    if (!document.querySelector(".banner")) $("main").prepend(h("div", { class: "banner", role: "status" },
+      "Can't reach the dashboard server. Is `agents dashboard` still running in Ubuntu?"));
+  } finally { polling = false; }
+}
+setInterval(() => poll(false), 4000);
+setInterval(() => {
+  const el = document.getElementById("elapsed");
+  if (el && S && S.current) el.textContent = "Running " + dur(Date.now() / 1000 - S.current.started);
+}, 1000);
+poll(false);
+</script>
+</body>
+</html>
