@@ -12,7 +12,7 @@
 param(
   [string]$Distro = "Ubuntu",
   [string]$AgentsDir = "~/agents/clockvane-website",
-  [int]$EveryMinutes = 30,
+  [int]$EveryMinutes = 10,
   [switch]$Uninstall
 )
 

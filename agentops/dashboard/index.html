@@ -477,7 +477,7 @@ function renderRuns() {
     rows.push(h("tr", { class: "run", tabindex: "0", onclick: () => toggleRun(r), onkeydown: (e) => { if (e.key === "Enter") toggleRun(r); } },
       h("td", { class: "num" }, fmtWhen(r.started)),
       h("td", {}, h("div", { class: "agentcell" }, avatar(r.role, "mini"), title(r.role))),
-      h("td", {}, ACTION_SHORT[r.action] || r.action),
+      h("td", {}, ACTION_SHORT[r.action] || r.action, r.chained ? h("div", { class: "final", title: "Started right after the previous run, in the same check" }, "back-to-back") : null),
       h("td", {}, itemLink(r.issue, r.pr), h("div", { class: "final hide-sm" }, issueTitle(r.pr || r.issue))),
       h("td", {}, outcomeBadge(r), showFinal ? h("div", { class: "final" }, r.final) : null,
         r.denials_total ? h("div", { class: "final" }, `${r.denials_total} command(s) refused`) : null),

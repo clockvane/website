@@ -52,8 +52,9 @@
     "mode": "on-demand",
     "allowed_hours": "00:00-24:00",
     "blocked_weekdays": [],
-    "max_runs_per_day": 12,
-    "min_minutes_between_runs": 25
+    "max_runs_per_day": 40,
+    "min_minutes_between_runs": 10,
+    "tick_minutes": 10
   },
   "run": {
     "max_turns": {
@@ -79,7 +80,11 @@
       "none"
     ],
     "plan_retry_minutes": 30,
-    "max_plan_failures": 3
+    "max_plan_failures": 3,
+    "max_runs_per_tick": 8,
+    "chain_minutes": 25,
+    "tick_hard_limit_minutes": 55,
+    "min_run_minutes": 8
   },
   "merge": {
     "auto_merge": true,
