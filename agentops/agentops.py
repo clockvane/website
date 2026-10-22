@@ -7,12 +7,13 @@ Runs on the owner's WSL laptop, one unit of work per tick:
      `agent-review/summary` status, squash-merge PRs whose reviews all approve, flag
      gate PRs for the owner.
   2. Choose the next unit of AI work (fix > review > resume > new issue > EM planning).
-  3. Gate it: allowed hours, daily cap, owner idle, estimated plan usage, cooldowns.
-  4. Run exactly one `claude -p --agent <role>` with tight limits, watch for usage-limit
-     errors, record the run in a ledger.
+  3. Gate it: run window, daily cap, owner idle, the owner's usage limits (checked against a
+     live plan-usage reading), cooldowns.
+  4. Run exactly one `claude -p --agent <role>` with tight limits, stop it if plan usage reaches
+     the owner's limit, record the run in a ledger and learn how much a run costs.
 
 Python 3.9+ stdlib only. Human-owned: agents cannot edit this folder.
-Usage:  python3 agentops/agentops.py {tick,status,gate,next,doctor,selftest} [--dry-run] [--force]
+Usage:  python3 agentops/agentops.py {start,stop,limits,status,tick,gate,next,doctor,selftest}
 """
 from __future__ import annotations
 
@@ -195,9 +196,9 @@ class State:
     def put(self, name: str, data: Any) -> None:
         save_json(self.dir / f"{name}.json", data)
 
-    def bump(self, key: str) -> int:
+    def bump(self, key: str, by: int = 1) -> int:
         attempts = self.doc("attempts")
-        attempts[key] = attempts.get(key, 0) + 1
+        attempts[key] = max(0, attempts.get(key, 0) + by)
         self.put("attempts", attempts)
         return attempts[key]
 
@@ -362,6 +363,158 @@ def estimate_usage(cfg: Config, state: State, now: float) -> Dict[str, Any]:
     return out
 
 
+# --------------------------------------------------------------------------- live plan usage
+# Every Claude Code request returns the plan's real usage (all of the owner's Claude use, including
+# claude.ai and other machines). agentops saves the newest reading from agent runs, a tiny probe
+# request and the status line in one snapshot file, and gates on it.
+LIMIT_OUTCOMES = {"usage-limit", "usage-limit-reached", "throttled"}
+DEFAULT_EXPECTED_PCT = {"implement": 20.0, "fix": 10.0, "review": 8.0, "plan": 5.0}
+
+
+def snapshot_path(cfg: "Config") -> Path:
+    return xp(cfg.get("paths", "snapshot_file", default="~/.claude/agentops/usage-snapshot.json"))
+
+
+def reading_from_event(ev: Dict[str, Any]) -> Optional[Dict[str, Dict[str, Any]]]:
+    """{'five_hour': {'pct': 78.0, 'resets_at': epoch}, 'seven_day': {...}} from a rate_limit_event."""
+    windows = (ev.get("rate_limit_info") or {}).get("unifiedWindows") or {}
+    out = {}
+    for name in WINDOWS:
+        w = windows.get(name)
+        if isinstance(w, dict) and w.get("utilization") is not None:
+            out[name] = {"pct": float(w["utilization"]) * 100.0, "resets_at": w.get("resetsAt")}
+    return out or None
+
+
+def save_reading(cfg: "Config", reading: Dict[str, Dict[str, Any]], source: str, now: Optional[float] = None) -> None:
+    now = time.time() if now is None else now
+    path = snapshot_path(cfg)
+    cur = load_json(path) or {}
+    if (cur.get("captured_at") or 0) > now:
+        return
+    doc: Dict[str, Any] = {"captured_at": now, "source": source}
+    for name in WINDOWS:
+        w = reading.get(name)
+        if w:
+            doc[name] = {"used_percentage": round(float(w["pct"]), 1), "resets_at": w.get("resets_at")}
+        elif isinstance(cur.get(name), dict):
+            doc[name] = cur[name]
+    save_json(path, doc)
+
+
+def live_usage(cfg: "Config", now: float) -> Optional[Dict[str, Any]]:
+    """The newest plan-usage reading if it is fresh enough to trust, else None."""
+    snap = load_json(snapshot_path(cfg))
+    if not isinstance(snap, dict) or not snap.get("captured_at"):
+        return None
+    age = now - float(snap["captured_at"])
+    if age < -60 or age > cfg.get("usage", "live", "max_age_minutes", default=15) * 60:
+        return None
+    out: Dict[str, Any] = {"age_min": round(max(age, 0) / 60, 1), "source": snap.get("source", "status line")}
+    for name in WINDOWS:
+        w = snap.get(name) or {}
+        pct, resets = w.get("used_percentage"), w.get("resets_at")
+        if pct is None:
+            return None
+        if resets and float(resets) <= now:
+            pct = 0.0  # that window has reset since the reading
+        out[name] = float(pct)
+        out[name + "_resets"] = float(resets) if resets else None
+    return out
+
+
+def probe_usage(cfg: "Config", state: "State") -> Optional[str]:
+    """Read plan usage with a one-word request on the smallest model (~$0.001). None on success."""
+    cmd = [cfg.get("claude_bin", default="claude"), "-p", "Reply with just: OK",
+           "--model", cfg.get("usage", "live", "probe_model", default="haiku"), "--max-turns", "1",
+           "--tools", "", "--no-session-persistence", "--output-format", "stream-json", "--verbose",
+           "--settings", json.dumps({"disableAllHooks": True})]
+    try:
+        res = subprocess.run(cmd, cwd=state.dir, capture_output=True, text=True, timeout=120,
+                             stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"usage check failed: {exc}"
+    reading, limit_text = None, ""
+    for line in res.stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "rate_limit_event":
+            reading = reading_from_event(ev) or reading
+        elif ev.get("type") == "result" and LIMIT_RX.search(json.dumps(ev, ensure_ascii=False)):
+            limit_text = json.dumps(ev, ensure_ascii=False)
+    if limit_text:
+        set_limit_cooldown(cfg, state, limit_text)
+    if reading:
+        save_reading(cfg, reading, "usage check")
+        return None
+    return "usage check returned no reading" + (f" ({res.stderr.strip()[:120]})" if res.stderr.strip() else "")
+
+
+def effective_limits(cfg: "Config", window: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+    """The owner's limits: `agents limits` (config.local.json), overridden per window by `agents start`."""
+    u = cfg.get("usage", default={})
+    lim = {"session": float(u.get("five_hour_stop_pct", 75)), "weekly": float(u.get("seven_day_stop_pct", 85)),
+           "team_share": float(u.get("team_seven_day_share_pct", 50))}
+    for k, v in ((window or {}).get("limits") or {}).items():
+        if k in lim and v is not None:
+            lim[k] = float(v)
+    return lim
+
+
+def expected_run_pct(cfg: "Config", state: "State", action: str) -> Tuple[float, str]:
+    learned = ((state.doc("run_costs").get("by_action") or {}).get(action)) or {}
+    if learned.get("n"):
+        return max(1.0, float(learned["pct"])), f"learned from {learned['n']} run(s)"
+    default = (cfg.get("usage", "expected_run_pct", default={}) or {}).get(action, DEFAULT_EXPECTED_PCT.get(action, 10.0))
+    return float(default), "starting guess"
+
+
+def learn_run_cost(state: "State", rec: Dict[str, Any]) -> None:
+    five = (rec.get("usage_delta") or {}).get("five_hour")
+    if five is None or rec.get("outcome") in LIMIT_OUTCOMES or not rec.get("action"):
+        return
+    costs = state.doc("run_costs")
+    by = costs.setdefault("by_action", {})
+    cur = by.get(rec["action"]) or {}
+    n = int(cur.get("n", 0))
+    by[rec["action"]] = {"pct": round(five if not n else 0.5 * cur["pct"] + 0.5 * five, 2), "n": n + 1}
+    usd = rec.get("cost_estimate_usd")
+    if usd and five >= 1:
+        old = costs.get("usd_per_pct")
+        costs["usd_per_pct"] = round(usd / five if not old else 0.5 * old + 0.5 * usd / five, 4)
+    seven = (rec.get("usage_delta") or {}).get("seven_day")
+    if seven is not None and five >= 2:
+        old = costs.get("seven_per_five")
+        costs["seven_per_five"] = round(seven / five if old is None else 0.5 * old + 0.5 * seven / five, 3)
+    state.put("run_costs", costs)
+
+
+def team_share_live(state: "State", now: float) -> float:
+    return round(sum((r.get("usage_delta") or {}).get("seven_day") or 0.0
+                     for r in state.ledger(now - 7 * DAY) if r.get("kind") == "run"), 1)
+
+
+def run_budget(cfg: "Config", state: "State", action: str, live: Optional[Dict[str, Any]],
+               limits: Dict[str, float]) -> float:
+    """Per-run spending cap: the configured cap, lowered so the run ends near the owner's limit."""
+    base = float((cfg.get("run", "max_budget_usd", default={}) or {}).get(action, 2.0))
+    usd_per_pct = state.doc("run_costs").get("usd_per_pct")
+    if not live or not usd_per_pct:
+        return base
+    headroom = limits["session"] - live["five_hour"]
+    return round(max(0.25, min(base, headroom * float(usd_per_pct))), 2)
+
+
+def clock(ts: Optional[float], tz: dt.tzinfo, now: Optional[float] = None) -> str:
+    if not ts:
+        return "?"
+    t = dt.datetime.fromtimestamp(float(ts), tz)
+    same_day = t.date() == dt.datetime.fromtimestamp(now or time.time(), tz).date()
+    return t.strftime("%H:%M" if same_day else "%a %H:%M")
+
+
 # --------------------------------------------------------------------------- idle detection
 def project_dir_name(path: Path) -> str:
     return re.sub(r"[^A-Za-z0-9]", "-", str(path))
@@ -477,7 +630,8 @@ def in_allowed_hours(spec: str, local: dt.datetime) -> bool:
 
 
 def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] = None,
-         check_idle: bool = True) -> Tuple[bool, List[str], Dict[str, Any]]:
+         check_idle: bool = True, live: Optional[Dict[str, Any]] = None, action: Optional[str] = None,
+         probe: bool = False) -> Tuple[bool, List[str], Dict[str, Any]]:
     reasons: List[str] = []
     info: Dict[str, Any] = {}
     local = dt.datetime.fromtimestamp(now, cfg.tz)
@@ -533,6 +687,34 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
             if busy:
                 reasons.append(f"Windows apps busy: {', '.join(busy)}")
 
+    limits = effective_limits(cfg, window)
+    info["limits"] = limits
+    if usage is None and live is None:
+        live = live_usage(cfg, now)
+        if live is None and probe and cfg.get("usage", "live", "probe", default=True):
+            info["usage_check"] = probe_usage(cfg, state) or "ok"
+            live = live_usage(cfg, time.time())
+    if live is not None:
+        info["live"] = live
+        exp5 = expected_run_pct(cfg, state, action)[0] if action else 0.0
+        exp7 = exp5 * float(state.doc("run_costs").get("seven_per_five") or 0.25)
+        info["expected_run_pct"] = round(exp5, 1)
+        for name, key, exp in (("five_hour", "session", exp5), ("seven_day", "weekly", exp7)):
+            pct, lim = live[name], limits[key]
+            when = f" (resets {clock(live.get(name + '_resets'), cfg.tz, now)})" if live.get(name + "_resets") else ""
+            if pct >= lim:
+                reasons.append(f"{key} usage {pct:.0f}% has reached your limit {lim:.0f}%{when}")
+            elif exp and pct + exp > lim:
+                reasons.append(f"{key} usage {pct:.0f}% + ~{exp:.0f}% for a {action} run would pass your "
+                               f"limit {lim:.0f}%{when}")
+        team = team_share_live(state, now)
+        info["team_seven_day_pct"] = team
+        if team >= limits["team_share"]:
+            reasons.append(f"the team used ~{team:.0f}% of the weekly plan in 7 days (its share is "
+                           f"{limits['team_share']:.0f}%)")
+        return (not reasons), reasons, info
+
+    # No fresh reading (the usage check failed): fall back to estimating from local transcripts.
     u = usage if usage is not None else estimate_usage(cfg, state, now)
     ucfg = cfg.get("usage", default={})
     margin = ucfg.get("safety_margin_pct", 8)
@@ -545,7 +727,7 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
         pct = w.get("pct")
         info[f"{name}_pct"] = None if pct is None else round(pct, 1)
         info[f"{name}_source"] = w.get("source")
-        stop = ucfg.get(stop_key, 65)
+        stop = limits["session" if name == "five_hour" else "weekly"]
         known = pct is not None and not w.get("uncertain") and (
             w.get("ratio") is not None or str(w.get("source", "")).startswith("snapshot"))
         if known:
@@ -556,7 +738,7 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
             reasons.append(f"{name.replace('_', ' ')} usage ≥ ~{pct:.0f}% and rising (uncertain) ≥ stop {stop}%")
     team = u.get("team_seven_day_pct")
     info["team_seven_day_pct"] = team
-    share = ucfg.get("team_seven_day_share_pct", 35)
+    share = limits["team_share"]
     if team is not None and team >= share:
         reasons.append(f"team used ~{team:.0f}% of the weekly plan (share {share}%)")
     if not calibrated:
@@ -898,11 +1080,17 @@ class Dispatcher:
             return work
         world = self.world_hash(issues, prs, main_sha)
         last = self.state.doc("last_plan")
-        cooldown = self.cfg.get("run", "plan_cooldown_minutes", default=180) * 60
         if last.get("world") == world:
-            # The EM already looked at exactly this state. Wait for something to change
-            # (a merge, a label, a new issue) — or retry a failed planning run after a cooldown.
-            if last.get("result") in ("nothing", "planned") or self.now - last.get("at", 0) < cooldown:
+            # The EM already looked at exactly this state. Wait for something to change (a merge,
+            # a label, a new issue). A failed planning run is retried after a short wait.
+            rcfg = self.cfg.get("run", default={})
+            age, result = self.now - last.get("at", 0), last.get("result")
+            if result == "nothing":
+                return None
+            if result == "planned" and age < rcfg.get("plan_cooldown_minutes", 180) * 60:
+                return None
+            if result == "failed" and (last.get("failures", 1) >= rcfg.get("max_plan_failures", 3)
+                                       or age < rcfg.get("plan_retry_minutes", 30) * 60):
                 return None
         return Work("eng-manager", "plan", note=f"No ready work. Plan the next step for phase `{phase}`.",
                     world=world)
@@ -942,14 +1130,28 @@ def render_prompt(work: Work, phase: str, repo: str) -> str:
                       head_sha=work.head_sha or "-", phase=phase, repo=repo, action_note=work.note)
 
 
-def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = False) -> Dict[str, Any]:
+def set_limit_cooldown(cfg: Config, state: State, limit_text: str, resets_at: Optional[float] = None,
+                       throttled: bool = False) -> float:
+    until = resets_at or parse_reset(limit_text, time.time(), cfg.tz)
+    if not until:
+        weekly = "weekly" in limit_text.lower()
+        until = time.time() + (12 * HOUR if weekly else (cfg.get("usage", "cooldown_minutes_on_throttle", default=30) * 60
+                                                          if throttled else HOUR))
+    until = min(until, time.time() + 7 * DAY) + 120
+    state.put("cooldown", {"until": until, "reason": "usage limit" if limit_text else "API throttling",
+                           "set_at": time.time()})
+    return until
+
+
+def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = False,
+               limits: Optional[Dict[str, float]] = None, budget: Optional[float] = None) -> Dict[str, Any]:
     rcfg = cfg.get("run", default={})
     prompt = render_prompt(work, phase, cfg["repo"])
     cmd = [cfg.get("claude_bin", default="claude"), "-p", prompt,
            "--agent", work.role,
            "--output-format", "stream-json", "--verbose",
            "--max-turns", str(rcfg.get("max_turns", {}).get(work.action, 40)),
-           "--max-budget-usd", str(rcfg.get("max_budget_usd", {}).get(work.action, 2.0)),
+           "--max-budget-usd", str(budget if budget is not None else rcfg.get("max_budget_usd", {}).get(work.action, 2.0)),
            "--permission-mode", "dontAsk",
            "--settings", str(HERE / "claude-run-settings.json")]
     cmd += rcfg.get("extra_claude_args", [])
@@ -958,7 +1160,11 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
                AGENTOPS_HEAD_SHA=work.head_sha or "", AGENTOPS_REPO=cfg["repo"])
     started = time.time()
     rec: Dict[str, Any] = {"kind": "run", "started": started, "role": work.role, "action": work.action,
-                           "issue": work.issue, "pr": work.pr, "head_sha": work.head_sha}
+                           "issue": work.issue, "pr": work.pr, "head_sha": work.head_sha,
+                           "budget_usd": float(cmd[cmd.index("--max-budget-usd") + 1])}
+    first_reading: Optional[Dict[str, Any]] = None
+    last_reading: Optional[Dict[str, Any]] = None
+    stop_at_limit = bool(limits) and cfg.get("usage", "stop_runs_at_limit", default=True)
     if dry:
         rec.update(outcome="dry-run", cmd=" ".join(cmd[:3]) + " …")
         return rec
@@ -969,11 +1175,12 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
     throttles, result, limit_text = 0, None, ""
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=logf,
-                                stdin=subprocess.DEVNULL, text=True, start_new_session=True)
+                                stdin=subprocess.DEVNULL, start_new_session=True)
         sel = selectors.DefaultSelector()
         sel.register(proc.stdout, selectors.EVENT_READ)
-        killed = None
-        while True:
+        fd = proc.stdout.fileno()
+        killed, buf, eof = None, b"", False
+        while not killed and not eof:
             if time.time() - started > timeout:
                 killed = "timeout"
                 break
@@ -981,37 +1188,59 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
                 if proc.poll() is not None:
                     break
                 continue
-            line = proc.stdout.readline()
-            if not line:
-                break
-            logf.write(line)
-            try:
-                ev = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            etype, sub = ev.get("type"), ev.get("subtype")
-            if etype == "system" and sub == "init":
-                rec["session_id"] = ev.get("session_id")
-                rec["model"] = ev.get("model")
-            elif etype == "system" and sub == "api_retry" and ev.get("error") == "rate_limit":
-                throttles += 1
-                if throttles >= 3:
-                    killed = "throttled"
+            # read raw chunks: a buffered readline() would hide lines from select() until more output
+            chunk = os.read(fd, 65536)
+            if not chunk:
+                eof = True
+                if not buf:
                     break
-            elif "rate_limit" in str(etype):
-                info = ev.get("rate_limit_info") or ev
-                if str(info.get("status", "")).lower() in ("rejected", "blocked"):
-                    resets = info.get("resetsAt") or info.get("resets_at")
-                    if resets:
-                        rec["limit_resets_at"] = float(resets) / (1000 if float(resets) > 1e11 else 1)
-                    limit_text = "rate limit rejected"
-            elif etype == "result":
-                result = ev
-            synthetic = etype == "assistant" and (ev.get("message") or {}).get("model") == "<synthetic>"
-            if etype == "result" or synthetic:
-                text = json.dumps(ev, ensure_ascii=False)
-                if LIMIT_RX.search(text):
-                    limit_text = text
+                chunk = b"\n"
+            buf += chunk
+            *lines, buf = buf.split(b"\n")
+            for raw in lines:
+                line = raw.decode("utf-8", "replace")
+                if not line.strip():
+                    continue
+                logf.write(line + "\n")
+                try:
+                    ev = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                etype, sub = ev.get("type"), ev.get("subtype")
+                if etype == "system" and sub == "init":
+                    rec["session_id"] = ev.get("session_id")
+                    rec["model"] = ev.get("model")
+                elif etype == "system" and sub == "api_retry" and ev.get("error") == "rate_limit":
+                    throttles += 1
+                    if throttles >= 3:
+                        killed = "throttled"
+                elif "rate_limit" in str(etype):
+                    info = ev.get("rate_limit_info") or ev
+                    reading = reading_from_event(ev)
+                    if reading:
+                        first_reading = first_reading or reading
+                        last_reading = reading
+                        save_reading(cfg, reading, "agent run")
+                        p5 = (reading.get("five_hour") or {}).get("pct")
+                        p7 = (reading.get("seven_day") or {}).get("pct")
+                        if stop_at_limit and ((p5 is not None and p5 >= limits["session"]) or
+                                              (p7 is not None and p7 >= limits["weekly"])):
+                            killed = "usage-limit-reached"
+                    if str(info.get("status", "")).lower() in ("rejected", "blocked"):
+                        resets = info.get("resetsAt") or info.get("resets_at")
+                        if resets:
+                            rec["limit_resets_at"] = float(resets) / (1000 if float(resets) > 1e11 else 1)
+                        limit_text = "rate limit rejected"
+                elif etype == "result":
+                    result = ev
+                synthetic = etype == "assistant" and (ev.get("message") or {}).get("model") == "<synthetic>"
+                if etype == "result" or synthetic:
+                    text = json.dumps(ev, ensure_ascii=False)
+                    if LIMIT_RX.search(text):
+                        limit_text = text
+                if killed:
+                    break
+            logf.flush()
         if killed:
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(proc.pid, signal.SIGINT)
@@ -1032,22 +1261,28 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
                    is_error=bool(result.get("is_error")), cost_estimate_usd=result.get("total_cost_usd"),
                    turns=result.get("num_turns"), final=(result.get("result") or "")[-400:])
         rec["session_id"] = rec.get("session_id") or result.get("session_id")
+        denials = result.get("permission_denials") or []
+        if denials:
+            rec["denials_total"] = len(denials)
+            rec["denials"] = [f"{d.get('tool_name')}: " + str((d.get("tool_input") or {}).get("command")
+                                                              or d.get("tool_input"))[:160] for d in denials[:3]]
     else:
         rec["outcome"] = killed or "no-result"
     if killed:
         rec["outcome"] = killed
+    if first_reading and last_reading:
+        rec["usage_start"] = {k: round(v["pct"], 1) for k, v in first_reading.items()}
+        rec["usage_end"] = {k: round(v["pct"], 1) for k, v in last_reading.items()}
+        delta = {}
+        for name in WINDOWS:
+            a, b = first_reading.get(name), last_reading.get(name)
+            if a and b and a.get("resets_at") == b.get("resets_at"):
+                delta[name] = round(max(0.0, b["pct"] - a["pct"]), 1)
+        rec["usage_delta"] = delta
     if limit_text or killed == "throttled":
-        tz = cfg.tz
-        until = rec.get("limit_resets_at") or parse_reset(limit_text, time.time(), tz)
-        if not until:
-            weekly = "weekly" in limit_text.lower()
-            until = time.time() + (12 * HOUR if weekly else (cfg.get("usage", "cooldown_minutes_on_throttle", default=30) * 60
-                                                              if killed == "throttled" else HOUR))
-        until = min(until, time.time() + 7 * DAY) + 120
-        state.put("cooldown", {"until": until, "reason": "usage limit" if limit_text else "API throttling",
-                               "set_at": time.time()})
+        rec["cooldown_until"] = set_limit_cooldown(cfg, state, limit_text, rec.get("limit_resets_at"),
+                                                   throttled=killed == "throttled")
         rec["outcome"] = "usage-limit" if limit_text else "throttled"
-        rec["cooldown_until"] = until
     return rec
 
 
@@ -1113,7 +1348,8 @@ def cmd_tick(args: argparse.Namespace) -> int:
             log("nothing to do (waiting for the owner or for CI)")
             return 0
         log(f"next: {work.role} {work.action} issue={work.issue} pr={work.pr} — {work.note[:90]}")
-        ok, reasons, info = gate(cfg, state, now) if not args.force else (True, [], {})
+        ok, reasons, info = gate(cfg, state, now, action=work.action, probe=not args.dry_run) \
+            if not args.force else (True, [], {})
         if not ok:
             log("gated: " + "; ".join(reasons))
             return 0
@@ -1123,28 +1359,60 @@ def cmd_tick(args: argparse.Namespace) -> int:
         if any(a.endswith("squash-merge") for a in disp.actions):
             main_sha = sync_clone(branch)
         phase = read_phase()
+        limits = effective_limits(cfg, read_window(cfg, now))
+        budget = run_budget(cfg, state, work.action, info.get("live"), limits)
         if work.attempt_key:
             state.bump(work.attempt_key)
         if work.action == "implement" and work.issue:
             with contextlib.suppress(RuntimeError):
                 gh.add_labels(work.issue, ["status:in-progress"])
                 gh.remove_label(work.issue, "status:ready")
-        log(f"running {work.role} ({work.action}) …")
-        rec = run_claude(cfg, state, work, phase)
-        if work.action == "plan":
-            final = rec.get("final", "")
-            result = ("nothing" if "NOTHING_TO_DO" in final else "planned") if rec.get("outcome") == "success" \
-                else "failed"
-            state.put("last_plan", {"world": work.world, "at": now, "result": result})
+        live = info.get("live") or {}
+        log(f"running {work.role} ({work.action}) … session usage {live.get('five_hour', '?')}%, "
+            f"your limit {limits['session']:.0f}%, budget ${budget}")
+        rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget)
+        if rec.get("outcome") in LIMIT_OUTCOMES and work.attempt_key:
+            state.bump(work.attempt_key, -1)  # stopped for usage: not the agent's failure
+        if work.action == "plan" and rec.get("outcome") not in LIMIT_OUTCOMES:
+            result = plan_result(rec)
+            last = state.doc("last_plan")
+            failures = ((last.get("failures", 0) if last.get("world") == work.world else 0) + 1) \
+                if result == "failed" else 0
+            state.put("last_plan", {"world": work.world, "at": now, "result": result, "failures": failures,
+                                    "final": (rec.get("final") or "")[-300:]})
+        learn_run_cost(state, rec)
         if work.action == "fix" and work.pr and "owner-fix" in work.attempt_key:
             with contextlib.suppress(RuntimeError):
                 if gh.head_sha(work.pr) != work.head_sha:
                     gh.remove_label(work.pr, "owner-feedback")
                     gh.remove_label(work.pr, "needs-human")
         state.append_ledger(rec)
+        used = (rec.get("usage_delta") or {}).get("five_hour")
         log(f"run finished: {rec.get('outcome')} turns={rec.get('turns')} est=${rec.get('cost_estimate_usd')} "
-            f"log={rec.get('log')}")
+            f"session+{used if used is not None else '?'}% log={rec.get('log')}")
+        if rec.get("denials"):
+            log(f"refused tool calls ({rec.get('denials_total')}): " + " | ".join(rec["denials"]))
         return 0
+
+
+def final_line(text: str) -> str:
+    lines = [ln.strip() for ln in (text or "").strip().splitlines() if ln.strip()]
+    return lines[-1] if lines else ""
+
+
+def plan_result(rec: Dict[str, Any]) -> str:
+    """'planned' / 'nothing' only when the EM finished cleanly and said so; anything else failed."""
+    if rec.get("outcome") != "success" or rec.get("is_error"):
+        return "failed"
+    last, final = final_line(rec.get("final", "")), rec.get("final") or ""
+    for marker, result in (("NOTHING_TO_DO", "nothing"), ("PLANNED:", "planned")):
+        if last.startswith(marker):
+            return result
+    if "BLOCKED:" in last:
+        return "failed"
+    if "NOTHING_TO_DO" in final:
+        return "nothing"
+    return "planned" if "PLANNED:" in final else "failed"
 
 
 def agent_run_pids() -> List[int]:
@@ -1171,7 +1439,15 @@ def cmd_start(args: argparse.Namespace) -> int:
         until = now + float(args.hours) * HOUR
     if args.until:
         until = next_clock_time(args.until, now, cfg.tz)
-    save_json(window_path(cfg), {"opened_at": now, "until": until, "skip_quiet": bool(args.now)})
+    win: Dict[str, Any] = {"opened_at": now, "until": until, "skip_quiet": bool(args.now)}
+    window_limits = {k: v for k, v in (("session", args.session_limit), ("weekly", args.weekly_limit)) if v is not None}
+    for k, v in window_limits.items():
+        if not 1 <= v <= 100:
+            raise SystemExit(f"--{k}-limit must be between 1 and 100")
+    if window_limits:
+        win["limits"] = window_limits
+    save_json(window_path(cfg), win)
+    lim = effective_limits(cfg, win)
     pause = xp(cfg.get("paths", "pause_file", default="~/.claude/agentops/PAUSE"))
     if pause.exists():
         pause.unlink()
@@ -1179,9 +1455,10 @@ def cmd_start(args: argparse.Namespace) -> int:
     when = "until you run `agents stop`" if until is None else \
         "until " + dt.datetime.fromtimestamp(until, cfg.tz).strftime("%a %d %b %H:%M")
     print(f"Agents started {when}.")
-    print("They still wait if you are using Claude Code yourself" if not args.now else
-          "Quiet-period check is OFF for this window (--now).",
-          "and stop on their own near your usage limits.")
+    print(f"They start a run only while session usage stays under {lim['session']:.0f}% and weekly usage under "
+          f"{lim['weekly']:.0f}%{' (for this start only)' if window_limits else ''}; change with `agents limits`.")
+    print("They still wait while you use Claude Code yourself (20 min quiet period)." if not args.now else
+          "Quiet-period check is OFF for this window (--now).")
     if args.no_tick:
         print("The scheduler will pick up work at its next tick (every 30 min).")
         return 0
@@ -1247,43 +1524,111 @@ def cmd_status(args: argparse.Namespace) -> int:
     cfg = Config.load()
     state = State(cfg)
     now = time.time()
-    u = estimate_usage(cfg, state, now)
-    ok, reasons, info = gate(cfg, state, now, usage=u)
     tz = cfg.tz
-    print(f"agentops status — {dt.datetime.fromtimestamp(now, tz):%a %d %b %H:%M %Z}")
+    if getattr(args, "live", False):
+        err = probe_usage(cfg, state)
+        if err:
+            print(f"  ! {err}")
+    ok, reasons, info = gate(cfg, state, now)
+    version = (HERE / "VERSION").read_text().strip() if (HERE / "VERSION").exists() else "?"
+    print(f"agentops status — {dt.datetime.fromtimestamp(now, tz):%a %d %b %H:%M %Z}   (kit {version})")
     print(f"  repo: {cfg['repo']}   phase: {read_phase()}")
     win = info.get("window")
     if win:
-        until = "until stopped" if win.get("until") is None else \
-            "until " + dt.datetime.fromtimestamp(win["until"], tz).strftime("%a %H:%M")
+        until = "until stopped" if win.get("until") is None else "until " + clock(win["until"], tz, now)
         print(f"  agents: STARTED {until}{' (quiet check off)' if win.get('skip_quiet') else ''}")
     else:
         print(f"  agents: {'not started (on-demand mode)' if info.get('mode') == 'on-demand' else 'always-on mode'}")
     if agent_run_pids():
         print("  a run is in progress right now")
-    age = u.get("snapshot_age_h")
-    print(f"  status-line snapshot: {'none yet' if age is None else f'{age} h old'}")
-    for name in WINDOWS:
-        w = u["windows"][name]
-        pct = "unknown" if w.get("pct") is None else f"~{w['pct']:.0f}%"
-        print(f"  {name:10s} plan usage: {pct:>8s}  ({w.get('source')}{', uncertain' if w.get('uncertain') else ''})")
-    team = u.get("team_seven_day_pct")
-    print(f"  team share of weekly plan: {'unknown' if team is None else f'~{team:.0f}%'}")
+    lim = info["limits"]
+    print(f"  your limits: session {lim['session']:.0f}% · weekly {lim['weekly']:.0f}% · team share of the week "
+          f"{lim['team_share']:.0f}%   (change: agents limits --session N)")
+    live = info.get("live")
+    if live:
+        print(f"  plan usage now: session {live['five_hour']:.0f}% (resets {clock(live.get('five_hour_resets'), tz, now)})"
+              f" · weekly {live['seven_day']:.0f}% (resets {clock(live.get('seven_day_resets'), tz, now)})"
+              f"   [{live['source']}, {live['age_min']:.0f} min ago]")
+    else:
+        print("  plan usage now: no fresh reading — `agents status --live` checks it (costs ~$0.001)")
+    print(f"  team used ~{team_share_live(state, now):.0f}% of the weekly plan in the last 7 days")
+    sizes = []
+    for action in ("implement", "fix", "review", "plan"):
+        pct, src = expected_run_pct(cfg, state, action)
+        sizes.append(f"{action} ~{pct:.0f}%{'' if src.startswith('learned') else '*'}")
+    print(f"  a run starts only if it fits under your limit: {', '.join(sizes)} of a session"
+          f"{'  (* starting guess until measured)' if '*' in ''.join(sizes) else ''}")
     print(f"  owner last active: {info.get('owner_last_activity_min')} min ago; "
-          f"interactive sessions open: {info.get('interactive_sessions')}")
-    print(f"  runs today: {info.get('runs_today')}/{cfg.get('schedule', 'max_runs_per_day')}")
+          f"runs today: {info.get('runs_today')}/{cfg.get('schedule', 'max_runs_per_day')}")
+    lp = state.doc("last_plan")
+    if lp:
+        line = f"  last planning: {lp.get('result')} at {clock(lp.get('at'), tz, now)}"
+        if lp.get("result") == "failed":
+            if lp.get("failures", 1) >= cfg.get("run", "max_plan_failures", default=3):
+                line += f" — failed {lp.get('failures')} times, waiting for a change on GitHub or for you"
+            else:
+                line += f" — retry after {clock(lp['at'] + cfg.get('run', 'plan_retry_minutes', default=30) * 60, tz, now)}"
+        print(line)
+        if lp.get("result") == "failed" and lp.get("final"):
+            print(f"     ↳ {final_line(lp['final'])[:150]}")
     cd = state.doc("cooldown")
     if cd.get("until", 0) > now:
-        print(f"  cooldown until {dt.datetime.fromtimestamp(cd['until'], tz):%a %H:%M} ({cd.get('reason')})")
+        print(f"  cooldown until {clock(cd['until'], tz, now)} ({cd.get('reason')})")
     print(f"  gate: {'OPEN' if ok else 'CLOSED'}")
     for r in reasons:
         print(f"    - {r}")
     print("  last runs:")
-    for r in state.ledger(now - 2 * DAY)[-8:]:
-        if r.get("kind") == "run":
-            when = dt.datetime.fromtimestamp(r["started"], tz).strftime("%a %H:%M")
-            print(f"    {when} {r.get('role'):17s} {r.get('action'):9s} #{r.get('issue') or r.get('pr') or '-'} "
-                  f"→ {r.get('outcome')} (est ${r.get('cost_estimate_usd')})")
+    runs = [r for r in state.ledger(now - 2 * DAY) if r.get("kind") == "run"][-8:]
+    if not runs:
+        print("    (none yet)")
+    for r in runs:
+        used = (r.get("usage_delta") or {}).get("five_hour")
+        print(f"    {clock(r['started'], tz, now):9s} {r.get('role'):17s} {r.get('action'):9s} "
+              f"#{r.get('issue') or r.get('pr') or '-':<4} → {r.get('outcome')}, {r.get('turns')} turns, "
+              f"est ${r.get('cost_estimate_usd')}{f', session +{used:.0f}%' if used is not None else ''}")
+        if r.get("denials"):
+            print(f"       refused: {r['denials'][0][:110]}")
+        if r.get("outcome") != "success" or "BLOCKED" in final_line(r.get("final", "")):
+            if r.get("final"):
+                print(f"       ↳ {final_line(r['final'])[:120]}")
+    return 0
+
+
+def cmd_limits(args: argparse.Namespace) -> int:
+    path = xp(os.environ.get("AGENTOPS_LOCAL_CONFIG", LOCAL_CONFIG))
+    local = load_json(path) or {}
+    if not isinstance(local, dict):
+        raise SystemExit(f"{path} is not a JSON object — fix or delete it")
+    keys = (("session", "five_hour_stop_pct"), ("weekly", "seven_day_stop_pct"),
+            ("team_share", "team_seven_day_share_pct"))
+    usage = local.setdefault("usage", {})
+    changed = False
+    if args.reset:
+        for _a, key in keys:
+            changed |= usage.pop(key, None) is not None
+    for attr, key in keys:
+        v = getattr(args, attr)
+        if v is not None:
+            if not 1 <= v <= 100:
+                raise SystemExit(f"--{attr.replace('_', '-')} must be between 1 and 100")
+            usage[key] = v
+            changed = True
+    if not usage:
+        local.pop("usage")
+    if changed:
+        save_json(path, local)
+        print(f"Saved to {path}")
+    cfg = Config.load()
+    lim = effective_limits(cfg)
+    print(f"Agents start a run only while it fits under these limits of your Claude plan:")
+    print(f"  session (5-hour) usage  {lim['session']:.0f}%")
+    print(f"  weekly usage            {lim['weekly']:.0f}%")
+    print(f"  team share of the week  {lim['team_share']:.0f}%  (what the agents themselves may use in 7 days)")
+    print("A run that reaches a limit while working is stopped and picked up again later.")
+    win = read_window(cfg, time.time())
+    if win and win.get("limits"):
+        print(f"The current start window overrides: {win['limits']}")
+    print("Change:  agents limits --session 96 --weekly 90 --team-share 60    Defaults:  agents limits --reset")
     return 0
 
 
@@ -1399,13 +1744,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     s.add_argument("--until", help="work until this local time, e.g. 07:30")
     s.add_argument("--now", action="store_true", help="skip the quiet-period check for this window")
     s.add_argument("--no-tick", action="store_true", help="don't run the first tick immediately")
+    s.add_argument("--session-limit", type=float, help="for this start only: stop at this %% of session usage")
+    s.add_argument("--weekly-limit", type=float, help="for this start only: stop at this %% of weekly usage")
     s.set_defaults(fn=cmd_start)
+    s = sub.add_parser("limits", help="show or set how much of your Claude plan the agents may use")
+    s.add_argument("--session", type=float, help="session (5-hour) usage limit in %%, e.g. 96")
+    s.add_argument("--weekly", type=float, help="weekly usage limit in %%, e.g. 90")
+    s.add_argument("--team-share", dest="team_share", type=float, help="max %% of the week the agents may use")
+    s.add_argument("--reset", action="store_true", help="back to the kit defaults")
+    s.set_defaults(fn=cmd_limits)
     s = sub.add_parser("stop", help="stop starting new runs")
     s.add_argument("--kill", action="store_true", help="also interrupt a run that is in progress")
     s.set_defaults(fn=cmd_stop)
     sub.add_parser("setup-statusline", help="connect Claude Code's status line (shows plan usage)").set_defaults(
         fn=cmd_setup_statusline)
-    sub.add_parser("status", help="usage estimate, gate state, recent runs").set_defaults(fn=cmd_status)
+    s = sub.add_parser("status", help="plan usage, limits, gate state, recent runs")
+    s.add_argument("--live", action="store_true", help="check plan usage now (one tiny request, ~$0.001)")
+    s.set_defaults(fn=cmd_status)
     sub.add_parser("gate", help="print the gate decision as JSON").set_defaults(fn=cmd_gate)
     sub.add_parser("next", help="show the next unit of work (read-only)").set_defaults(fn=cmd_next)
     sub.add_parser("doctor", help="check prerequisites").set_defaults(fn=cmd_doctor)
