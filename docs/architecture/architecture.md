@@ -5,7 +5,7 @@
 | Owner | tech-lead |
 | Status | Proposed (Gate 2 input) |
 | Last updated | 2026-10-22 |
-| Decisions | [ADR-001 stack](../adr/ADR-001-stack.md) · ADR-002 hosting (pending) |
+| Decisions | [ADR-001 stack](../adr/ADR-001-stack.md) · [ADR-002 hosting](../adr/ADR-002-hosting.md) |
 | Related | [NFRs](nfr.md) · [Engineering standards](../engineering/standards.md) |
 
 ## 1. Context (C4 level 1)
@@ -93,7 +93,8 @@ docs/                     # product, design, content, adr, architecture, enginee
 - Mobile navigation uses a no-JS pattern (`<details>`/disclosure or CSS), enhanced only if needed.
 - Proof, FAQ and other optional sections are **empty-safe**: if their collection is empty, they do
   not render and their pages are excluded from the build and sitemap (FR-5).
-- Non-production builds set `noindex` and a disallow-all `robots.txt` via an env flag (NFR-SEO-2).
+- There is one artifact for every environment (no env flags in the build). Preview and staging get `noindex` through
+  the `X-Robots-Tag` header and a disallow-all `robots.txt` that the deploy step swaps in (NFR-SEO-2; ADR-002).
 
 ## 5. Content model
 Collections are typed with Zod in `src/content.config.ts`; the build fails on invalid content.
@@ -113,8 +114,8 @@ any remain (Gate 3 rule).
   `contact { email?, phone?, endpoint, fallbackMethods[] }`, `socials[]`, `analytics { provider?, id? }`,
   `legal { companyName?, address? }`. Validated by a Zod schema at build; values that are not yet
   known are `undefined` and components hide them.
-- **Env vars** (set in CI/host, never in repo): `PUBLIC_SITE_ENV` (`preview` | `production`),
-  optional `PUBLIC_SITE_URL` override for previews, and handler secrets (e.g. notification token)
+- **Env vars** (set in CI/host, never in repo): `SITE_URL_PRODUCTION`, read only by `site.config.ts`
+  (falls back to a default defined in that file), and handler secrets (e.g. notification token)
   read only by the adapter in `infra/` and passed into `handleEnquiry` as arguments.
 - `.env*` files are never committed or read by agents (CLAUDE.md rule 7).
 - Domain change = edit `url` in `site.config.ts` + redirects in `infra/` (NFR-PORT-2, NFR-SEO-5).
