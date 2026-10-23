@@ -4,7 +4,7 @@
 |-------|-------|
 | Status | Proposed |
 | Date | 2026-10-23 |
-| Deciders | devops-lead · approved by owner at Gate 2 |
+| Deciders | devops-lead · tech-lead review (`arch-impact`) · approved by owner at Gate 2 |
 
 ## Context
 ADR-001 fixes the stack: Astro static output (`dist/`) plus one small enquiry handler,
@@ -58,7 +58,9 @@ enquiry handler, using the free `*.pages.dev` / `*.workers.dev` subdomains until
   is **not** used, so there is no second build system and the artifact stays host-agnostic.
 - **Environment-specific behaviour is deploy-time only.** The artifact contains no environment flags. The
   deploy step adds a `_headers` file generated from `infra/headers` (plus `X-Robots-Tag: noindex` for preview and
-  staging) next to the artifact contents. `site.config.ts` holds the production URL, so canonical URLs in
+  staging) next to the artifact contents. The deploy step also replaces `robots.txt` in the deployed copy with a
+  disallow-all file for preview and staging (the artifact on disk is unchanged), so NFR-SEO-2 is met for both the
+  header and robots.txt. `site.config.ts` holds the production URL, so canonical URLs in
   previews point at production; this is harmless because previews are `noindex`. This resolves the conflict between
   NFR-SEO-2 (non-production `noindex`) and build-once.
 - **Environments**
@@ -73,15 +75,27 @@ enquiry handler, using the free `*.pages.dev` / `*.workers.dev` subdomains until
   The destination (PRD Q4) is set by Worker secrets, never in the repo. Until Q4 is answered the handler is a no-op
   stub that returns the fallback-contact error state. `site.config.ts → contact.endpoint` points at it.
   Because both live on different origins, the CSP `connect-src`/`form-action` include that origin (already in `nfr.md`).
-- **Authentication.** Cloudflare does not accept GitHub OIDC for its API, so a **scoped API token** (Pages edit +
-  Workers edit, one account) is the exception to the OIDC preference. Mitigation: the token is stored as an
-  **environment secret**, so production's token is released only to jobs the owner has approved; `staging` and
-  `preview` use the same account token in their own environments; rotate it every 90 days. The exit target
-  (Cloud Run) supports OIDC through Workload Identity Federation, which removes the stored secret entirely.
+- **Authentication.** Cloudflare does not accept GitHub OIDC for its API, so an **API token** (Pages edit +
+  Workers edit, one account) is the exception to the OIDC preference. Cloudflare cannot scope a token to a branch or a
+  single Pages project, so one token can deploy anywhere in the account, including production. Environment secrets
+  alone therefore do not protect production: a PR that edits a workflow would receive the `preview` token. Controls:
+  1. **Preview deploys run from `workflow_run`.** `ci.yml` (on `pull_request`) builds and uploads the artifact and has
+     no Cloudflare credentials. `deploy-preview.yml` is triggered by `workflow_run` of `ci.yml`, so GitHub runs the
+     copy on `main`, never the PR's copy. It downloads the artifact as data (verifies `SHA256SUMS`, never executes
+     anything from it) and deploys. A PR-edited workflow file cannot reach the token.
+  2. The `preview` and `staging` environments allow deployment only from branch `main`; `production` only from tags `v*`.
+  3. Changes to `.github/workflows/**` need owner review via CODEOWNERS. Agents may not edit CODEOWNERS (rule 4), so a
+     `governance` + `needs-human` issue is opened with the CI/CD ticket.
+  4. Rotate the token every 90 days. The exit target (Cloud Run) supports OIDC through Workload Identity Federation,
+     which removes the stored secret.
+
+  **Residual risk:** a malicious workflow change merged to `main` (past agent reviews and CODEOWNERS) could use the
+  token. Hardening if the site becomes business-critical: a second free Cloudflare account for production with its
+  own token held only in `production`. That changes secret values only, not workflow logic.
 - **Domain and DNS plan.** (1) Now: `*.pages.dev`. (2) When the owner buys the domain: add it as a custom domain on the
   Pages project; keep DNS at the registrar and add the CNAME Cloudflare shows (apex needs Cloudflare DNS or a registrar
   that supports CNAME flattening/ALIAS, so the simplest path is moving the domain's nameservers to Cloudflare, which is free).
-  (3) Update `site.config.ts` domain and email, then ship a release; the old `pages.dev` URL 301-redirects to the new domain.
+  (3) Update `site.config.ts` domain and email, then ship a release. To redirect the old `pages.dev` URL, use Cloudflare Bulk Redirects (free), defined in `infra/cloudflare/` and not in `dist/` (`_redirects` cannot match on host).
   Email (MX/SPF/DKIM) is a separate decision and PRD Q8.
 - **Observability on free tiers.** Uptime: a free external monitor (UptimeRobot or Cloudflare Health Checks, owner creates the
   account) hitting `/` and the Worker's health route. Lighthouse CI: results uploaded as workflow artifacts and a
@@ -103,7 +117,8 @@ enquiry handler, using the free `*.pages.dev` / `*.workers.dev` subdomains until
 - Positive: $0 at 100x static traffic; unlimited PR previews; one artifact for every environment; the owner approves production
   inside GitHub; the exit plan is already written.
 - Negative / trade-offs:
-  - Stored Cloudflare token instead of OIDC (mitigated above).
+  - Stored Cloudflare token instead of OIDC. It is account-wide, so the controls and residual risk under
+    Authentication apply.
   - Worker runtime differs from Node: `handleEnquiry` may only use web-standard APIs. A unit test runs it under a
     Workers-like runtime (Miniflare) in the infra ticket.
   - Per-IP rate limiting (SEC-8) relies on Cloudflare features; on another host it moves to nginx or Cloud Armor.

@@ -31,7 +31,7 @@ flowchart LR
 | 1 | `lint` | `npm run lint` (ESLint, Prettier check, Stylelint), `actionlint` on workflows, secret scan (gitleaks) | – | `contents: read` | any finding |
 | 2 | `typecheck` | `npm run check` (`astro check`, `tsc --noEmit`) | – | `contents: read` | any error |
 | 3 | `unit` | `npm test` (Vitest) with coverage report; enquiry handler under a Workers-like runtime | – | `contents: read` | failure or coverage drop on changed files |
-| 4 | `build` | `npm run build`; writes `SHA256SUMS`; uploads artifact `site-<sha>` (retention 30 days; release artifacts 90) | 1-3 | `contents: read` | build error; budget breach (page weight, JS) |
+| 4 | `build` | `npm run build`; writes `SHA256SUMS`; uploads artifact `site-<sha>` (retention 90 days for `main` runs, 14 for PR runs) | 1-3 | `contents: read` | build error; budget breach (page weight, JS) |
 | 5 | `e2e-a11y` | downloads artifact, serves `dist/` statically, Playwright (Chromium only) plus `@axe-core/playwright` on every page; the header test runs against previews | 4 | `contents: read` | failed flow, any axe WCAG 2.2 AA violation |
 | 6 | `lighthouse` | `lhci autorun` against `dist/`, mobile and desktop on Home, Services, Contact; asserts ≥ 95 and CWV limits | 4 | `contents: read` | score or budget under target |
 | 7 | `html-links` | `html-validate`, internal link check, sitemap/robots/OG presence | 4 | `contents: read` | any broken link or invalid HTML |
@@ -43,9 +43,9 @@ GitHub Actions minutes are unlimited on public repositories; if the repo ever go
 ## Environments and triggers
 | Environment | Trigger | Workflow | Approval | What happens |
 |---|---|---|---|---|
-| preview | `pull_request` (same-repo) | `ci.yml` → `deploy-preview.yml` | none | deploy the PR's artifact to branch `pr-<N>`; comment the URL on the PR; run header + smoke test; delete deployment on PR close |
+| preview | `pull_request` (same-repo) builds in `ci.yml`; `workflow_run` of `ci.yml` triggers `deploy-preview.yml` (runs the copy on `main`, so PR code never sees the token; the artifact is data only) | `ci.yml` → `deploy-preview.yml` | none | deploy the PR's artifact to branch `pr-<N>`; comment the URL on the PR; run header + smoke test; delete deployment on PR close |
 | staging | `push` to `main` | `ci.yml` → `deploy-staging.yml` | none | rebuild is **not** done: the main-branch run's artifact is deployed to `staging`; E2E and Lighthouse re-run against the live staging URL |
-| production | `push` of tag `v*.*.*` | `release.yml` | **owner, via `environment: production`** | find the successful `main` run for the tagged commit, download its artifact, verify `SHA256SUMS`, deploy to the production branch, smoke test |
+| production | `push` of tag `v*.*.*` excluding pre-releases (`tags: ['v*.*.*', '!v*-*']`, plus a job `if:` guard that rejects any tag containing `-`) | `release.yml` | **owner, via `environment: production`** | find the successful `main` run for the tagged commit, download its artifact, verify `SHA256SUMS`, deploy to the production branch, smoke test |
 
 Notes:
 - The tag workflow fails closed if no green `main` run exists for the tagged SHA. That guarantees staging tested the exact bytes that reach production.
@@ -63,7 +63,7 @@ Notes:
 Caches never hold secrets and are read-only for fork PRs.
 
 ## Required checks (branch ruleset on `main`, set by the owner)
-`lint`, `typecheck`, `unit`, `build`, `e2e-a11y`, `lighthouse`, `html-links`, `deploy-preview`, plus the agent review statuses. Branches must be up to date;
+`lint`, `typecheck`, `unit`, `build`, `e2e-a11y`, `lighthouse`, `html-links`, plus the agent review statuses. `deploy-preview` is not required (fork PRs never deploy, so it would never report); it is still expected on same-repo PRs. Branches must be up to date;
 no direct pushes; dispatcher merge only. Use the job names above verbatim so the ruleset keeps working.
 
 ## Rollback
@@ -78,10 +78,10 @@ Secrets are added by the owner, never by agents. Nothing goes in the repo or in 
 
 | Name | Kind | Scope | Used by | Notes |
 |---|---|---|---|---|
-| `CLOUDFLARE_API_TOKEN` | secret | environments `preview`, `staging`, `production` (separate token per environment where possible) | deploy workflows | Scopes: Pages Edit, Workers Scripts Edit. Rotate every 90 days. Production's value is only released after approval |
+| `CLOUDFLARE_API_TOKEN` | secret | environments `preview`, `staging`, `production` | deploy workflows | Scopes: Pages Edit, Workers Scripts Edit. Account-wide: Cloudflare cannot scope it to a branch or project, so protection comes from `workflow_run` preview deploys, environment branch/tag restrictions and CODEOWNERS on workflows (ADR-002 Authentication). Optional hardening: a second Cloudflare account for production. Rotate every 90 days |
 | `CLOUDFLARE_ACCOUNT_ID` | secret | the same three environments | deploy workflows | Not very sensitive, kept as a secret for tidiness |
 | `CF_PAGES_PROJECT` | variable | repository | deploy workflows | Project name, e.g. `clockvane-website` |
-| `SITE_URL_PRODUCTION` | variable | repository | build | Defaults to the `pages.dev` URL; changes when the domain is live (ADR-002) |
+| `SITE_URL_PRODUCTION` | variable | repository | build | Read only by `site.config.ts`, which falls back to the default URL defined in that file; no other code reads it (rule 5). Set it only if the URL must differ from the default |
 | `ENQUIRY_*` (delivery destination, keys) | Worker secrets | Cloudflare, set by the owner via `wrangler secret put` or the dashboard | enquiry worker | Defined after PRD Q4 |
 | `LHCI_GITHUB_APP_TOKEN` | secret, optional | repository | lighthouse | Only if we adopt the LHCI GitHub app for status checks; not needed for the artifact-based design |
 | `GITHUB_TOKEN` | automatic | per job | all | Permissions narrowed per job as above |
