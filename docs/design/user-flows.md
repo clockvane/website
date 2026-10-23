@@ -18,10 +18,14 @@ flowchart TD
   CF --> FILL["Fills name, reply contact,<br/>message"]
   FILL --> SUB["Submits"]
   SUB --> VAL{"Valid?"}
-  VAL -->|"no"| ERR["Inline errors, summary focused,<br/>input kept"]
+  VAL -->|"no (JS)"| ERR["Inline errors, summary focused,<br/>input kept"]
+  VAL -->|"no (native check, no JS)"| NAT["Browser shows its own<br/>field messages"]
+  NAT --> FILL
   ERR --> FILL
   VAL -->|"yes"| SEND{"Delivery<br/>succeeds?"}
-  SEND -->|"no"| FAIL["Error message with<br/>fallback contact, input kept"]
+  SEND -->|"no (JS)"| FAIL["Error message with<br/>fallback contact, input kept"]
+  SEND -->|"no (no JS, 303)"| EP["/contact/error/ static page:<br/>text not kept, fallback contact,<br/>link back to form"]
+  EP --> CF
   FAIL --> FILL
   SEND -->|"yes"| OK["Confirmation with expected<br/>response time and next steps"]
   OK --> NEXT["Optional: read How we work"]
@@ -30,7 +34,7 @@ flowchart TD
 Notes:
 - Entry points: header button (every page), hero (Home), closing CTA band (every content page), footer band.
 - Spam resistance is invisible (honeypot and server checks), no CAPTCHA by default (FR-2).
-- Without JS the form posts normally, validates on the server, and redirects to `/contact/thanks/` on success.
+- Without JS the form posts normally after native constraint validation (`required`, `type="email"`, `maxlength`). The enquiry handler (Worker, separate origin) answers `303` to `/contact/thanks/` on success, or to the static `noindex` page `/contact/error/` if the server rejects the submission or delivery fails. That page says the text was not kept, shows the fallback contact and links back to the form. Redirect targets are fixed absolute URLs built from `site.config.ts` url, never from request fields. Only the JS path keeps input.
 - Analytics events (success-metrics): contact page view, submit success. Funnel: CTA click, contact view, submit.
 
 ## 2. Persona journeys
@@ -84,14 +88,14 @@ flowchart TD
     h5["Start a conversation (button)"]
   end
   subgraph FTR["Footer, all pages"]
-    f0["Closing CTA band<br/>(not on Contact or Privacy)"]
+    f0["Closing CTA band<br/>(not on Contact, Enquiry sent, Enquiry failed, legal pages or 404)"]
     f1["Services: five links"]
     f2["Company: How we work, About, Contact"]
     f3["Privacy notice, copyright from config"]
   end
 ```
 
-Mobile: header collapses to logo, CTA button and a menu button below 768 px. The menu opens a full-width panel with the same items in the same order, closes with Escape and the menu button, and traps no focus beyond the panel while open. The CTA button stays visible outside the panel so the primary action is always one tap away.
+Mobile: header collapses to logo, CTA button and a menu button below 768 px. The menu is a no-JS `<details>` disclosure (or a button with `aria-expanded`) opening a full-width panel with the same items in the same order, closed by the menu button. Focus order follows the panel and is not trapped; Escape returns focus to the menu button (optional JS enhancement). The CTA button stays visible outside the panel so the primary action is always one tap away.
 
 ## 6. Interactive states per flow step
 
