@@ -79,6 +79,9 @@ Detail and RACI: `docs/sdlc/WORKFLOW.md`. Never start work that belongs to a lat
 - Copy comes from the approved copy deck in `docs/content/`. Specific, benefit-led, no hype.
 - Every page has a unique title and description, OG tags, structured data where it fits, and is in
   the sitemap. Real 404 page, loading, empty and error states.
+- Diagrams are Mermaid inside Markdown and must render on GitHub: put every node and edge label
+  in double quotes (`A["Owner<br/>@name"]`, `A -->|"label"| B`). Unquoted `@`, brackets, `#` or `;`
+  inside a label break the whole diagram.
 
 ## How a run works
 The scheduler (`agentops/`) chooses one work item and starts you with a work order such as
