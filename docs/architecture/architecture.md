@@ -5,7 +5,7 @@
 | Owner | tech-lead |
 | Status | Proposed (Gate 2 input) |
 | Last updated | 2026-10-22 |
-| Decisions | [ADR-001 stack](../adr/ADR-001-stack.md) · ADR-002 hosting (pending) |
+| Decisions | [ADR-001 stack](../adr/ADR-001-stack.md) · [ADR-002 hosting](../adr/ADR-002-hosting.md) |
 | Related | [NFRs](nfr.md) · [Engineering standards](../engineering/standards.md) |
 
 ## 1. Context (C4 level 1)
