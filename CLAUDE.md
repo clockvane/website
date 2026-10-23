@@ -92,4 +92,8 @@ If the work order is impossible (missing input, dependency not merged), comment 
 - WSL Ubuntu on an 8 GB laptop. Run at most one dev server and one headless browser at a time and
   stop them before you finish.
 - Use `gh` for GitHub and `git` for version control. Do not install global packages.
+- Edit files with the Edit/Write tools, or with `sed`, `printf` and `>`/`>>` redirection. Never drive
+  file edits through `python3 -`, `python3 -c` or shell functions (`name() { … }`) — the Bash guard
+  cannot inspect those and refuses them, which wastes the run. The allowed commands are listed in
+  `agentops/claude-run-settings.json`.
 - The stack and toolchain are whatever ADR-001 says. Read it before touching code.
