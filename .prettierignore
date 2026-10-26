@@ -1,0 +1,13 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+coverage/
+.agentops-scratch/
+.agentops-clone/
+.claude/
+.codex/
+.github/
+agentops/
+docs/
+*.md
