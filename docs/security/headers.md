@@ -11,9 +11,9 @@ document is the policy and rationale. It refines `docs/architecture/nfr.md` SEC-
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Forces HTTPS. No `preload` until the real domain is final and every subdomain serves HTTPS |
 | `X-Content-Type-Options` | `nosniff` | Stops MIME sniffing of uploads or mislabelled files |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Sends only the origin cross-site; full URL same-site |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()` | Disables features the site never uses |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()` | Disables features the site never uses |
 | `Cross-Origin-Opener-Policy` | `same-origin` | Isolates the browsing context from popups |
-| `Cross-Origin-Resource-Policy` | `same-origin` for the document and assets | Prevents other sites embedding our files. Not set on the Worker response if cross-origin fetch from the site needs it (see Worker) |
+| `Cross-Origin-Resource-Policy` | `same-origin` for the document and assets | Prevents other sites embedding our files. The Worker gets no CORP header: its responses are fetched by the site origin under CORS (see Worker) |
 | `X-Robots-Tag` | `noindex, nofollow` on preview and staging only | NFR-SEO-2, added at deploy time (ADR-002) |
 | `Cache-Control` | `public, max-age=31536000, immutable` for hashed `/_astro/*`; `public, max-age=0, must-revalidate` for HTML | Fast repeat visits, fresh HTML |
 
@@ -40,7 +40,7 @@ upgrade-insecure-requests
 Rationale per directive:
 - `script-src 'self'`: no inline scripts, no `eval`, no third-party origins. One bundled form-enhancement script (architecture §4).
 - `style-src 'self'`: no `unsafe-inline`. **Build constraint:** Astro inlines small stylesheets by default; set
-  `build.inlineStylesheets: 'never'` in `astro.config` and avoid `style=""` attributes (use classes/tokens). Inline `<script>` that
+  `build.inlineStylesheets: 'never'` and keep `build.assetsInlineLimit` low so processed scripts are not inlined, (in `astro.config`), and avoid `style=""` attributes (use classes/tokens). Inline `<script>` that
   Astro may emit for tiny bundles must also be checked; the header test (below) fails the build if the built HTML contains
   inline `<script>` without `src`, `style=` attributes, or `<style>` blocks. If a hash is ever unavoidable, use a build-time
   SHA-256 hash in `script-src`, never `'unsafe-inline'`.
@@ -72,7 +72,7 @@ origin, prefer a first-party-proxied or self-hosted script, and document it in `
 - CORS (site and Worker are different origins): `Access-Control-Allow-Origin` is the exact site origin from `site.config.ts`
   (never `*`, never reflected blindly), `Access-Control-Allow-Methods: POST, OPTIONS`, `Access-Control-Allow-Headers: Content-Type`,
   `Vary: Origin`, no credentials. A non-JS `<form method=post>` navigates the browser to the Worker, so the Worker answers with a
-  `303` redirect back to the site's `/contact/?sent=1` (or `?error=<code>`) page; the redirect target comes from config, not from the request.
+  `303` redirect back to `/contact/thanks/` on success or `/contact/error/` on failure; both URLs come from config, never from the request.
 - Later option: route the Worker under the same domain (`/api/enquiry`) once the domain exists; this removes CORS and tightens the CSP
   to `'self'`. Tracked in the domain-day checklist (threat model NEW-6).
 
