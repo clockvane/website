@@ -1372,5 +1372,99 @@ class ReviewRoundsAndCommits(unittest.TestCase):
             self.assertFalse((hooks / "__pycache__").exists())
 
 
+SKIPPING_CODEX = r"""#!/usr/bin/env python3
+# Stand-in for Codex: the first time it answers without trying the commands (like the model did on
+# 27 Oct); after that it runs each numbered command through the PreToolUse hook, as Codex does.
+import json, os, re, subprocess, sys
+a = sys.argv[1:]
+if a[:1] == ["--version"]: print("codex-cli 9.9.9"); sys.exit(0)
+prompt = sys.stdin.read()
+root = a[a.index("-C") + 1]
+count = os.environ["FAKE_COUNT"]
+n = int(open(count).read()) + 1 if os.path.exists(count) else 1
+open(count, "w").write(str(n))
+print(json.dumps({"type": "thread.started", "thread_id": "t%d" % n}), flush=True)
+if n == 1:
+    print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "1. refused; did not run"}}))
+    sys.exit(0)
+for cmd in re.findall(r"^\d\. (.+)$", prompt, re.M):
+    hook = subprocess.run([sys.executable, os.path.join(os.environ["AGENTOPS_REPO_ROOT"], "agentops/hooks/guard_bash.py")],
+                          input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": root}),
+                          capture_output=True, text=True)
+    if hook.returncode != 2:
+        subprocess.run(["sh", "-c", cmd], cwd=root, capture_output=True)
+    print(json.dumps({"type": "item.completed", "item": {"type": "command_execution", "command": cmd}}), flush=True)
+print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "DONE: selftest"}}))
+"""
+
+
+class CodexSelftest(unittest.TestCase):
+    def test_asks_again_when_the_model_skips_the_commands(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            cfg = make_cfg(tmp)
+            fake = tmp / "codex"
+            fake.write_text(SKIPPING_CODEX)
+            fake.chmod(0o755)
+            cfg.d["engines"]["codex"].update(bin=str(fake), sessions_dir=str(tmp / "sessions"), writable_dirs=[])
+            cfg.d["paths"]["codex_snapshot_file"] = str(tmp / "codex-snap.json")
+            st = ao.State(cfg)
+            src = tmp / "src"
+            (src / "agentops" / "hooks").mkdir(parents=True)
+            for name in ("guard_bash.py", "protect_paths.py"):
+                (src / "agentops" / "hooks" / name).write_text((AGENTOPS / "hooks" / name).read_text())
+            gitc = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+            subprocess.run(["git", "init", "-q", "-b", "main", str(src)], check=True)
+            subprocess.run(gitc + ["-C", str(src), "add", "-A"], check=True)
+            subprocess.run(gitc + ["-C", str(src), "commit", "-qm", "init"], check=True)
+            clone = tmp / "site-codex-2"
+            subprocess.run(["git", "clone", "-q", str(src), str(clone)], check=True)
+            for k, v in (("user.name", "t"), ("user.email", "t@t"), ("commit.gpgsign", "false")):
+                subprocess.run(["git", "-C", str(clone), "config", k, v], check=True)
+            os.environ["FAKE_COUNT"] = str(tmp / "count")
+            import io, contextlib
+            try:
+                with contextlib.redirect_stdout(io.StringIO()) as out:
+                    checks, rec = ao.codex_selftest(cfg, st, "codex-2", clone)
+            finally:
+                os.environ.pop("FAKE_COUNT", None)
+            self.assertEqual(rec["attempts"], 2)
+            self.assertIn("asking again", out.getvalue())
+            # (the guard lets agents write to /tmp, so "outside the repository" can't be tested with a home there)
+            home_in_tmp = str(Path.home()).startswith("/tmp/")
+            self.assertTrue(all(ok for label, ok in checks if not (home_in_tmp and "outside" in label)), checks)
+
+    def test_codex_check_skips_copies_that_already_passed(self):
+        from unittest import mock
+        import io, contextlib
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            cfg = make_cfg(tmp)
+            cfg.d["engines"]["codex"]["clone_dir"] = str(tmp / "site-codex")
+            st = ao.State(cfg)
+            st.put("codex_check", {"passed": True, "version": "codex-cli 1.0", "clones": {
+                str(tmp / "site-codex"): {"worker": "codex", "passed": True, "version": "codex-cli 1.0"}}})
+            tested = []
+
+            def fake_selftest(cfg_, state, worker, clone):
+                tested.append(worker)
+                return [("the agentops guard runs on every Codex command", True)], {"outcome": "success"}
+            with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: cfg)), \
+                    mock.patch.object(ao, "codex_version", lambda c: "codex-cli 1.0"), \
+                    mock.patch.object(ao, "codex_bin", lambda c: "codex"), \
+                    mock.patch.object(ao.subprocess, "run", lambda *a, **k: type("R", (), {"returncode": 0})()), \
+                    mock.patch.object(ao, "ensure_worker_clone", lambda c, w: ao.worker_clone(c, w)), \
+                    mock.patch.object(ao, "ensure_codex_trust", lambda p: "already trusted"), \
+                    mock.patch.object(ao, "codex_selftest", fake_selftest), \
+                    mock.patch.object(ao, "codex_model_ok", lambda c, s, m: True), \
+                    contextlib.redirect_stdout(io.StringIO()) as out:
+                code = ao.cmd_codex_check(type("A", (), {"again": False})())
+            self.assertEqual((code, tested), (0, ["codex-2"]))
+            self.assertIn("already passed", out.getvalue())
+            clones = st.doc("codex_check")["clones"]
+            self.assertTrue(clones[str(tmp / "site-codex-2")]["passed"])
+
+
 if __name__ == "__main__":
     unittest.main()
