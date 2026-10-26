@@ -343,3 +343,22 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 | Unknown flag `--permission-prompts` | `claude update` (needs 2.1.259+). |
 
 Unit tests for the scheduler: `python3 agentops/agentops.py selftest`.
+
+---
+
+## Development commands
+
+Requires Node.js 24 LTS (`.nvmrc`) and npm. Start from a clean clone with `npm ci`.
+
+| Command                | What it does                                                    |
+| ---------------------- | --------------------------------------------------------------- |
+| `npm run dev`          | Dev server on `$PORT` (default 4321)                            |
+| `npm run build`        | Static build into `dist/`                                       |
+| `npm run preview`      | Serves `dist/` on `$PORT` (default 4321)                        |
+| `npm run lint`         | ESLint (TypeScript + Astro)                                     |
+| `npm run format:check` | Prettier check (`npm run format` writes changes)                |
+| `npm run typecheck`    | `astro check` (TypeScript strict + `noUncheckedIndexedAccess`)  |
+| `npm run check`        | `astro check` plus `tsc --noEmit`, the CI `typecheck` job       |
+| `npm test`             | Vitest unit tests                                               |
+
+Brand, domain, email, socials and analytics IDs live only in `site.config.ts`.
