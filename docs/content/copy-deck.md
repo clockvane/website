@@ -48,7 +48,7 @@ Order matters: automation and cloud lead, the website follows as the easy first 
 ## 1. Home `/`
 
 - `seo_title`: Automate repetitive business work | {{brand.name}}  (47)
-- `meta_description`: We take over copy-paste chores, report building and approval chasing, so your team can do real work. Book a free audit call.  (≈125)
+- `meta_description`: We take over copy-paste chores, report building and approval chasing, so your team can do real work. Book a free audit call.  (124)
 
 ### `home.hero`
 - h1: We automate the boring work in your business
@@ -97,7 +97,7 @@ Renders nothing at launch (owner Q5). Honest proof lives elsewhere: this site's 
 ## 2. Services overview `/services/`
 
 - `seo_title`: Services: automation, cloud, websites | {{brand.name}}  (51)
-- `meta_description`: Process automation, AI automation, cloud and DevOps, websites and custom software for small businesses. Book a free audit call.  (≈125)
+- `meta_description`: Process automation, AI automation, cloud and DevOps, websites and custom software for small businesses. Book a free audit call.  (127)
 
 ### `services.intro`
 - h1: Services
@@ -126,7 +126,7 @@ Renders nothing at launch (owner Q5). Honest proof lives elsewhere: this site's 
 
 **Custom software**
 - problem: No off-the-shelf tool fits how you work.
-- typical work: Internal tools and dashboards · Integrations between your systems · APIs and back-office apps · Code you own
+- typical work: Internal tools and dashboards · Integrations between your systems · APIs and back-office apps · [[PLACEHOLDER: Q1 code-ownership terms]]
 - link: Read about custom software
 
 ### `services.help-choose`
@@ -145,7 +145,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### 3.1 Business process automation `/services/process-automation/`
 - `seo_title`: Business process automation | {{brand.name}}  (42)
-- `meta_description`: Stop re-typing data and chasing approvals. We automate the repeat work between your tools. Start with a 2–3 day audit. Book a free audit call.  (≈150)
+- `meta_description`: Stop re-typing data and chasing approvals. We automate the repeat work between your tools. Start with a 2–3 day audit. Book a free audit call.  (142)
 - h1: Business process automation
 - `intro`: Every week someone on your team copies data from one tool to another, builds the same report or chases the same approval. That work is slow, dull and easy to get wrong. We make it run by itself.
 - `what` (h2 What we do): We look at how the work really happens, pick the chores that cost the most time, and connect your existing tools so the data moves on its own. We use the tools you already pay for where we can, and write small custom pieces only where we must. [[PLACEHOLDER: Q1 confirm tools and platforms the owner is happy to name]]
@@ -162,7 +162,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### 3.2 AI automation `/services/ai-automation/`
 - `seo_title`: AI automation for small businesses | {{brand.name}}  (49)
-- `meta_description`: We add an AI step where it helps, like reading invoices or sorting emails, with a person checking the unclear cases. Book a free audit call.  (≈140)
+- `meta_description`: We add an AI step where it helps, like reading invoices or sorting emails, with a person checking the unclear cases. Book a free audit call.  (140)
 - h1: AI automation
 - `intro`: Some chores need reading or judging, not just copying: invoices, emails, forms, notes. AI can do the first pass. We build that step into your workflow and keep a person in charge.
 - `what`: We add an AI step only where it saves real time. For example, it reads an incoming invoice and fills in the spreadsheet. If it is unsure, it flags the item for a person. We keep a log of what it did, so you can check.
@@ -174,10 +174,10 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### 3.3 Cloud and DevOps `/services/cloud-devops/`
 - `seo_title`: Cloud and DevOps setup | {{brand.name}}  (40)
-- `meta_description`: Automated releases, a tidy cloud setup and clear handover for growing teams. Fewer manual steps, fewer surprises. Book a free audit call.  (≈135)
+- `meta_description`: Automated releases, a tidy cloud setup and clear handover for growing teams. Fewer manual steps, fewer surprises. Book a free audit call.  (137)
 - h1: Cloud and DevOps
 - `intro`: If releasing your software means a long checklist and crossed fingers, or the cloud bill surprises you each month, your setup needs work. We build pipelines and cloud setups that are simple to run and well documented.
-- `what`: We automate how your code is built, tested and released. We set up your cloud accounts with sensible access rules, backups and cost limits, and hand over everything so you are not locked to us. Our founders have hands-on cloud and DevOps experience. [[PLACEHOLDER: Q6 certifications and platforms (for example Google Cloud) the owner wants named]]
+- `what`: We automate how your code is built, tested and released. We set up your cloud accounts with sensible access rules, backups and cost limits, and hand over everything so you are not locked to us. [[PLACEHOLDER: Q6 confirm the founders' cloud and DevOps experience, plus any certifications or platforms to name]]
 - diagram alt: A pipeline: code is saved, tested automatically, then released to the live site with one approval.
 - `deliverables`: Automated build, test and release pipeline · Cloud account setup with access rules and backups · Monitoring and alerts for the basics · Cost review with clear savings options · Runbook and handover session. [[PLACEHOLDER: Q1 confirm; owner says this is for larger clients]]
 - `process`: 1. Free audit call. 2. Review of what you have today. 3. Agreed plan and fixed price. 4. Build and test. 5. Handover, with an option of a monthly retainer.
@@ -185,7 +185,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### 3.4 Websites and apps `/services/websites-and-apps/`
 - `seo_title`: Business websites and apps | {{brand.name}}  (42)
-- `meta_description`: A fast, clear business website in 1–2 weeks, built to be found and to bring enquiries. See what is included. Book a free audit call.  (≈130)
+- `meta_description`: A fast, clear business website in 1–2 weeks, built to be found and to bring enquiries. See what is included. Book a free audit call.  (132)
 - h1: Websites and apps
 - `intro`: Your website is often the first thing a customer sees. If it is slow, confusing or out of date, they leave. We build a clear business website in 1–2 weeks, and web apps when you need more.
 - `what`: We plan the pages, write or tidy the copy with you, build a fast site that works on a phone, and set it up so search engines can read it. We also connect the contact form to the tools you use, so enquiries do not get lost.
@@ -196,12 +196,12 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### 3.5 Custom software `/services/custom-software/`
 - `seo_title`: Custom software development | {{brand.name}}  (42)
-- `meta_description`: When no off-the-shelf tool fits, we build the missing piece: internal tools, integrations and back-office apps. You own the code.  (≈125)
+- `meta_description`: When no off-the-shelf tool fits, we build the missing piece: internal tools, integrations and back-office apps. Book a free audit call.  (135)
 - h1: Custom software
 - `intro`: Sometimes the tool you need does not exist, or the ones you have do not talk to each other. We build the missing piece, small and focused, so it fits how you work.
 - `what`: We start by checking whether an existing tool can do the job, because that is cheaper. If not, we build a small, well-tested application or integration and document it so someone else could maintain it.
 - diagram alt: Three separate tools connect through one small custom service that moves data between them.
-- `deliverables`: Working software, tested · Source code in a repository you own [[PLACEHOLDER: Q1 confirm code-ownership terms]] · Documentation · Deployment set up and handed over · Optional support retainer
+- `deliverables`: Working software, tested · Source code [[PLACEHOLDER: Q1 confirm code-ownership terms]] · Documentation · Deployment set up and handed over · Optional support retainer
 - `process`: 1. Free audit call. 2. Short written scope with a fixed price. 3. Build in small steps with demos. 4. Handover. [[PLACEHOLDER: Q1 timelines; the brief gives none for custom software]]
 - `needs`: A clear owner for decisions · Examples of how the work is done today · Access to systems the software must connect to
 
@@ -210,7 +210,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 ## 4. How we work `/how-we-work/`
 
 - `seo_title`: How we work: from first call to handover | {{brand.name}}  (58)
-- `meta_description`: Four steps from a free audit call to a working system. Fixed-price packages, an optional retainer and clear handover. Book a free audit call.  (≈140)
+- `meta_description`: Four steps from a free audit call to a working system. Fixed-price packages, an optional retainer and clear handover. Book a free audit call.  (141)
 
 ### `how.intro`
 - h1: How we work
@@ -222,7 +222,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
   1. **Free audit call.** We look at one slow process and listen. You get an honest view of what is worth automating.
   2. **Scope and price.** We write down what we will build, by when and for how much. You get a written plan to approve.
   3. **Build.** We work in small steps and show progress. You get working pieces to test, not a surprise at the end.
-  4. **Hand over.** We move it live, document it and train your team. You get the system, the accounts and the documents.
+  4. **Hand over.** We move it live and document it. [[PLACEHOLDER: Q1 confirm handover commitments: team training, removing our access when done]] You get the system and the documents.
 
 ### `how.models`
 - h2: How we engage
@@ -236,7 +236,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### `how.handover`
 - h2: Security and handover
-- body: You keep your accounts, data and code. We ask for the least access we need, and we remove it when we finish. We document how everything works. [[PLACEHOLDER: Q1 confirm ownership terms and access practice]]
+- body: [[PLACEHOLDER: Q1 confirm ownership terms and access practice. Draft: "You keep your accounts, data and code. We ask for the least access we need and remove it when we finish. We document how everything works."]]
 
 ### `how.faq` (optional short list)
 - h2: Common questions
@@ -250,7 +250,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 ## 5. About `/about/`
 
 - `seo_title`: About us | {{brand.name}}  (18)
-- `meta_description`: Meet the founders behind {{brand.name}}, an India-based team that automates boring work for small businesses worldwide.  (≈120)
+- `meta_description`: Meet the founders behind {{brand.name}}, an India-based team that automates boring work for small businesses worldwide.  (119)
 
 ### `about.intro`
 - h1: About {{brand.name}}
@@ -264,7 +264,7 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### `about.expertise`
 - h2: What we are good at
-- list: Cloud and DevOps · Software development · AI automation · Websites and apps for businesses
+- list: Cloud and DevOps · Software development · AI automation · Websites and apps for businesses [[PLACEHOLDER: Q6 owner confirms each founder's areas; this list is the services list only]]
 - note: [[PLACEHOLDER: Q6 any certifications or years of experience the owner wants stated]]
 
 ### `about.proof`
@@ -273,15 +273,15 @@ Shared structure (FR-6): `intro`, `what`, `deliverables`, `process`, `needs`, pl
 
 ### `about.name`
 - h2: The name
-- body: A clock keeps time by itself. A vane turns with the wind and shows the way. We build systems that run on their own and keep your business pointed in the right direction.
+- body: [[PLACEHOLDER: owner confirms the name story. Draft: "A clock keeps time by itself. A vane turns with the wind and shows the way."]]
 - note: Name story lives on this page only. The name may change (Q9), so no other page relies on it.
 
 ---
 
 ## 6. Contact `/contact/`
 
-- `seo_title`: Contact {{brand.name}} | Book a free audit call  (≈45)
-- `meta_description`: Book a free audit call or send a short message about the work you want off your plate. We reply within 1 business day.  (≈120)
+- `seo_title`: Contact {{brand.name}} | Book a free audit call  (41)
+- `meta_description`: Book a free audit call or send a short message about the work you want off your plate. We reply within 1 business day.  (118)
 
 ### `contact.intro`
 - h1: Tell us what you want off your plate
@@ -326,8 +326,8 @@ You can also reach us at {{brand.email}}. [[PLACEHOLDER: Q4/Q8 no mailbox yet. H
 
 ## 9. Privacy notice `/privacy/`
 
-- `seo_title`: Privacy notice | {{brand.name}}  (≈30)
-- `meta_description`: What {{brand.name}} collects when you contact us or visit this site, why, who sees it and how to ask us to delete it.  (≈120)
+- `seo_title`: Privacy notice | {{brand.name}}  (26)
+- `meta_description`: What {{brand.name}} collects when you contact us or visit this site, why, who sees it and how to ask us to delete it.  (117)
 - Status: **structure and plain-English draft only, not legal advice. The owner must review it before launch.** [[PLACEHOLDER: Q9 legal review]]
 - h1: Privacy notice
 - meta line: Last updated: [[PLACEHOLDER: date of publication]]
@@ -378,8 +378,9 @@ All `seo_title` values above are different and ≤ 60 characters with `{{brand.n
 ## 13. Open questions and decisions (also in the PR description)
 
 **Decisions**
-1. **CTA label conflict.** Owner answer Q4 says "Book a free audit call". `PRD.md`, `sitemap.md` and `wireframes.md` say "Start a conversation" and "Submit enquiry". This deck follows the owner (CTA "Book a free audit call", form button "Send message", Contact h1 changed). Recommend the UX designer and product owner update those three files in a follow-up. If the owner prefers "Start a conversation", it is a find-and-replace in this deck.
+1. **CTA label conflict.** Owner answer Q4 says "Book a free audit call". `PRD.md`, `sitemap.md` and `wireframes.md` say "Start a conversation" and "Submit enquiry". This deck follows the owner (CTA "Book a free audit call", form button "Send message", Contact h1 changed). Follow-up ticket #32 realigns those three files. If the owner prefers "Start a conversation", it is a find-and-replace in this deck.
 2. British or US spelling.
+   Also: custom software is shown as a fifth service; owner decides (Q1 lists four packages) before Gate 2.
 3. Final tagline (working one is used).
 4. One file or one file per page: the ticket asked for `copy-deck.md`, so all pages live here.
 
