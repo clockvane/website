@@ -60,22 +60,22 @@ Compact on purpose: no repeated sections (competitor scan). Every page needs a u
 
 | Page | Purpose | Primary CTA | Priority |
 |------|---------|-------------|----------|
-| Home | State what we do and for whom, route to services, show the way of working, repeat the CTA | Start a conversation | p0 |
-| Services (overview) | Explain all five services in concrete terms and link to detail | Start a conversation | p0 |
-| Service detail pages (5, one per service) | Problem, what we do, typical deliverables, how engagements work; searchable landing for each service | Start a conversation | p1 |
-| How we work (process and engagement) | Reduce fear: steps from first call to delivery, engagement models, how scoping and pricing work | Start a conversation | p1 |
-| About | Who is behind Clockvane, why it exists (name story from the brief), expertise. Only owner-supplied facts | Start a conversation | p1 |
-| Contact | Primary conversion page; the contact path from section 6 | Submit enquiry | p0 |
+| Home | State what we do and for whom, route to services, show the way of working, repeat the CTA | Book a free audit call | p0 |
+| Services (overview) | Explain all five services in concrete terms and link to detail | Book a free audit call | p0 |
+| Service detail pages (5, one per service) | Problem, what we do, typical deliverables, how engagements work; searchable landing for each service | Book a free audit call | p1 |
+| How we work (process and engagement) | Reduce fear: steps from first call to delivery, engagement models, how scoping and pricing work | Book a free audit call | p1 |
+| About | Who is behind Clockvane, why it exists (name story from the brief), expertise. Only owner-supplied facts | Book a free audit call | p1 |
+| Contact | Primary conversion page; the contact path from section 6 | Send message | p0 |
 | Privacy notice (and cookie info if needed) | Legal basis for collecting enquiries and any analytics | None | p0 |
 | 404 page | Recover lost visitors | Back home / contact | p0 |
-| Proof (work / testimonials) | Show real work and quotes. **Empty-safe**: must not render or must show an honest "coming soon" until real proof exists | Start a conversation | p2 |
-| FAQ | Answer pricing, timeline, process, ownership questions (can be a section instead of a page) | Start a conversation | p2 |
+| Proof (work / testimonials) | Show real work and quotes. **Empty-safe**: must not render or must show an honest "coming soon" until real proof exists | Book a free audit call | p2 |
+| FAQ | Answer pricing, timeline, process, ownership questions (can be a section instead of a page) | Book a free audit call | p2 |
 | Blog / insights, case studies, client portal | Future | n/a | p3 |
 
 Cross-cutting: global header with primary CTA, footer with legal links, sitemap.xml, robots.txt, social/OG preview image.
 
 ## 6. Conversions
-- **Primary:** "Start a conversation": an enquiry (name, contact detail, short description of the chore or project). [[PLACEHOLDER: owner to choose between enquiry form and book-a-call link, Q4]]
+- **Primary:** "Book a free audit call": an enquiry (name, contact detail, short description of the chore or project). [[PLACEHOLDER: owner to choose between enquiry form and book-a-call link, Q4]]
 - **Secondary:** Read the way of working / services; copy or click a direct contact method once one exists.
 - **No-mailbox path:** The enquiry must reach the owner without a Clockvane mailbox. Any delivery mechanism (a form service, notification to the owner's existing channel, or a scheduling link) is chosen in the design phase; the requirement is that the destination is a config value so switching to a real mailbox is a config change, not a rewrite. Visitors must always get an on-page confirmation and an expected response time. [[PLACEHOLDER: promised response time]]
 - Exactly one primary CTA label is used site-wide.
@@ -191,3 +191,4 @@ Only the owner can answer these. Do not guess; draft copy uses placeholders unti
 | Date | Change | Why |
 |------|--------|-----|
 | 2026-10-22 | Initial draft | Ticket #3, Gate 1 input |
+| 2026-10-26 | Primary CTA label is now "Book a free audit call" and the form button "Send message" (previous labels replaced in PRD, sitemap.md, wireframes.md; Contact h1 follows the copy deck) | Owner answer Q4; ticket #32 |

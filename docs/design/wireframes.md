@@ -22,7 +22,7 @@ Low fidelity only: structure, order, content slots and CTAs. No colour, type or 
 - Heading order never skips a level. Section headings are `h2`, items inside are `h3`.
 - Focus order follows DOM order, which follows visual order. No positive `tabindex`. Wide layouts reorder only with CSS grid placement that keeps reading order identical to DOM order.
 - Every interactive target is at least 44 x 44 px on M.
-- Primary CTA label is always "Start a conversation" (Contact submit: "Submit enquiry").
+- Primary CTA label is always "Book a free audit call" (Contact submit: "Send message").
 - Diagrams (workflow illustrations) are inline SVG with `role="img"` and a text alternative, or marked decorative with `aria-hidden="true"` when the text beside them says the same thing. Inline SVGs count towards the P-8 page weight: keep them simple, with no embedded raster and no fonts inside the SVG.
 
 ## 0. Shared components
@@ -37,10 +37,10 @@ M (closed)                     M (menu open)                 D
                                |   (five links)            |
                                | How we work               |
                                | About                     |
-                               | [ Start a conversation ]  |
+                               | [ Book a free audit call ]  |
                                +---------------------------+
 ```
-- M and T: logo, then a Menu built as `<details>`/`<summary>` (base pattern, no script). The CTA button sits inside the open menu **and** a compact copy of "Start a conversation" remains visible beside Menu from 480 px up. `[[DECISION for Gate 2: below 480 px, CTA only inside menu (default) or icon-only CTA]]`. Whichever option wins, update `user-flows.md` (mobile paragraph, which currently says the CTA stays visible outside the panel below 768 px) to match.
+- M and T: logo, then a Menu built as `<details>`/`<summary>` (base pattern, no script). The CTA button sits inside the open menu **and** a compact copy of "Book a free audit call" remains visible beside Menu from 480 px up. `[[DECISION for Gate 2: below 480 px, CTA only inside menu (default) or icon-only CTA]]`. Whichever option wins, update `user-flows.md` (mobile paragraph, which currently says the CTA stays visible outside the panel below 768 px) to match.
 - D: full nav inline, sticky. Services is a link to `/services/` with a separate `<details>`/`<summary>` toggle next to it opening the five service links (base pattern, no script). Optional JS enhancement, not in v1: close on Escape and when focus leaves.
 - Tab order: skip link, logo, Services link, Services disclosure, How we work, About, CTA.
 - Current page: `aria-current="page"` plus underline.
@@ -61,7 +61,7 @@ M                                D
 `*` hidden when not configured in `site.config.ts` (Q8). Footer link groups use `nav` with `aria-label` ("Services", "Company"); the footer headings are `h2` visually styled small.
 
 ### Closing CTA band
-`(h2)` one line + one supporting sentence + `[ Start a conversation ]`. Copy: `closing-cta`. Same block on every content page, so it stays one component. Omitted on Contact, Thanks, Error, Privacy, 404.
+`(h2)` one line + one supporting sentence + `[ Book a free audit call ]`. Copy: `closing-cta`. Same block on every content page, so it stays one component. Omitted on Contact, Thanks, Error, Privacy, 404.
 
 ### Page header (inner pages)
 Breadcrumb (service pages only) · `(h1)` · one-paragraph lede. Copy: `<page>.intro`.
@@ -77,7 +77,7 @@ D
 +--------------------------------------------------------------------------+
 | (h1) Hero statement (8 cols)              |  Workflow diagram (4 cols)   |
 | lede                                      |  before / after, SVG         |
-| [ Start a conversation ]  < See services >|                              |
+| [ Book a free audit call ]  < See services >|                              |
 +--------------------------------------------------------------------------+
 | (h2) Chores we take off your hands                                       |
 | 3 to 5 named examples as a plain list (not cards)                        |
@@ -131,7 +131,7 @@ Order and focus: skip link, header, hero CTA, hero secondary link, services link
 |  < Read about {service} >                   |
 +---------------------------------------------+
 | Not sure which one? (h2) + short text       |
-| [ Start a conversation ]                    |
+| [ Book a free audit call ]                    |
 +---------------------------------------------+
 | CLOSING CTA BAND (merged with the above:    |
 |  one band only, not two)                    |
@@ -148,7 +148,7 @@ One template (FR-6) used for process-automation, websites-and-apps, custom-softw
 +---------------------------------------------+
 | Breadcrumb: Home > Services > {name}        |
 | (h1) {name}   lede (the problem, in plain words)
-| [ Start a conversation ]                    |
+| [ Book a free audit call ]                    |
 +---------------------------------------------+
 | (h2) What we do        paragraph + SVG      |
 +---------------------------------------------+
@@ -228,7 +228,7 @@ Copy: `about.intro`, `about.who`, `about.expertise`, `about.name`. Owner-supplie
 M                                     D
 +-----------------------------+       +-------------------------------------------+
 | HEADER                      |       | HEADER                                    |
-| (h1) Start a conversation   |       | (h1) Start a conversation                 |
+| (h1) Tell us what you want off your plate   |       | (h1) Tell us what you want off your plate               |
 | lede + response time        |       | lede                    | Side panel (4c) |
 |                             |       |                         | (h2) What happens|
 | [error summary region]      |       | [error summary region]  |  next: 3 steps   |
@@ -238,9 +238,9 @@ M                                     D
 | What do you want sorted? *  |       | Message *               | Privacy note     |
 |   [ textarea ]              |       |   [ textarea ]          |                  |
 |  (optional) Company [ ___ ] |       | (optional) Company      |                  |
-| (honeypot, hidden from all  |       | [ Submit enquiry ]      |                  |
+| (honeypot, hidden from all  |       | [ Send message ]      |                  |
 |  users and AT)              |       +-------------------------------------------+
-| [ Submit enquiry ]          |
+| [ Send message ]          |
 | Privacy note . fallback*    |
 | FOOTER (no CTA band)        |
 +-----------------------------+
