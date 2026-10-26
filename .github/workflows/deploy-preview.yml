@@ -85,7 +85,7 @@ jobs:
       - name: Smoke test
         run: |
           url="https://pr-${PR_NUMBER}.${CF_PAGES_PROJECT}.pages.dev/"
-          for i in 1 2 3 4 5 6; do
+          for _ in 1 2 3 4 5 6; do
             if curl -fsS -D "$RUNNER_TEMP/headers.txt" -o /dev/null "$url" &&
                grep -qi '^x-robots-tag:.*noindex' "$RUNNER_TEMP/headers.txt"; then
               echo "OK: $url is up and noindex"; exit 0
