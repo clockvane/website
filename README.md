@@ -192,6 +192,8 @@ copies of the repo, **at the same time** as the Claude agents. Which ones is set
   and has Codex try five commands in each on the cheapest model. Only if the guard refuses the bad ones
   and git can still commit does that worker switch on. Until then those agents simply run on Claude. It
   also records where Codex is installed, so the scheduler finds it even if its PATH doesn't.
+  Copies that already passed aren't tested again (`agents codex-check --again` forces it). If the model
+  answers without actually trying the test commands, it is asked again (up to 3 times).
 - **Its own limits.** The GPT lane reads your ChatGPT plan usage from Codex and stops at
   `agents limits --engine codex --session N` (default 85% session, 85% week). On Plus, GPT-6 Astra allows
   roughly 5–45 messages per 5 hours, so the designer runs a few times a day; GPT-6.1 Sol allows more.
