@@ -23,6 +23,7 @@ Key pages = Home, Services, one Service detail, Contact (as in the NFRs).
 |-------|------|-------|---------------|
 | Static | ESLint, Prettier, Stylelint, `astro check` (TS strict), `html-validate` on `dist/` | Style, types, token use, valid markup, alt text (A-9) | local + CI (every PR) |
 | Unit | Vitest | `src/lib/**`: `handleEnquiry` (valid, invalid, oversize, honeypot, time-trap, no HTML in outbound), Zod schemas, `site.config.ts` validation, metadata/JSON-LD builders, URL helpers | local + CI (every PR) |
+| Unit (Workers runtime) | Vitest + Miniflare | `handleEnquiry` run under a Workers-like runtime to prove it uses only web-standard APIs (ADR-002); infra ticket | CI on PRs touching `src/lib/contact/**` or `infra/cloudflare/**` |
 | Component | Astro container API + Vitest | Components with states: form (idle, error, success), proof components render nothing without data (FR-5), nav, CTA | local + CI |
 | Content/SEO script | Vitest or Node script over built `dist/` | S-1 unique title ≤ 60 and description ≤ 160, S-2 canonical/OG/Twitter, S-3 sitemap and robots, S-4 noindex on non-prod, S-5 JSON-LD shape (no rating/review), one `h1` | CI (every PR, after build) |
 | Config hygiene | Grep-based test | Brand, domain, email, phone, socials, analytics IDs appear only in `site.config.ts`/env (FR-4); no host-specific imports in `src/` (NFR-PORT-1) | CI (every PR) |
@@ -40,8 +41,8 @@ and rendered HTML, never framework internals, so a framework swap (ADR-001 exit 
 |---------|--------|
 | Local, before push | lint, type-check, unit, build, then e2e + axe for changed pages (Chromium, headless, one worker) |
 | PR (required CI checks) | Static, unit, component, content/SEO script, config hygiene, build, internal links, `npm audit`, e2e smoke + axe on all routes (Chromium), Lighthouse CI on key pages (3 runs, median) |
-| PR preview deploy | Header test, noindex check (S-4), Lighthouse against the preview URL when available |
-| Push to `main` | Everything in PR plus the slow-tagged e2e suites (`@slow`: full viewport matrix screenshots, no-JS run) |
+| PR preview deploy | Header test, noindex check (S-4), Lighthouse against the preview URL when available. Advisory: previews do not run for fork PRs, so the `dist/`-based checks are the required gate |
+| Push to `main` | Everything in PR plus the slow-tagged e2e suites (`@slow`: full viewport matrix screenshots, reflow) |
 | Nightly (scheduled) | External link check, full Lighthouse set (all pages), `npm audit`, Firefox + WebKit e2e smoke |
 | Before each release (Gate 3) | Firefox + WebKit full e2e, manual keyboard and screen-reader pass (§5), security header scan, enquiry delivery test on staging |
 
@@ -54,13 +55,13 @@ Tag `@smoke` = runs on every PR. Each test is independent, uses role/label selec
 | ID | Journey | Given / When / Then | Traces to | Tag |
 |----|---------|---------------------|-----------|-----|
 | E-1 | Contact: happy path | Given the Contact page, when a visitor fills name, reply contact, message and submits, then a success state is shown and focus moves to it | FR-2 | @smoke |
-| E-2 | Contact: validation | When required fields are empty or invalid, then errors appear next to the fields, are linked via `aria-describedby`, and are announced in a live region (client and, with JS off, server) | FR-2, A-6 | @smoke |
-| E-3 | Contact: server error | When the endpoint returns an error (mocked route), then an error state with the fallback contact method is shown; nothing is dropped silently | O-2, FR-7 | @smoke |
+| E-2 | Contact: validation | When required fields are empty or invalid, then errors appear next to the fields, are linked via `aria-describedby`, and are announced in a live region | FR-2, A-6 | @smoke |
+| E-3 | Contact: server error | When the endpoint returns an error, including `429` rate-limited (mocked routes), then an error state with the fallback contact method is shown; nothing is dropped silently | O-2, FR-7 | @smoke |
 | E-4 | Contact: spam resistance | Honeypot filled or submission under the time threshold is rejected without a visible error to bots | FR-2, SEC-8 | |
-| E-5 | Contact: no JS | With JS disabled, the form posts natively and the server-rendered result page shows success or errors | NFR-PERF-3, P-10 | @slow |
+| E-5 | Contact: no JS | With JS disabled (`javaScriptEnabled: false`), native `required`/`type` validation blocks empty or invalid fields; a valid submit returns 303 to `/contact/thanks/`; a failed delivery returns 303 to `/contact/error/` with the fallback contact and a link back (input not kept) | NFR-PERF-3, P-10 | @smoke |
 | E-6 | Navigation | From Home, every page in the sitemap is reachable within two clicks; header nav, footer nav and skip link work; current page is marked `aria-current` | FR-8, A-2 | @smoke |
 | E-7 | Primary CTA | The same CTA is in the header and at least once in-page on every page and leads to Contact | FR-1 | @smoke |
-| E-8 | Mobile menu | At 360 px the menu opens and closes with keyboard and pointer, Escape closes, focus returns to the toggle | A-3 | @smoke |
+| E-8 | Mobile menu | At 360 px the `<details>`/disclosure toggle opens and closes from the keyboard (Enter/Space) and by pointer, with correct `open`/`aria-expanded` state. Only if a JS enhancement ships: Escape closes and focus returns to the toggle | A-3 | @smoke |
 | E-9 | 404 | An unknown URL returns the real 404 page (HTTP 404, correct title, `noindex`, links back to Home and Contact) | FR-7 | @smoke |
 | E-10 | Service detail | Every service page has the same structure (heading outline, CTA, related links) | FR-6 | |
 | E-11 | Empty proof | With no real proof data, testimonials/logos/stats render nothing (no empty headings) | FR-5 | |
@@ -138,5 +139,5 @@ such as a screenshot path). Reviewers (QA) re-run the relevant suite on the PR h
 
 ## 13. Open items
 - Tooling versions are pinned by the lockfile at scaffold time (ADR-001).
-- Where `handleEnquiry` runs and how delivery is tested on staging depend on ADR-002 and PRD Q4.
+- Delivery testing on staging depends on PRD Q4 (`handleEnquiry` runs as a Worker, ADR-002).
 - Whether a free, project-owned test inbox is available is a question for the owner (PRD Q4).
