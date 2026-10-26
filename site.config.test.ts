@@ -6,6 +6,13 @@ describe('site config', () => {
     expect(siteConfigSchema.parse(siteConfig).brand).toBe('Clockvane');
   });
 
+  it('rejects an invalid config', () => {
+    expect(
+      siteConfigSchema.safeParse({ ...siteConfig, brand: '' }).success,
+    ).toBe(false);
+    expect(siteConfigSchema.safeParse({}).success).toBe(false);
+  });
+
   it('flags placeholder values', () => {
     expect(isPlaceholder(siteConfig.email)).toBe(true);
     expect(isPlaceholder(siteConfig.brand)).toBe(false);
