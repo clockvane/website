@@ -178,7 +178,7 @@ M: single column, diagram stacked under the CTA and scrolling horizontally never
 | Differentiation from AI/SaaS templates | High: serif, paper, brass are rare in this field | Medium: dark/mono/teal is common in dev-tool sites |
 | Fits tone ("We automate the boring stuff", plain words) | Very good: serif reads as human | Good: mono labels can feel jargon-y if overused |
 | Font budget risk (P-6) | Low: 2 variable files | Medium: 3–4 static files near 100 kB |
-| Contrast headroom | Lowest ratio 5.18:1 or better for text pairs; brass at 6.07:1 | Lowest text ratio 5.25:1; most pairs are AAA |
+| Contrast headroom | Lowest text pair is 5.86:1; brass at 6.07:1 | Lowest text ratio 5.25:1; most pairs are AAA |
 | Dark mode | Needs a designed navy/ink variant | Natural: Night is already the base |
 | Diagram legibility | Good; fills and brass carry meaning | Excellent; dot grid and mono labels suit workflows |
 | Risk | Could read "boutique/agency" if copy gets precious | Could read like every dev-tool site |
