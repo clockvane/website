@@ -135,6 +135,24 @@ if conflicts:
     sys.exit(3)
 PY
 find . -name __pycache__ -type d -prune -exec rm -rf {} +
+# never commit Python bytecode (the agents' safety hooks are Python): ignore it next to the agentops
+# entries near the top of .gitignore, away from lines that open PRs add at the end
+python3 - .gitignore <<'PY'
+import sys
+path = sys.argv[1]
+try:
+    lines = open(path, encoding="utf-8").read().splitlines()
+except FileNotFoundError:
+    lines = []
+missing = [p for p in ("__pycache__/", "*.py[co]") if p not in lines]
+if missing:
+    at = next((i + 1 for i, l in enumerate(lines) if l.strip() == ".claude/settings.local.json"), None)
+    if at is None:
+        at = next((i + 1 for i, l in enumerate(lines) if l.strip() == ".agentops-scratch/"), len(lines))
+    lines[at:at] = missing
+    open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
+    print(".gitignore: added " + ", ".join(missing))
+PY
 # keep the values bootstrap wrote for this repo
 python3 - "$work/old-config.json" agentops/config.json <<'PY'
 import json, sys

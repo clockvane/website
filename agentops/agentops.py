@@ -37,6 +37,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+# This runs inside the agents' copies of the repo: never leave __pycache__/ there for an agent to commit.
+sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent
 CLONE_MARKER = REPO_ROOT / ".agentops-clone"
@@ -1379,8 +1381,18 @@ def ci_state(check_runs: List[Dict[str, Any]], statuses: List[Dict[str, Any]], c
     return "success"
 
 
+REVIEW_SHA_RX = re.compile(r"agentops:review\b[^>]*\bsha=([0-9a-f]{7,40})")
+
+
 def review_rounds(bodies: List[str]) -> int:
-    return sum(1 for b in bodies if "agentops:review" in b and "verdict=changes" in b)
+    """How many review rounds ended in 'changes': one per reviewed commit, however many reviewers
+    asked for changes on it (two reviewers on the same commit are one round, not two)."""
+    rounds: set = set()
+    for i, b in enumerate(bodies):
+        if "agentops:review" in b and "verdict=changes" in b:
+            m = REVIEW_SHA_RX.search(b)
+            rounds.add(m.group(1) if m else f"#{i}")
+    return len(rounds)
 
 
 DEP_RX = re.compile(r"(?im)^\s*[-*]?\s*(?:depends on|blocked by)\s*:?\s*(.+)$")
@@ -1750,7 +1762,7 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
                AGENTOPS_PR=str(work.pr or ""), AGENTOPS_ISSUE=str(work.issue or ""),
                AGENTOPS_HEAD_SHA=work.head_sha or "", AGENTOPS_REPO=cfg["repo"], AGENTOPS_LANE="claude",
                AGENTOPS_ENGINE="claude", AGENTOPS_REPO_ROOT=str(REPO_ROOT), AGENTOPS_STATE_DIR=str(state.dir),
-               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port))
+               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port), PYTHONDONTWRITEBYTECODE="1")
     started = time.time()
     rec: Dict[str, Any] = {"kind": "run", "started": started, "role": work.role, "action": work.action,
                            "issue": work.issue, "pr": work.pr, "head_sha": work.head_sha,
@@ -1995,7 +2007,7 @@ def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optiona
                AGENTOPS_PR=str(work.pr or ""), AGENTOPS_ISSUE=str(work.issue or ""),
                AGENTOPS_HEAD_SHA=work.head_sha or "", AGENTOPS_REPO=cfg["repo"], AGENTOPS_LANE="codex",
                AGENTOPS_ENGINE="codex", AGENTOPS_REPO_ROOT=str(root), AGENTOPS_STATE_DIR=str(state.dir),
-               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port))
+               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port), PYTHONDONTWRITEBYTECODE="1")
     rec: Dict[str, Any] = {"kind": "run", "lane": "codex", "engine": "codex", "model": model, "effort": effort,
                            "started": started, "role": work.role, "action": work.action, "issue": work.issue,
                            "pr": work.pr, "head_sha": work.head_sha, "log": str(log_path)}
