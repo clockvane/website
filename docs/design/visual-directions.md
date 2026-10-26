@@ -13,7 +13,7 @@ Scope: direction only. The full token set (`tokens.json`), component specs and t
 - Brand appears as "Clockvane" only (in production, from `site.config.ts`).
 
 ## Shared illustration system (both directions)
-Illustrations are original diagrams of work, not decoration: a **before/after workflow** (a person re-keying data between tools, versus the same steps running by themselves with a human check at the one unclear step), a **pipeline** (source, step, step, result), and a **timeline** for packages (2–3 days, 1–2 weeks, 1–3 weeks). Built from five primitives: node (rounded rectangle), connector (orthogonal line with a small arrowhead), checkpoint (a circle marking "a person checks this"), tick mark (a nod to a clock dial, used as a rhythm motif) and label. Each direction styles these primitives differently; the structure is identical, so the SVG set is drawn once and themed with tokens (`currentColor` and CSS custom properties). Every diagram has `role="img"` with a text alternative, or `aria-hidden` when adjacent text says the same.
+Illustrations are original diagrams of work, not decoration: a **before/after workflow** (a person re-keying data between tools, versus the same steps running by themselves with a human check at the one unclear step), a **pipeline** (source, step, step, result), and a **timeline** for packages (2–3 days, 1–2 weeks, 1–3 weeks). Built from five primitives: node (rounded rectangle), connector (orthogonal line with a small arrowhead), checkpoint (a circle marking "a person checks this"), tick mark (a nod to a clock dial, used as a rhythm motif) and label. Each direction styles these primitives differently; the structure is identical, so the SVG set is drawn once and themed with tokens (`currentColor` and CSS custom properties). Every diagram has `role="img"` with a text alternative, or `aria-hidden` when adjacent text says the same. Theming is done through classes in the external stylesheet: no `style=` attributes and no `<style>` inside inline SVG (CSP `style-src 'self'`).
 
 ---
 
@@ -22,7 +22,7 @@ Illustrations are original diagrams of work, not decoration: a **before/after wo
 ### Concept
 A well-kept ledger on a tidy workbench. Warm paper, ink-navy text and one brass accent, set in a literate serif for headlines. It says: a careful person is doing this for you, in plain words. The clock motif is quiet: fine tick marks as section dividers and diagram rules.
 
-### Colour (light is the default; dark variant is specified in `tokens.json`)
+### Colour (light is the default; dark variant deferred, inverse surfaces only)
 | Role | Hex | Used for |
 |------|-----|----------|
 | Paper (bg) | `#F6F2EA` | Page background |
@@ -45,18 +45,24 @@ Contrast (WCAG 2.2 AA: 4.5:1 normal text, 3:1 large text and UI components):
 | Paper on Navy `#2D3B52` | 10.12:1 | Text in CTA band and footer | AAA |
 | Brass-light `#E8C98F` on Ink `#1B2433` | 9.79:1 | Accent on dark | AAA |
 | Brass `#8A4B14` on Paper (focus ring, 3:1 needed) | 6.07:1 | Focus outline (2 px, 2 px offset) | Pass |
+| Brass-light `#E8C98F` on Navy `#2D3B52` | 7.09:1 | Links and rules in CTA band and footer | AAA |
+| Navy `#2D3B52` on Brass-light `#E8C98F` | 7.09:1 | Primary button label on inverse surfaces | AAA |
+| Brass-light on Navy (focus ring, 3:1 needed) | 7.09:1 | Focus outline on inverse surfaces; Brass is only 1.67:1 on Navy and is not used there | Pass |
+| Brass `#8A4B14` on Paper-deep `#E9E2D3` | 5.26:1 | Card links | AA |
+
+Rule: on Navy and Ink bands the focus ring and the primary button use Brass-light (inverted button), never Brass.
 
 ### Type pairing (both SIL OFL 1.1, self-hostable)
 - **Headings: Newsreader** (variable, roman only, optical size axis; subset to Latin). Calm, editorial, readable at display sizes.
 - **Body and UI: Public Sans** (variable). Neutral, sturdy, clear numerals.
-- Budget: Newsreader roman plus Public Sans roman = 2 files, roughly 60–80 kB subset. Italics are synthesised sparingly or avoided.
+- Budget: Newsreader roman plus Public Sans roman = 2 files, estimated 60–80 kB subset (verify at build against P-6; if over, drop the `opsz` axis or instance it to a fixed optical size). Italics are synthesised sparingly or avoided.
 - Scale: 1.25 ratio, body 18 px / 1.6 on mobile, H1 40 px on M rising to 56 px on D, measure 62–68 characters.
 
 ### Imagery and illustration
 Diagrams drawn like technical plates: 1.5 px ink strokes, flat paper-deep fills, brass for "the path the work takes now", fine tick marks along the baseline. No photos in v1. A real photo of the owner may be added to About only if supplied (PRD Q1, Q6).
 
 ### Motion principles
-Slow and mechanical, like a clock hand: a single 240 ms ease-out on hover and focus transitions, and diagram connectors that draw once (stroke-dashoffset, 600 ms) when scrolled into view. Everything is off under `prefers-reduced-motion: reduce`, with diagrams shown in their final state. No parallax, no autoplay, no scroll-jacking.
+Slow and mechanical, like a clock hand: a single 240 ms ease-out on hover and focus transitions, and diagram connectors that draw once (stroke-dashoffset, 600 ms), CSS only: on load, or tied to scroll with `animation-timeline: view()` inside `@supports`. The default, unsupported and reduced-motion state is the finished static diagram. No loops, no JavaScript. Everything is off under `prefers-reduced-motion: reduce`. No parallax, no autoplay, no scroll-jacking.
 
 ### Layout rhythm
 Generous vertical space (96 px section padding on D, 56 px on M), a 12-column grid with the text column held to 8 columns and diagrams allowed to breathe wider. Sections alternate paper and paper-deep; thin tick-mark rules separate them. Corner radius small (4 px). Cards use a 1 px border rather than shadow.
@@ -123,18 +129,22 @@ Contrast:
 | Signal-light `#7FD8BE` on Night | 10.78:1 | Accent on dark | AAA |
 | Night-soft `#A9B4BF` on Night | 8.62:1 | Muted text on dark | AAA |
 | Signal on Surface (focus ring, 3:1 needed) | 5.89:1 | Focus outline | Pass |
+| Signal-light `#7FD8BE` on Night (focus ring, 3:1 needed) | 10.78:1 | Focus outline on inverse surfaces (the Signal ring is only 2.82:1 on Night and is not used there) | Pass |
+| Night `#10161F` on Signal-light `#7FD8BE` | 10.78:1 | Primary button label on inverse surfaces; button is inverted (Signal-light fill) so its edge meets 3:1 | AAA |
+
+Rule: on Night bands the focus ring and the primary button use Signal-light, never Signal.
 
 ### Type pairing (SIL OFL 1.1, self-hostable)
 - **Headings and body: IBM Plex Sans** (static Regular, Medium, SemiBold; Latin subset). Engineered, slightly technical, excellent legibility.
 - **Labels and data: IBM Plex Mono** (Regular). For step labels in diagrams, timeline durations and small eyebrow text only, never for paragraphs.
-- Budget: roughly 3–4 WOFF2 files, about 70–95 kB subset. This sits close to P-6 (≤ 4 files, ≤ 100 kB), so it needs a measured check when built.
+- Budget: roughly 3–4 WOFF2 files, about 70–95 kB subset. This sits close to P-6 (≤ 4 files, ≤ 100 kB), so it needs a measured check when built. Newsreader is not used here.
 - Scale: 1.2 ratio, body 17 px / 1.6, H1 38 px on M rising to 52 px on D. Medium weight for headings, tight tracking at display sizes.
 
 ### Imagery and illustration
 Diagrams as system maps: 1 px strokes on a faint dot grid, mono labels, a signal-colour path for the automated route, a hollow circle for "a person checks this". The same plate style appears at small size in cards as an icon-like glyph. No photos in v1.
 
 ### Motion principles
-Crisp and informative: 150 ms linear-ish transitions, a step-by-step highlight that walks along the pipeline diagram once on view (each node lights for 300 ms in sequence), and a blinking-free status dot. Fully disabled under `prefers-reduced-motion`. No decorative animation.
+Crisp and informative: 150 ms linear-ish transitions, and a step-by-step highlight that walks along the pipeline diagram once (each node lights for 300 ms in sequence), CSS only: it plays once on load, or is tied to scroll with `animation-timeline: view()` inside `@supports`. The default, unsupported and reduced-motion state is the final static diagram. No loops, no blinking, no JavaScript. Disabled under `prefers-reduced-motion`. No decorative animation.
 
 ### Layout rhythm
 Tighter and more modular than A: an 8 px base grid, 80 px section padding on D and 48 px on M, content in visible module cards (8 px radius, 1 px border, no shadow). Light and Night bands alternate once on the page (closing CTA and footer are Night). Hero is split left text, right diagram, with the mono eyebrow above the H1.
@@ -165,7 +175,7 @@ Service card (surface-2, 8 px radius, 1 px border)
 | <See the automation build>  ->  |
 +---------------------------------+
 ```
-M: single column, diagram stacked under the CTA and scrolling horizontally never (it reflows to a vertical pipeline).
+M: single column, diagram stacked under the CTA and never scrolls horizontally (the pipeline reflows to vertical).
 
 ---
 
