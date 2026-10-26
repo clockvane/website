@@ -162,6 +162,36 @@ provides the 30-minute clock through Task Scheduler.
 | `agents status` | Started or not, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
 | `agents dashboard` | Opens a live dashboard in your browser (see below). |
 
+### GPT agents (the Codex lane)
+
+Some agents run on OpenAI models through the **Codex CLI** with your ChatGPT sign-in, in a second
+copy of the repo, **at the same time** as the Claude agents. Which ones is set in
+`agentops/config.json → roles`:
+
+| Agent | Engine | Model |
+|-------|--------|-------|
+| UX designer | Codex | `gpt-6-astra` (effort high) |
+| SDE 3 | Codex | `gpt-6.1-sol` (effort high) |
+| SDE 2 | Codex | `gpt-6.1-sol` (effort medium) |
+| everyone else | Claude Code | as in `.claude/agents/*.md` |
+
+- **Same rules.** Codex reads `AGENTS.md` (which points to `CLAUDE.md`) and gets the role file and
+  procedure in its prompt. The same guard checks every command (`.codex/hooks.json`) and refuses anything
+  not on the team's list; file edits to governance files or outside the repo are refused; `.codex/rules/`
+  forbids merging, force-push, secrets and cloud tools. git and gh run outside Codex's sandbox (they need
+  `.git` and the network); everything else runs inside it.
+- **Switched on by a test.** `agents codex-check` (once, and again after a Codex update) creates the
+  second copy, marks that one folder as trusted in `~/.codex/config.toml`, and has Codex try five
+  commands on the cheapest model. Only if the guard refuses the bad ones and git can still commit does the
+  lane switch on. Until then those agents simply run on Claude.
+- **Its own limits.** The GPT lane reads your ChatGPT plan usage from Codex and stops at
+  `agents limits --engine codex --session N` (default 85% session, 85% week). On Plus, GPT-6 Astra allows
+  roughly 5–45 messages per 5 hours, so the designer runs a few times a day; GPT-6.1 Sol allows more.
+- **Reviews stay independent.** GPT work is reviewed by the Claude reviewers and vice versa. Two
+  reviews of the same PR can run at once; a fix and a review of the same PR never overlap.
+- **Owner-only merges.** Any agent PR that changes rules, the scheduler, workflows or deploy files
+  (`merge.owner_merge_paths`) waits for you to merge it, even after all reviews approve.
+
 ### The dashboard
 
 `agents dashboard` (in its own Ubuntu tab) opens **http://localhost:8765** in your Windows browser:

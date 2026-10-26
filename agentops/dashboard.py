@@ -134,8 +134,60 @@ def parse_steps(path: Path, root: str, limit: int = 60) -> Dict[str, Any]:
                 cost = ev.get("total_cost_usd")
                 lines = [ln for ln in str(final or "").strip().splitlines() if ln.strip()]
                 steps.append({"kind": "done", "text": _short(lines[-1] if lines else ev.get("subtype"), 220), "t": ts})
+            # ---- Codex (`codex exec --json`)
+            elif et == "item.completed":
+                step = codex_step(ev.get("item") or {}, root)
+                if step:
+                    step["t"] = ts
+                    steps.append(step)
+                    if step["kind"] == "say":
+                        final = step["full"]
+            elif et == "turn.completed":
+                turns.add(f"turn{len(turns)}")
+                lines = [ln for ln in str(final or "").strip().splitlines() if ln.strip()]
+                if lines:
+                    steps.append({"kind": "done", "text": _short(lines[-1], 220), "t": ts})
+            elif et == "turn.failed":
+                msg = (ev.get("error") or {}).get("message") or "the run failed"
+                steps.append({"kind": "done", "text": _short(msg, 220), "t": ts, "error": "failed", "why": ""})
+    for st in steps:
+        st.pop("full", None)
     return {"steps": steps[-limit:], "total_steps": len(steps), "turns": len(turns), "model": model,
             "cost": cost, "last_at": last_ts}
+
+
+def codex_step(item: Dict[str, Any], root: str) -> Optional[Dict[str, Any]]:
+    def rel(p: str) -> str:
+        p = str(p or "")
+        return p[len(root) + 1:] if root and p.startswith(root + "/") else p
+
+    kind = item.get("type")
+    if kind == "command_execution":
+        cmd = item.get("command") or ""
+        if isinstance(cmd, list):
+            cmd = cmd[-1] if len(cmd) >= 3 and str(cmd[1]) in ("-c", "-lc") else " ".join(map(str, cmd))
+        m = re.match(r"^(?:/\S*/)?(?:ba|z)?sh -l?c (['\"])(.*)\1$", str(cmd), re.S)
+        cmd = m.group(2) if m else str(cmd)
+        step = {"kind": "run", "text": _short(cmd.splitlines()[0] if cmd else "", 140), "detail": _short(cmd, 400)}
+        out = str(item.get("aggregated_output") or "")
+        if item.get("exit_code") not in (0, None) or item.get("status") in ("failed", "declined"):
+            refused = "Blocked by agentops" in out or "denied" in out.lower() or item.get("status") == "declined"
+            step.update(error="refused" if refused else "failed", why=_short(out.strip().splitlines()[-1] if out.strip() else "", 200))
+        return step
+    if kind == "file_change":
+        changes = item.get("changes") or []
+        verbs = {"add": "Created", "delete": "Deleted"}
+        text = ", ".join(f"{verbs.get(c.get('kind'), 'Edited')} {rel(c.get('path'))}" for c in changes[:3])
+        return {"kind": "edit", "text": _short(text + (" …" if len(changes) > 3 else ""), 200)}
+    if kind == "agent_message" and str(item.get("text", "")).strip():
+        return {"kind": "say", "text": _short(item["text"], 220), "full": item["text"]}
+    if kind == "web_search":
+        return {"kind": "web", "text": f"Searched the web: {_short(item.get('query'), 100)}"}
+    if kind == "mcp_tool_call":
+        return {"kind": "other", "text": f"{item.get('server', '')} {item.get('tool', '')}".strip()}
+    if kind == "todo_list":
+        return {"kind": "plan", "text": "Updated its checklist"}
+    return None  # reasoning, notices and warnings are not steps
 
 
 # --------------------------------------------------------------------------- GitHub (cached)
@@ -245,12 +297,17 @@ class Dashboard:
                        "labels": ao.label_names(i), "role": ao.role_from(ao.label_names(i)),
                        "deps": ao.dependencies(i.get("body") or ""),
                        "closed_at": ao.parse_iso(i.get("closedAt") or "")} for i in issues]
-        nxt = None
-        with contextlib.suppress(Exception):
-            disp = ao.Dispatcher(cfg, cached, state, now, apply=False)
-            work = disp.choose(ao.read_phase(), ao.git("rev-parse", "HEAD", check=False))
-            nxt = {"work": work.__dict__ if work else None, "housekeeping": disp.actions}
-        return {"at": now, "error": None, "issues": out_issues, "prs": out_prs, "next": nxt}
+        nxt, by_lane = None, {}
+        lanes = ao.active_lanes(cfg, state)
+        for lane in lanes:
+            with contextlib.suppress(Exception):
+                disp = ao.Dispatcher(cfg, cached, state, now, apply=False, lane=lane, lanes=lanes,
+                                     busy=ao.other_lane_work(state, lane))
+                work = disp.choose(ao.read_phase(), ao.git("rev-parse", "HEAD", check=False))
+                by_lane[lane] = work.__dict__ if work else None
+                if lane == "claude":
+                    nxt = {"work": by_lane[lane], "housekeeping": disp.actions}
+        return {"at": now, "error": None, "issues": out_issues, "prs": out_prs, "next": nxt, "next_by_lane": by_lane}
 
     def github_loop(self) -> None:
         while True:
@@ -290,19 +347,38 @@ class Dashboard:
         window = ao.read_window(cfg, now)
         live = ao.live_usage(cfg, now)
         ok, reasons, info = ao.gate(cfg, state, now, live=live) if live else ao.gate(cfg, state, now)
-        current = state.doc("current_run") if ao.agent_run_pids() else {}
-        if current:
-            current = dict(current, **self.steps_for(Path(current.get("log", ""))))
+        lanes = ao.active_lanes(cfg, state)
+        currents = []
+        for lane in ao.LANES:
+            cur = state.doc(ao.lane_doc("current_run", lane))
+            if cur and ao.pid_alive(cur.get("pid")):
+                cur = dict(cur, lane=lane, **{k: v for k, v in self.steps_for(Path(cur.get("log", ""))).items()
+                                              if not (k == "model" and cur.get("model"))})
+                currents.append(cur)
+        current = currents[0] if currents else {}
+        codex = None
+        if cfg.get("engines", "codex", "enabled", default=False):
+            clive = ao.live_usage(cfg, now, "codex")
+            cok, creasons, cinfo = ao.gate(cfg, state, now, live=clive, lane="codex") if clive \
+                else ao.gate(cfg, state, now, lane="codex")
+            codex = {"active": "codex" in lanes, "live": clive, "limits": ao.effective_limits(cfg, window, "codex"),
+                     "gate": {"open": cok, "reasons": creasons}, "check": state.doc("codex_check") or None,
+                     "expected": {a: ao.expected_run_pct(cfg, state, a, "codex")[0]
+                                  for a in ("implement", "fix", "review")}}
         runs = [r for r in state.ledger(now - 7 * ao.DAY) if r.get("kind") == "run"]
         day_start = dt.datetime.fromtimestamp(now, cfg.tz).replace(hour=0, minute=0, second=0).timestamp()
         team = []
         for role, title, group in TEAM:
             mine = [r for r in runs if r.get("role") == role]
             last = mine[-1] if mine else None
+            rs = ao.role_settings(cfg, role)
+            on_gpt = ao.engine_for(cfg, role, lanes) == "codex"
             team.append({"role": role, "title": title, "group": group,
-                         "model": self.meta.get(role, {}).get("model", ""),
+                         "model": rs.get("model") if on_gpt else self.meta.get(role, {}).get("model", ""),
+                         "engine": "codex" if on_gpt else "claude",
+                         "planned_engine": rs.get("engine", "claude"),
                          "color": self.meta.get(role, {}).get("color", ""),
-                         "working": bool(current) and current.get("role") == role,
+                         "working": any(c.get("role") == role for c in currents),
                          "runs_today": sum(1 for r in mine if r["started"] >= day_start),
                          "last": {k: last.get(k) for k in ("started", "action", "issue", "pr", "outcome")} if last else None})
         tick_log = ao.xp("~/.claude/agentops/tick.log")
@@ -312,7 +388,7 @@ class Dashboard:
         out_runs = []
         for r in runs[-30:]:
             item = {k: r.get(k) for k in ("started", "ended", "role", "action", "issue", "pr", "outcome", "turns",
-                                          "cost_estimate_usd", "denials_total", "chained")}
+                                          "cost_estimate_usd", "denials_total", "chained", "lane", "model")}
             item["final"] = ao.final_line(r.get("final", ""))[:220]
             item["session_pct"] = (r.get("usage_delta") or {}).get("five_hour")
             item["log"] = Path(r["log"]).name if r.get("log") else None
@@ -325,7 +401,8 @@ class Dashboard:
             "gate": {"open": ok, "reasons": reasons},
             "usage": {"live": live, "limits": info.get("limits") or ao.effective_limits(cfg, window),
                       "expected": expected, "team_week_pct": ao.team_share_live(state, now)},
-            "current": current or None, "team": team, "runs": list(reversed(out_runs)),
+            "current": current or None, "currents": currents, "lanes": lanes, "codex": codex,
+            "team": team, "runs": list(reversed(out_runs)),
             "last_plan": state.doc("last_plan") or None, "cooldown": state.doc("cooldown") or None,
             "last_tick": last_tick, "tick_minutes": every,
             "min_gap_minutes": cfg.get("schedule", "min_minutes_between_runs", default=25),

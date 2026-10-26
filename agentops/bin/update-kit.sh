@@ -40,8 +40,8 @@ echo "comparing with the last kit install: $(git log -1 --format='%h %s' "$base"
 python3 - "$KIT_DIR" "$base" <<'PY' || die "nothing was changed — see the message above"
 import os, subprocess, sys, tempfile
 kit, base = sys.argv[1], sys.argv[2]
-DIRS = ["agentops", ".claude/agents", ".claude/skills", ".github/ISSUE_TEMPLATE"]
-FILES = ["CLAUDE.md", "README.md", ".github/pull_request_template.md", ".github/CODEOWNERS"]
+DIRS = ["agentops", ".claude/agents", ".claude/skills", ".github/ISSUE_TEMPLATE", ".codex"]
+FILES = ["CLAUDE.md", "AGENTS.md", "README.md", ".github/pull_request_template.md", ".github/CODEOWNERS"]
 
 
 def git(*args):
@@ -175,7 +175,8 @@ fi
 cat <<EOF
 
 $(printf '\033[1;32m')Done.$(printf '\033[0m') Next, in this terminal:
-  agents limits                                          # check your limits (runs per day too)
-  agents start --now --until 08:00 --session-limit 90    # e.g. overnight, higher limit while you sleep
-  agents dashboard                                       # watch them (in its own tab)
+  agents codex-check                                     # once: safety test that switches on the GPT lane
+  agents limits --engine codex                           # see/adjust the ChatGPT plan limits (default 85%)
+  agents start --now --until 08:00 --session-limit 90    # let them work
+  agents dashboard                                       # watch both lanes (in its own tab)
 EOF

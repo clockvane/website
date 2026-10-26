@@ -98,6 +98,12 @@ button.link { background: none; border: none; padding: 0; color: var(--accent); 
 button.ghost { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 8px; font: inherit; font-size: 12px; cursor: pointer; text-transform: none; letter-spacing: 0; }
 
 .idle-title { font-size: 18px; font-weight: 600; }
+.lane-block + .lane-block { margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); }
+.lanetag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.lanetag.gpt { background: color-mix(in srgb, var(--c-green) 14%, transparent); color: var(--c-green); }
+.next .lanetag { flex: none; }
+.usage-sub { font-size: 12px; font-weight: 600; color: var(--muted); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
 .reasons { margin: 10px 0 0; padding: 0; list-style: none; }
 .reasons li { padding: 6px 0; color: var(--muted); display: flex; gap: 8px; }
 .reasons li::before { content: "•"; color: var(--faint); }
@@ -292,7 +298,8 @@ function renderHeader() {
     }
   });
   const pill = $("statepill");
-  if (S.current) { pill.className = "statepill working"; pill.replaceChildren(h("span", { class: "pulse" }), "Working"); }
+  const n = (S.currents || []).length || (S.current ? 1 : 0);
+  if (n) { pill.className = "statepill working"; pill.replaceChildren(h("span", { class: "pulse" }), n > 1 ? `${n} agents working` : "Working"); }
   else if (S.window) { pill.className = "statepill waiting"; pill.replaceChildren("Started · waiting"); }
   else { pill.className = "statepill"; pill.replaceChildren("Stopped"); }
   const gh = S.github || {};
@@ -309,30 +316,63 @@ function stepList(steps, newestFirst, limit) {
       s.error ? h("div", { class: "why" }, (s.error === "refused" ? "Refused: " : "Failed: ") + (s.why || "")) : null),
     h("time", {}, s.t ? ago(s.t) : ""))));
 }
+function laneTag(lane, model) {
+  return lane === "codex" ? h("span", { class: "lanetag gpt" }, "GPT" + (model ? " · " + model : ""))
+    : h("span", { class: "lanetag" }, "Claude");
+}
+function runningBlock(c, i) {
+  const kids = [];
+  const t = issueTitle(c.pr || c.issue);
+  kids.push(h("div", { class: "now-head" }, avatar(c.role, "lg"),
+    h("div", {}, h("div", { class: "now-title" }, `${title(c.role)} is ${ACTION[c.action] || c.action} `, laneTag(c.lane, c.lane === "codex" ? c.model : "")),
+      h("div", { class: "now-sub" }, (c.pr || c.issue) ? itemLink(c.issue, c.pr) : null,
+        t ? ` · ${t}` : (c.action === "plan" ? "Looks at GitHub and creates the next tickets" : "")))));
+  kids.push(h("div", { class: "chips" },
+    h("span", { class: "chip elapsed", "data-start": c.started }, "Running " + dur(S.now - c.started)),
+    h("span", { class: "chip" }, c.lane === "codex" ? `${c.total_steps || 0} steps` : `${c.turns || 0} turns`),
+    c.model && c.lane !== "codex" ? h("span", { class: "chip" }, c.model.replace("claude-", "")) : null,
+    c.budget_usd ? h("span", { class: "chip" }, `budget $${Number(c.budget_usd).toFixed(2)}`) : null,
+    c.last_at ? h("span", { class: "chip" }, `last step ${ago(c.last_at)}`) : null));
+  const steps = c.steps || [];
+  const many = (S.currents || []).length > 1;
+  const limit = showAllSteps ? 0 : (many ? 6 : 10);
+  if (!steps.length) kids.push(h("p", { class: "hint" }, "Starting up…"));
+  else {
+    kids.push(stepList(steps, true, limit));
+    if (steps.length > (many ? 6 : 10)) kids.push(h("div", { class: "more" }, h("button", { class: "link", onclick: () => { showAllSteps = !showAllSteps; render(); } },
+      showAllSteps ? "Show fewer steps" : `Show all ${steps.length} steps`)));
+  }
+  return h("div", { class: "lane-block" }, kids);
+}
+function nextLine(lane) {
+  const gh = S.github || {};
+  const next = (gh.next_by_lane || {})[lane] !== undefined ? (gh.next_by_lane || {})[lane] : (lane === "claude" && gh.next ? gh.next.work : null);
+  const reasons = lane === "codex" ? ((S.codex && S.codex.gate.reasons) || []) : ((S.gate && S.gate.reasons) || []);
+  const showTag = (S.lanes || []).length > 1;
+  if (next) {
+    const t = issueTitle(next.pr || next.issue);
+    return h("div", { class: "next" }, showTag ? laneTag(lane) : null, avatar(next.role),
+      h("div", {}, h("b", {}, `Next up: ${title(next.role)} — ${ACTION_SHORT[next.action] || next.action} `), itemLink(next.issue, next.pr),
+        h("small", {}, t || (next.action === "plan" ? "No ready tickets, so the manager plans the next ones" : ""),
+          reasons.length && (S.currents || []).length ? ` · waiting: ${plainReason(reasons[0])}` : "")));
+  }
+  if (!gh.at) return null;
+  return h("div", { class: "next" }, showTag ? laneTag(lane) : null, h("div", {}, h("b", {}, "Nothing to pick up"),
+    h("small", {}, lane === "codex" ? "No ready work for the GPT agents (designer, SDE 3, SDE 2) right now."
+      : "Waiting for you (a gate or a needs-human item) or for CI.")));
+}
 function renderNow() {
-  const card = $("now"); const c = S.current;
+  const card = $("now");
+  const currents = S.currents || (S.current ? [S.current] : []);
+  const lanes = S.lanes || ["claude"];
   const kids = [h("h2", {}, "Right now")];
-  if (c) {
-    const item = c.pr ? `PR #${c.pr}` : c.issue ? `#${c.issue}` : "";
-    const t = issueTitle(c.pr || c.issue);
-    kids.push(h("div", { class: "now-head" }, avatar(c.role, "lg"),
-      h("div", {}, h("div", { class: "now-title" }, `${title(c.role)} is ${ACTION[c.action] || c.action}`),
-        h("div", { class: "now-sub" }, item ? itemLink(c.issue, c.pr) : null, t ? ` · ${t}` : (c.action === "plan" ? "Looks at GitHub and creates the next tickets" : "")))));
-    kids.push(h("div", { class: "chips" },
-      h("span", { class: "chip", id: "elapsed", "data-start": c.started }, "Running " + dur(S.now - c.started)),
-      h("span", { class: "chip" }, `${c.turns || 0} turns`),
-      c.model ? h("span", { class: "chip" }, c.model.replace("claude-", "")) : null,
-      c.budget_usd ? h("span", { class: "chip" }, `budget $${Number(c.budget_usd).toFixed(2)}`) : null,
-      c.last_at ? h("span", { class: "chip" }, `last step ${ago(c.last_at)}`) : null));
-    const steps = c.steps || [];
-    if (!steps.length) kids.push(h("p", { class: "hint" }, "Starting up…"));
-    else {
-      kids.push(stepList(steps, true, showAllSteps ? 0 : 10));
-      if (steps.length > 10) kids.push(h("div", { class: "more" }, h("button", { class: "link", onclick: () => { showAllSteps = !showAllSteps; render(); } },
-        showAllSteps ? "Show fewer steps" : `Show all ${steps.length} steps`)));
+  if (currents.length) {
+    currents.forEach((c, i) => kids.push(runningBlock(c, i)));
+    for (const lane of lanes) if (!currents.some((c) => c.lane === lane)) {
+      const line = nextLine(lane);
+      if (line) kids.push(h("div", { class: "lane-block" }, line));
     }
   } else {
-    const gh = S.github || {}, next = gh.next && gh.next.work;
     if (!S.window) {
       kids.push(h("div", { class: "idle-title" }, "The team is stopped"));
       kids.push(h("p", { class: "hint" }, "Start it in Ubuntu: ", h("code", {}, "agents start --now --hours 3")));
@@ -345,15 +385,7 @@ function renderNow() {
         nextCheck ? `Next check around ${fmtTime(nextCheck)}.` : "The next check is due any moment."));
       if (S.gate && S.gate.reasons.length) kids.push(h("ul", { class: "reasons" }, S.gate.reasons.map((r) => h("li", {}, plainReason(r)))));
     }
-    if (next) {
-      const t = issueTitle(next.pr || next.issue);
-      kids.push(h("div", { class: "next" }, avatar(next.role),
-        h("div", {}, h("b", {}, `Next up: ${title(next.role)} — ${ACTION_SHORT[next.action] || next.action} `), itemLink(next.issue, next.pr),
-          h("small", {}, t || (next.action === "plan" ? "No ready tickets, so the manager plans the next ones" : "")))));
-    } else if (gh.at) {
-      kids.push(h("div", { class: "next" }, h("div", {}, h("b", {}, "Nothing to pick up"),
-        h("small", {}, "Waiting for you (a gate or a needs-human item) or for CI."))));
-    }
+    for (const lane of lanes) { const line = nextLine(lane); if (line) kids.push(line); }
     const last = S.runs[0];
     if (last) kids.push(h("p", { class: "hint" }, `Last run: ${title(last.role)} — ${(ACTION_SHORT[last.action] || last.action).toLowerCase()} `,
       itemLink(last.issue, last.pr), ` · finished ${ago(last.ended || last.started)} · `, outcomeBadge(last)));
@@ -384,6 +416,22 @@ function renderUsage() {
     h("div", {}, ACTION_SHORT[a] || a, h("b", {}, `~${Math.round(p)}%`)))));
   kids.push(h("p", { class: "note" }, live ? `Reading from ${live.source}, ${ago(S.now - live.age_min * 60)}. Change limits: ` : "No fresh reading yet; the next run takes one. Change limits: ",
     h("code", {}, "agents limits --session N")));
+  const cx = S.codex;
+  if (cx) {
+    kids.push(h("div", { class: "usage-sub" }, "ChatGPT plan · GPT agents"));
+    if (!cx.active) {
+      kids.push(h("p", { class: "note" }, "The GPT lane is off until its one-time safety test passes: ", h("code", {}, "agents codex-check"),
+        cx.check && cx.check.at ? ` (last try ${fmtWhen(cx.check.at)}: not passed)` : ""));
+    } else {
+      const cl = cx.live, lim = cx.limits;
+      kids.push(meter("of this session (5 h)", cl ? cl.five_hour : null, lim.session, cl && cl.five_hour_resets));
+      kids.push(meter("of this week", cl ? cl.seven_day : null, lim.weekly, cl && cl.seven_day_resets));
+      kids.push(h("div", { class: "sizes" }, Object.entries(cx.expected || {}).map(([a, p]) =>
+        h("div", {}, ACTION_SHORT[a] || a, h("b", {}, `~${Math.round(p)}%`)))));
+      kids.push(h("p", { class: "note" }, cl ? `Reading from ${cl.source}, ${ago(S.now - cl.age_min * 60)}. ` : "No fresh reading yet. ",
+        "Change: ", h("code", {}, "agents limits --engine codex --session N")));
+    }
+  }
   $("usage").replaceChildren(...kids);
 }
 
@@ -447,13 +495,16 @@ function renderTeam() {
   const kids = [h("h2", {}, "Team")];
   kids.push(h("ul", { class: "team" }, S.team.map((m) => {
     let sub = "Not used yet";
-    if (m.working) sub = `Working now — ${ACTION[S.current.action] || S.current.action}`;
+    const mine = (S.currents || []).find((c) => c.role === m.role) || S.current || {};
+    if (m.working) sub = `Working now — ${ACTION[mine.action] || mine.action}`;
     else if (m.last) sub = `Last: ${fmtWhen(m.last.started)} · ${(ACTION_SHORT[m.last.action] || m.last.action).toLowerCase()}` +
       (m.last.pr ? ` PR #${m.last.pr}` : m.last.issue ? ` #${m.last.issue}` : "");
     return h("li", { class: m.working ? "working" : "" }, avatar(m.role),
       h("div", { class: "who" }, h("b", {}, m.title), h("small", {}, sub)),
       m.working ? h("span", { class: "pulse", title: "working" }) : null,
-      m.model ? h("span", { class: "model hide-sm" }, m.model) : null);
+      m.engine === "codex" ? h("span", { class: "lanetag gpt hide-sm", title: "Runs on GPT through Codex" }, m.model || "GPT")
+        : m.model ? h("span", { class: "model hide-sm", title: m.planned_engine === "codex" ? "Moves to GPT once `agents codex-check` passes" : "" },
+          m.model + (m.planned_engine === "codex" ? " → GPT" : "")) : null);
   })));
   $("teamcard").replaceChildren(...kids);
 }
@@ -476,7 +527,8 @@ function renderRuns() {
     const showFinal = r.final && (r.outcome !== "success" || /^BLOCKED/.test(r.final));
     rows.push(h("tr", { class: "run", tabindex: "0", onclick: () => toggleRun(r), onkeydown: (e) => { if (e.key === "Enter") toggleRun(r); } },
       h("td", { class: "num" }, fmtWhen(r.started)),
-      h("td", {}, h("div", { class: "agentcell" }, avatar(r.role, "mini"), title(r.role))),
+      h("td", {}, h("div", { class: "agentcell" }, avatar(r.role, "mini"), title(r.role)),
+        r.lane === "codex" ? h("div", { class: "final" }, laneTag("codex", r.model)) : null),
       h("td", {}, ACTION_SHORT[r.action] || r.action, r.chained ? h("div", { class: "final", title: "Started right after the previous run, in the same check" }, "back-to-back") : null),
       h("td", {}, itemLink(r.issue, r.pr), h("div", { class: "final hide-sm" }, issueTitle(r.pr || r.issue))),
       h("td", {}, outcomeBadge(r), showFinal ? h("div", { class: "final" }, r.final) : null,
@@ -521,8 +573,9 @@ async function poll(refresh) {
 }
 setInterval(() => poll(false), 4000);
 setInterval(() => {
-  const el = document.getElementById("elapsed");
-  if (el && S && S.current) el.textContent = "Running " + dur(Date.now() / 1000 - S.current.started);
+  document.querySelectorAll(".elapsed").forEach((el) => {
+    el.textContent = "Running " + dur(Date.now() / 1000 - Number(el.dataset.start));
+  });
 }, 1000);
 poll(false);
 </script>
