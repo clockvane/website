@@ -301,8 +301,9 @@ class Dashboard:
         lanes = ao.active_lanes(cfg, state)
         for lane in lanes:
             with contextlib.suppress(Exception):
+                # what an idle worker of this engine would pick next (everything held by a worker is skipped)
                 disp = ao.Dispatcher(cfg, cached, state, now, apply=False, lane=lane, lanes=lanes,
-                                     busy=ao.other_lane_work(state, lane))
+                                     busy=ao.busy_work(state, "dashboard"), worker=lane)
                 work = disp.choose(ao.read_phase(), ao.git("rev-parse", "HEAD", check=False))
                 by_lane[lane] = work.__dict__ if work else None
                 if lane == "claude":
@@ -348,14 +349,21 @@ class Dashboard:
         live = ao.live_usage(cfg, now)
         ok, reasons, info = ao.gate(cfg, state, now, live=live) if live else ao.gate(cfg, state, now)
         lanes = ao.active_lanes(cfg, state)
+        workers = ao.active_workers(cfg, state)
         currents = []
-        for lane in ao.LANES:
-            cur = state.doc(ao.lane_doc("current_run", lane))
+        for path in sorted(state.dir.glob("current_run*.json")):
+            worker = "claude" if path.stem == "current_run" else path.stem[len("current_run-"):]
+            cur = ao.load_json(path) or {}
             if cur and ao.pid_alive(cur.get("pid")):
-                cur = dict(cur, lane=lane, **{k: v for k, v in self.steps_for(Path(cur.get("log", ""))).items()
-                                              if not (k == "model" and cur.get("model"))})
+                cur = dict(cur, lane=ao.worker_engine(worker), worker=worker,
+                           **{k: v for k, v in self.steps_for(Path(cur.get("log", ""))).items()
+                              if not (k == "model" and cur.get("model"))})
                 currents.append(cur)
+        currents.sort(key=lambda c: (c["lane"] != "claude", ao.worker_number(c["worker"])))
         current = currents[0] if currents else {}
+        orch = state.doc("orchestrator")
+        if not (orch and ao.pid_alive(orch.get("pid"))):
+            orch = None
         codex = None
         if cfg.get("engines", "codex", "enabled", default=False):
             clive = ao.live_usage(cfg, now, "codex")
@@ -363,6 +371,8 @@ class Dashboard:
                 else ao.gate(cfg, state, now, lane="codex")
             codex = {"active": "codex" in lanes, "live": clive, "limits": ao.effective_limits(cfg, window, "codex"),
                      "gate": {"open": cok, "reasons": creasons}, "check": state.doc("codex_check") or None,
+                     "off_reason": (orch or {}).get("codex_off") or ao.codex_off_reason(cfg, state),
+                     "unverified": ao.unverified_workers(cfg, state),
                      "expected": {a: ao.expected_run_pct(cfg, state, a, "codex")[0]
                                   for a in ("implement", "fix", "review")}}
         runs = [r for r in state.ledger(now - 7 * ao.DAY) if r.get("kind") == "run"]
@@ -388,7 +398,7 @@ class Dashboard:
         out_runs = []
         for r in runs[-30:]:
             item = {k: r.get(k) for k in ("started", "ended", "role", "action", "issue", "pr", "outcome", "turns",
-                                          "cost_estimate_usd", "denials_total", "chained", "lane", "model")}
+                                          "cost_estimate_usd", "denials_total", "chained", "lane", "model", "worker")}
             item["final"] = ao.final_line(r.get("final", ""))[:220]
             item["session_pct"] = (r.get("usage_delta") or {}).get("five_hour")
             item["log"] = Path(r["log"]).name if r.get("log") else None
@@ -402,6 +412,9 @@ class Dashboard:
             "usage": {"live": live, "limits": info.get("limits") or ao.effective_limits(cfg, window),
                       "expected": expected, "team_week_pct": ao.team_share_live(state, now)},
             "current": current or None, "currents": currents, "lanes": lanes, "codex": codex,
+            "workers": workers, "worker_counts": {lane: sum(1 for w in workers if ao.worker_engine(w) == lane)
+                                                  for lane in lanes},
+            "orchestrator": orch,
             "team": team, "runs": list(reversed(out_runs)),
             "last_plan": state.doc("last_plan") or None, "cooldown": state.doc("cooldown") or None,
             "last_tick": last_tick, "tick_minutes": every,

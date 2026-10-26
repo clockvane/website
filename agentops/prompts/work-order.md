@@ -16,6 +16,8 @@ Rules for this run:
 - You are already in the repository root: don't start commands with `cd`. Prefer one command per
   Bash call. Write PR/issue bodies to .agentops-scratch/ and pass them with --body-file.
 - If a tool call is refused, retry it once as simpler separate commands before deciding you are blocked.
+- Other agents work at the same time in their own copies of the repo. If you start a dev, preview or
+  test server, use the PORT above (also set as $PORT), and stop it before you finish.
 - If you cannot complete it, comment on the issue/PR with the reason, apply `status:blocked`
   (or `needs-human` for decisions only the owner can make), and stop.
 - End your final reply with one line starting with DONE:, BLOCKED:, REVIEWED:, PLANNED: or

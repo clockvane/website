@@ -385,7 +385,7 @@ class Dispatch(unittest.TestCase):
         gh = FakeGH()
         w = self.disp(gh).choose("initiation", "sha1")
         self.assertEqual((w.role, w.action), ("eng-manager", "plan"))
-        self.state.put("last_plan", {"world": w.world, "at": NOW, "result": "nothing"})
+        self.state.put("last_plan", {"world": w.world, "at": NOW - 1000, "result": "nothing"})
         self.assertIsNone(self.disp(gh).choose("initiation", "sha1"))
         self.assertIsNotNone(self.disp(gh).choose("initiation", "sha2"))
 
@@ -752,7 +752,7 @@ class BackToBack(unittest.TestCase):
                 mock.patch.object(ao, "GH", lambda *a: gh), mock.patch.object(ao, "sync_clone", lambda b: "sha"), \
                 mock.patch.object(ao, "run_claude", fake_run), mock.patch.object(ao, "read_phase", lambda root=None: "build"), \
                 mock.patch.object(ao, "CLONE_MARKER", marker), contextlib.redirect_stdout(io.StringIO()):
-            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})())
+            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False, "worker": "claude", "deadline": None})())
         return ran
 
     def issues(self, *nums):
@@ -959,6 +959,356 @@ class CodexGuards(unittest.TestCase):
         patch = "*** Begin Patch\n*** Add File: /home/me/.bashrc\n+x\n*** End Patch\n"
         self.assertEqual(self.run_hook("protect_paths.py", {"tool_name": "apply_patch", "tool_input": {"command": patch}}).returncode, 2)
         self.assertEqual(protect.target_paths({"command": "*** Begin Patch\n*** Update File: a.md\n*** Move to: b.md\n"}), ["a.md", "b.md"])
+
+
+class Workers(unittest.TestCase):
+    """v9: several agents per plan at once, each claiming its own work."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        self.cfg = make_cfg(self.tmp)
+        self.st = ao.State(self.cfg)
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def L(self, *names):
+        return [{"name": x} for x in names]
+
+    def test_names_counts_clones_and_ports(self):
+        self.assertEqual(ao.worker_counts(self.cfg), {"claude": 2, "codex": 2})
+        self.cfg.d["workers"] = {"claude": 9, "codex": -1}
+        self.assertEqual(ao.worker_counts(self.cfg), {"claude": 3, "codex": 0})
+        self.cfg.d["workers"] = {"claude": 2, "codex": 2}
+        self.cfg.d["paths"]["agents_clone"] = "/home/u/agents/site"
+        self.cfg.d["engines"]["codex"]["clone_dir"] = "/home/u/agents/site-codex"
+        self.assertEqual([str(ao.worker_clone(self.cfg, w)) for w in ("claude", "claude-2", "codex", "codex-2")],
+                         ["/home/u/agents/site", "/home/u/agents/site-claude-2", "/home/u/agents/site-codex",
+                          "/home/u/agents/site-codex-2"])
+        ports = {ao.worker_port(w) for w in ("claude", "claude-2", "codex", "codex-2")}
+        self.assertEqual(len(ports), 4)
+        self.assertIn("PORT=4412", ao.render_prompt(ao.Work("sde2", "implement", 3, note="x"), "build", "o/r", ao.worker_port("codex-2")))
+        self.assertEqual((ao.worker_engine("codex-2"), ao.worker_number("codex-2"), ao.worker_number("claude")), ("codex", 2, 1))
+
+    def test_active_workers_follow_codex_check(self):
+        self.cfg.d["engines"]["codex"]["clone_dir"] = str(self.tmp / "site-codex")
+        self.assertEqual(ao.active_workers(self.cfg, self.st), ["claude", "claude-2"])  # no safety test yet
+        from unittest import mock
+        with mock.patch.object(ao, "codex_version", lambda cfg: "codex-cli 1.0"):
+            self.st.put("codex_check", {"passed": True, "version": "codex-cli 1.0"})
+            self.assertEqual(ao.active_workers(self.cfg, self.st), ["claude", "claude-2", "codex"])
+            self.assertEqual(ao.unverified_workers(self.cfg, self.st), ["codex-2"])
+            self.st.put("codex_check", {"passed": True, "version": "codex-cli 1.0", "clones": {
+                str(self.tmp / "site-codex-2"): {"passed": True, "version": "codex-cli 1.0"}}})
+            self.assertEqual(ao.active_workers(self.cfg, self.st), ["claude", "claude-2", "codex", "codex-2"])
+            self.assertIsNone(ao.codex_off_reason(self.cfg, self.st))
+            self.st.put("codex_check", {"passed": True, "version": "codex-cli 0.9"})
+            self.assertIn("was updated", ao.codex_off_reason(self.cfg, self.st))
+            self.cfg.d["workers"]["codex"] = 0  # GPT roles back to Claude, quietly
+            self.assertIsNone(ao.codex_off_reason(self.cfg, self.st))
+            self.assertEqual(ao.active_lanes(self.cfg, self.st), ["claude"])
+        with mock.patch.object(ao, "codex_version", lambda cfg: ""):
+            self.cfg.d["workers"]["codex"] = 2
+            self.assertIn("isn't visible to the scheduler", ao.codex_off_reason(self.cfg, self.st))
+
+    def test_two_workers_never_take_the_same_item(self):
+        issues = [{"number": n, "labels": self.L("status:ready", "agent:content-writer", "phase:design"), "body": ""}
+                  for n in (21, 22)]
+        gh = FakeGH(issues=issues)
+        d1 = ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude", busy=ao.busy_work(self.st, "claude"))
+        w1 = d1.choose("design", "m")
+        ao.claim(self.st, "claude", w1)
+        d2 = ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude-2",
+                           busy=ao.busy_work(self.st, "claude-2"))
+        w2 = d2.choose("design", "m")
+        self.assertEqual((w1.issue, w2.issue), (21, 22))
+        ao.release(self.st, "claude")
+        self.assertEqual(ao.busy_work(self.st, "claude-2"), set())
+        # a claim by a process that died does not block anything
+        self.st.put("claims", {"claude": {"role": "content-writer", "action": "implement", "issue": 21, "owner_pid": 999999999}})
+        self.assertEqual(ao.busy_work(self.st, "claude-2"), set())
+
+    def test_same_reviewer_not_twice_but_different_reviewers_in_parallel(self):
+        gh = FakeGH(prs=[pr(40, "sha40", ["agent:sde2", "ui-review"], branch="sde2/31-hero")],
+                    files={40: ["src/components/Hero.astro"]})
+        held = {("pr", 40, "review", "code-reviewer")}
+        w = ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude-2", busy=held).handle_prs(gh.prs)
+        self.assertNotEqual(w.role, "code-reviewer")
+        self.assertEqual(w.action, "review")
+
+    def test_planning_at_most_every_15_minutes(self):
+        self.st.put("last_plan", {"world": "other", "at": NOW - 300, "result": "nothing"})
+        self.assertIsNone(ao.Dispatcher(self.cfg, FakeGH(), self.st, NOW, worker="claude").choose("design", "m"))
+        self.assertEqual(ao.Dispatcher(self.cfg, FakeGH(), self.st, NOW + 900, worker="claude").choose("design", "m").action, "plan")
+
+    def test_planning_by_any_claude_worker_but_one_at_a_time(self):
+        d = ao.Dispatcher(self.cfg, FakeGH(), self.st, NOW, lane="claude", worker="claude-2")
+        self.assertEqual(d.choose("design", "m").action, "plan")
+        d = ao.Dispatcher(self.cfg, FakeGH(), self.st, NOW, lane="claude", worker="claude-2",
+                          busy={("plan", 0, "plan", "eng-manager")})
+        self.assertIsNone(d.choose("design", "m"))
+
+    def test_only_the_first_worker_escalates_and_only_primary_merges(self):
+        gh = FakeGH(prs=[pr(50, "s50", ["agent:sde2"])], checks={"s50": [{"status": "completed", "conclusion": "failure"}]})
+        self.st.bump("fix:50:s50", 2)
+        ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude-2", lanes=["claude"]).handle_prs(gh.prs)
+        self.assertEqual(gh.calls, [])
+        ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude", lanes=["claude"]).handle_prs(gh.prs)
+        self.assertIn(("label", 50, ["needs-human"]), gh.calls)
+        gh2 = FakeGH(prs=[pr(51, "s51", ["agent:sde2"])], files={51: ["src/a.ts"]},
+                     statuses={"s51": [ok("code-reviewer"), ok("qa-engineer")]})
+        ao.Dispatcher(self.cfg, gh2, self.st, NOW, lane="claude", worker="claude-2").handle_prs(gh2.prs)
+        self.assertEqual(gh2.calls, [])
+
+    def test_early_start_tickets_run_one_phase_ahead(self):
+        mk = lambda n, *extra: {"number": n, "labels": self.L("status:ready", "agent:sde3", *extra), "body": ""}
+        gh = FakeGH(issues=[mk(60, "phase:build"), mk(61, "phase:release", "early-start"), mk(62, "phase:build", "early-start")])
+        d = ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", worker="claude", lanes=["claude"])
+        self.assertEqual(d.handle_issues(gh.issues, [], "design").issue, 62)
+        self.cfg.d["run"]["early_start"] = False
+        self.assertIsNone(ao.Dispatcher(self.cfg, gh, self.st, NOW, lanes=["claude"]).handle_issues(gh.issues, [], "design"))
+
+    def test_gate_counts_runs_in_progress(self):
+        live = {"five_hour": 50.0, "seven_day": 20.0, "five_hour_resets": NOW + 3600, "seven_day_resets": NOW + 9e4,
+                "age_min": 1, "source": "test"}
+        self.cfg.d["usage"]["five_hour_stop_pct"] = 75
+        okay, reasons, _ = ao.gate(self.cfg, self.st, NOW, live=live, action="implement", check_idle=False)
+        self.assertTrue(okay, reasons)
+        okay, reasons, info = ao.gate(self.cfg, self.st, NOW, live=live, action="implement", check_idle=False, inflight=10.0)
+        self.assertFalse(okay)
+        self.assertIn("still to come from runs in progress", reasons[0])
+        self.st.put("claims", {"claude-2": {"action": "implement", "running": True, "owner_pid": os.getpid()},
+                               "codex": {"action": "implement", "running": True, "owner_pid": os.getpid()}})
+        self.assertEqual(ao.inflight_pct(self.cfg, self.st, "claude"), 10.0)  # half of a 20% run, Claude only
+
+    def test_spacing_is_per_worker(self):
+        self.st.append_ledger({"kind": "run", "started": NOW - 60, "lane": "claude", "worker": "claude"})
+        _ok, reasons, _ = ao.gate(self.cfg, self.st, NOW, check_idle=False, worker="claude-2")
+        self.assertNotIn("last run was too recent", reasons)
+        _ok, reasons, _ = ao.gate(self.cfg, self.st, NOW, check_idle=False, worker="claude")
+        self.assertIn("last run was too recent", reasons)
+
+    def test_overlap_share_splits_usage_between_parallel_runs(self):
+        self.st.append_ledger({"kind": "run", "lane": "claude", "worker": "claude-2", "started": NOW - 600, "ended": NOW - 300})
+        self.st.append_ledger({"kind": "run", "lane": "codex", "worker": "codex", "started": NOW - 600, "ended": NOW})
+        share = ao.overlap_share(self.st, {"started": NOW - 600, "ended": NOW}, "claude")
+        self.assertAlmostEqual(share, 600 / 900, places=2)  # the GPT run uses another plan: not counted
+
+    def test_main_copy_found_from_inside_a_worker_copy(self):
+        from unittest import mock
+        self.cfg.d["engines"]["codex"].pop("clone_dir", None)
+        with mock.patch.object(ao, "REPO_ROOT", Path("/h/agents/site-claude-2")):
+            self.assertEqual(str(ao.primary_clone(self.cfg)), "/h/agents/site")
+            self.assertEqual(str(ao.worker_clone(self.cfg, "codex-2")), "/h/agents/site-codex-2")
+        with mock.patch.object(ao, "REPO_ROOT", Path("/h/agents/site-codex")):
+            self.assertEqual(str(ao.worker_clone(self.cfg, "claude")), "/h/agents/site")
+
+    def test_other_agents_sessions_are_not_the_owner(self):
+        self.cfg.d["paths"]["agents_clone"] = "/h/agents/site"
+        busy = ao.project_dir_name(Path("/h/agents/site-claude-2"))
+        write_transcript(self.tmp, busy, "s-agent", [(time.time() - 30, "claude-sonnet-5-5", 100)])
+        _ok, reasons, info = ao.gate(self.cfg, self.st, time.time())
+        self.assertFalse(any("owner active" in r for r in reasons), reasons)
+        write_transcript(self.tmp, "-home-me-other-project", "s-me", [(time.time() - 30, "claude-sonnet-5-5", 100)])
+        _ok, reasons, info = ao.gate(self.cfg, self.st, time.time())
+        self.assertTrue(any("owner active" in r for r in reasons), reasons)
+
+    def test_codex_bin_falls_back_to_recorded_path(self):
+        fake = self.tmp / "bin" / "codex"
+        fake.parent.mkdir()
+        fake.write_text("#!/bin/sh\necho codex-cli 1.2.3\n")
+        fake.chmod(0o755)
+        self.cfg.d["engines"]["codex"]["bin"] = "codex-not-on-path-xyz"
+        self.st.put("codex_check", {"bin": str(fake)})
+        ao._CODEX_BIN.pop("codex-not-on-path-xyz", None)
+        old_path = os.environ.get("PATH", "")
+        try:
+            self.assertEqual(ao.codex_bin(self.cfg), str(fake))
+            self.assertEqual(ao.codex_version(self.cfg), "codex-cli 1.2.3")
+        finally:
+            os.environ["PATH"] = old_path
+            ao._CODEX_BIN.pop("codex-not-on-path-xyz", None)
+
+    def test_workers_command_saves_local_config(self):
+        import io, contextlib
+        local = self.tmp / "local.json"
+        os.environ["AGENTOPS_LOCAL_CONFIG"] = str(local)
+        try:
+            from unittest import mock
+            with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                ao.cmd_workers(type("A", (), {"claude": 1, "gpt": 3, "reset": False})())
+                self.assertEqual(json.loads(local.read_text())["workers"], {"claude": 1, "codex": 3})
+                with self.assertRaises(SystemExit):
+                    ao.cmd_workers(type("A", (), {"claude": 0, "gpt": None, "reset": False})())
+        finally:
+            os.environ.pop("AGENTOPS_LOCAL_CONFIG", None)
+
+
+class WorkerTurns(unittest.TestCase):
+    """v9: a worker's turn (exit codes, memory guard) and the check that keeps workers busy."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        (self.tmp / "projects").mkdir()
+        self.cfg = make_cfg(self.tmp)
+        self.st = ao.State(self.cfg)
+        ao.save_reading(self.cfg, {"five_hour": {"pct": 10.0, "resets_at": time.time() + 9000},
+                                   "seven_day": {"pct": 20.0, "resets_at": time.time() + 400000}}, "test")
+        self.marker = self.tmp / ".agentops-clone"
+        self.marker.touch()
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def turn(self, gh, worker="claude", **patches):
+        from unittest import mock
+        import io, contextlib
+        ran = []
+
+        def fake_run(cfg_, state, work, phase, **kw):
+            ran.append((work.role, work.action, work.issue, kw.get("worker")))
+            gh.issues = [i for i in gh.issues if i["number"] != work.issue]
+            return {"kind": "run", "started": time.time(), "ended": time.time(), "role": work.role,
+                    "action": work.action, "issue": work.issue, "outcome": "success", "final": "DONE: x"}
+        ctx = [mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)),
+               mock.patch.object(ao, "GH", lambda *a: gh), mock.patch.object(ao, "sync_clone", lambda b: "sha"),
+               mock.patch.object(ao, "run_claude", fake_run), mock.patch.object(ao, "run_codex", fake_run),
+               mock.patch.object(ao, "read_phase", lambda root=None: "build"),
+               mock.patch.object(ao, "CLONE_MARKER", self.marker)] + \
+            [mock.patch.object(ao, k, v) for k, v in patches.items()]
+        out = io.StringIO()
+        with contextlib.ExitStack() as stack:
+            for c in ctx:
+                stack.enter_context(c)
+            stack.enter_context(contextlib.redirect_stdout(out))
+            code = ao.cmd_tick(type("A", (), {"dry_run": False, "force": False, "worker": worker,
+                                              "deadline": time.time() + 3000})())
+        return code, ran, out.getvalue()
+
+    def issues(self, *nums, role="sde2"):
+        return [{"number": n, "labels": [{"name": x} for x in ("status:ready", f"agent:{role}", "phase:build")],
+                 "body": ""} for n in nums]
+
+    def test_exit_codes(self):
+        self.cfg.d["roles"] = {}
+        self.st.put("last_plan", {"world": "x", "at": time.time() - 3600, "result": "nothing"})
+        code, ran, _ = self.turn(FakeGH(issues=self.issues(21)))
+        self.assertEqual((code, [r[2] for r in ran]), (ao.EXIT_RAN, [21, None]))  # issue, then the EM plans
+        self.assertEqual(ran[0][3], "claude")
+        self.st.put("last_plan", {"world": "y", "at": time.time(), "result": "nothing"})
+        with ao.tick_lock(self.st, "claude-2"):
+            code, ran, out = self.turn(FakeGH(issues=self.issues(22)), worker="claude-2")
+        self.assertEqual((code, ran), (ao.EXIT_BUSY, []))
+        self.assertEqual(self.st.doc("claims"), {})  # nothing left claimed
+
+    def test_waits_for_memory_while_others_run(self):
+        self.cfg.d["roles"] = {}
+        self.st.put("claims", {"codex": {"action": "implement", "running": True, "owner_pid": os.getpid(), "issue": 9}})
+        code, ran, out = self.turn(FakeGH(issues=self.issues(23)), mem_available_mb=lambda: 600)
+        self.assertEqual((code, ran), (ao.EXIT_GATED, []))
+        self.assertIn("waiting for memory", out)
+        self.assertNotIn("claude", self.st.doc("claims"))
+
+    def test_idle_message_is_not_repeated(self):
+        self.cfg.d["roles"] = {}
+        self.st.put("last_plan", {})
+        gh = FakeGH()
+        from unittest import mock
+        with mock.patch.object(ao.Dispatcher, "choose", lambda self, phase, sha: None):
+            _c, _r, out1 = self.turn(gh)
+            code, _r, out2 = self.turn(gh)
+        self.assertEqual(code, ao.EXIT_IDLE)
+        self.assertIn("nothing to do", out1)
+        self.assertNotIn("nothing to do", out2)
+
+    def test_check_keeps_workers_busy_and_repolls_idle_ones(self):
+        """The check starts every worker, asks idle ones again, and ends at its deadline."""
+        from unittest import mock
+        import io, contextlib
+        calls = self.tmp / "calls.txt"
+        clone = self.tmp / "clone"
+        (clone / "agentops").mkdir(parents=True)
+        (clone / "agentops" / "agentops.py").write_text(
+            "import sys\nopen(%r, 'a').write(sys.argv[sys.argv.index('--worker') + 1] + '\\n')\nsys.exit(10)\n" % str(calls))
+        self.cfg.d["run"].update(tick_hard_limit_minutes=0.1, min_run_minutes=0, poll_minutes=0.01)
+        self.cfg.d["schedule"]["mode"] = "always"
+        out = io.StringIO()
+        with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)), \
+                mock.patch.object(ao, "CLONE_MARKER", self.marker), mock.patch.object(ao, "ORCH_LOOP_SECONDS", 0.2), \
+                mock.patch.object(ao, "active_workers", lambda cfg, st: ["claude", "codex"]), \
+                mock.patch.object(ao, "prepare_worker", lambda cfg, st, w: clone), contextlib.redirect_stdout(out):
+            started = time.time()
+            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})())
+        took = time.time() - started
+        seen = calls.read_text().split()
+        self.assertGreaterEqual(seen.count("claude"), 3, out.getvalue())
+        self.assertGreaterEqual(seen.count("codex"), 3)
+        self.assertTrue(5 <= took < 15, took)
+        self.assertFalse((self.st.dir / "orchestrator.json").exists())
+        self.assertIn("check finished", out.getvalue())
+
+    def test_waits_for_an_earlier_checks_agents(self):
+        from unittest import mock
+        import io, contextlib, fcntl, threading
+        calls = self.tmp / "calls.txt"
+        clone = self.tmp / "clone"
+        (clone / "agentops").mkdir(parents=True)
+        (clone / "agentops" / "agentops.py").write_text(
+            "import sys, time\nopen(%r, 'a').write('%%s %%f\\n' %% (sys.argv[sys.argv.index('--worker') + 1], time.time()))\nsys.exit(10)\n" % str(calls))
+        self.cfg.d["run"].update(tick_hard_limit_minutes=0.1, min_run_minutes=0, poll_minutes=0.01)
+        held = open(self.st.dir / "tick-codex.lock", "w")  # a kit-v8 Codex lane still running
+        fcntl.flock(held, fcntl.LOCK_EX)
+        released = {}
+
+        def release_later():
+            time.sleep(2.5)
+            released["at"] = time.time()
+            fcntl.flock(held, fcntl.LOCK_UN)
+            held.close()
+        threading.Thread(target=release_later).start()
+        out = io.StringIO()
+        with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)), \
+                mock.patch.object(ao, "CLONE_MARKER", self.marker), mock.patch.object(ao, "ORCH_LOOP_SECONDS", 0.2), \
+                mock.patch.object(ao, "active_workers", lambda cfg, st: ["claude", "claude-2"]), \
+                mock.patch.object(ao, "prepare_worker", lambda cfg, st, w: clone), contextlib.redirect_stdout(out):
+            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})())
+        self.assertIn("earlier check's agents are still finishing", out.getvalue())
+        starts = [line.split() for line in calls.read_text().splitlines()]
+        self.assertGreaterEqual(min(float(s) for _w, s in starts), released["at"])  # nothing before the release
+        self.assertIn("claude-2", [w for w, _s in starts])
+
+    def test_stopped_team_only_gets_one_housekeeping_pass(self):
+        from unittest import mock
+        import io, contextlib
+        calls = self.tmp / "calls.txt"
+        clone = self.tmp / "clone"
+        (clone / "agentops").mkdir(parents=True)
+        (clone / "agentops" / "agentops.py").write_text(
+            "import sys\nopen(%r, 'a').write(sys.argv[sys.argv.index('--worker') + 1] + '\\n')\nsys.exit(11)\n" % str(calls))
+        self.cfg.d["schedule"]["mode"] = "on-demand"  # and no `agents start` window
+        with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)), \
+                mock.patch.object(ao, "CLONE_MARKER", self.marker), mock.patch.object(ao, "ORCH_LOOP_SECONDS", 0.2), \
+                mock.patch.object(ao, "active_workers", lambda cfg, st: ["claude", "claude-2", "codex"]), \
+                mock.patch.object(ao, "prepare_worker", lambda cfg, st, w: clone), \
+                contextlib.redirect_stdout(io.StringIO()):
+            ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})())
+        self.assertEqual(calls.read_text().split(), ["claude"])
+
+    def test_second_check_does_nothing_while_one_runs(self):
+        from unittest import mock
+        import io, contextlib, fcntl
+        out = io.StringIO()
+        with open(self.st.dir / "orchestrator.lock", "w") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            self.assertFalse(ao.check_lock_free(self.st))
+            with mock.patch.object(ao.Config, "load", classmethod(lambda cls, root=None: self.cfg)), \
+                    mock.patch.object(ao, "CLONE_MARKER", self.marker), contextlib.redirect_stdout(out):
+                self.assertEqual(ao.cmd_tick(type("A", (), {"dry_run": False, "force": False})()), 0)
+        self.assertIn("already running", out.getvalue())
+        self.assertTrue(ao.check_lock_free(self.st))
 
 
 if __name__ == "__main__":

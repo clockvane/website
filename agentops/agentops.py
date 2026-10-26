@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """agentops — scheduler, usage gate and dispatcher for the Clockvane website agent team.
 
-Runs on the owner's WSL laptop, one unit of work per tick:
+Runs on the owner's WSL laptop. Each scheduled check (`tick`) keeps a small team of workers busy for
+up to an hour: by default 2 Claude workers and 2 GPT (Codex) workers, each in its own copy of the repo.
+Every worker repeatedly:
 
-  1. Housekeeping (no AI cost): read PRs/issues with `gh`, route reviews, set the
-     `agent-review/summary` status, squash-merge PRs whose reviews all approve, flag
+  1. Housekeeping (no AI cost, first Claude worker only): read PRs/issues with `gh`, route reviews,
+     set the `agent-review/summary` status, squash-merge PRs whose reviews all approve, flag
      gate PRs for the owner.
-  2. Choose the next unit of AI work (fix > review > resume > new issue > EM planning).
-  3. Gate it: run window, daily cap, owner idle, the owner's usage limits (checked against a
-     live plan-usage reading), cooldowns.
-  4. Run exactly one `claude -p --agent <role>` with tight limits, stop it if plan usage reaches
-     the owner's limit, record the run in a ledger and learn how much a run costs.
+  2. Claims the next unit of AI work for its engine (fix > review > resume > new issue > EM planning)
+     that no other worker holds.
+  3. Gates it: run window, daily cap, owner idle, the owner's usage limits (checked against a
+     live plan-usage reading, counting runs already in progress), cooldowns, free memory.
+  4. Runs exactly one agent (`claude -p --agent <role>` or `codex exec`) with tight limits, stops
+     it if plan usage reaches the owner's limit, records the run and learns how much a run costs.
 
 Python 3.9+ stdlib only. Human-owned: agents cannot edit this folder.
-Usage:  python3 agentops/agentops.py {start,stop,limits,status,dashboard,codex-check,tick,gate,next,doctor,selftest}
+Usage:  python3 agentops/agentops.py {start,stop,limits,workers,status,dashboard,codex-check,tick,gate,next,doctor,selftest}
 """
 from __future__ import annotations
 
@@ -205,9 +208,10 @@ class State:
         save_json(self.dir / f"{name}.json", data)
 
     @contextlib.contextmanager
-    def locked(self):
-        """Serialise read-modify-write of shared state (the Claude and Codex lanes run at once)."""
-        with open(self.dir / "state.lock", "w") as fh:
+    def locked(self, name: str = "state"):
+        """Serialise read-modify-write of shared state (several workers run at once). Each name is its
+        own lock file; never take the same name twice in one process (it would wait for itself)."""
+        with open(self.dir / f"{name}.lock", "w") as fh:
             fcntl.flock(fh, fcntl.LOCK_EX)
             try:
                 yield
@@ -555,16 +559,22 @@ def clock(ts: Optional[float], tz: dt.tzinfo, now: Optional[float] = None) -> st
     return t.strftime("%H:%M" if same_day else "%a %H:%M")
 
 
-# --------------------------------------------------------------------------- lanes: Claude + Codex
+# --------------------------------------------------------------------------- lanes and workers
 # Roles run on Claude Code by default. `roles.<role>.engine = "codex"` in config.json moves a role to
-# the Codex CLI (ChatGPT plan). Each engine is a lane with its own clone, lock, usage limits and
-# cooldown; both lanes run at the same time. The Codex lane only runs after `agents codex-check`
-# passed for the installed Codex version; until then its roles run on Claude.
+# the Codex CLI (ChatGPT plan). Each engine ("lane") has its own usage limits and cooldown, and runs
+# one or more WORKERS at the same time — `claude`, `claude-2`, `codex`, `codex-2` (`agents workers`) —
+# each in its own copy of the repo with its own lock. Workers claim work under a shared lock, so two
+# workers never take the same item. The Codex workers only run after `agents codex-check` passed
+# for the installed Codex version and for that worker's copy; until then their roles run on Claude.
 LANES = ("claude", "codex")
-_CODEX_VERSION: Optional[str] = None
+ENGINES = LANES
+MAX_WORKERS = 3
+_CODEX_VERSION: Dict[str, str] = {}
+_CODEX_BIN: Dict[str, str] = {}
 
 
 def lane_doc(name: str, lane: str) -> str:
+    """State-file name for an engine or worker: `cooldown` / `cooldown-codex`, `current_run-claude-2`."""
     return name if lane == "claude" else f"{name}-{lane}"
 
 
@@ -573,25 +583,137 @@ def role_settings(cfg: "Config", role: str) -> Dict[str, Any]:
     return dict(v) if isinstance(v, dict) else {}
 
 
+def codex_roles(cfg: "Config") -> List[str]:
+    return [r for r, v in (cfg.get("roles", default={}) or {}).items()
+            if isinstance(v, dict) and v.get("engine") == "codex"]
+
+
 def codex_bin(cfg: "Config") -> str:
-    return cfg.get("engines", "codex", "bin", default="codex")
+    """The Codex command. The scheduler's PATH can miss it (another Node version, or a folder only your
+    interactive shell adds), so fall back to where `agents codex-check` found it, then the usual places."""
+    import glob
+    import shutil
+    name = cfg.get("engines", "codex", "bin", default="codex")
+    if name in _CODEX_BIN:
+        return _CODEX_BIN[name]
+    found = (name if os.access(name, os.X_OK) else None) if os.path.isabs(name) else shutil.which(name)
+    if not found:
+        state_dir = xp(cfg.get("paths", "state_dir", default="~/.claude/agentops/clockvane-website"))
+        recorded = (load_json(state_dir / "codex_check.json") or {}).get("bin")
+        cands = [recorded] + sorted(glob.glob(str(xp("~/.nvm/versions/node/*/bin/codex"))), reverse=True) + \
+            [str(xp(p)) for p in ("~/.local/bin/codex", "~/.npm-global/bin/codex", "~/.codex/bin/codex")] + \
+            ["/usr/local/bin/codex", "/usr/bin/codex"]
+        found = next((c for c in cands if c and os.access(c, os.X_OK)), None)
+        if found:  # an npm-installed codex needs its own node, which sits next to it
+            os.environ["PATH"] = os.path.dirname(found) + os.pathsep + os.environ.get("PATH", "")
+    _CODEX_BIN[name] = found or name
+    return _CODEX_BIN[name]
 
 
 def codex_version(cfg: "Config") -> str:
-    global _CODEX_VERSION
-    if _CODEX_VERSION is None:
+    b = codex_bin(cfg)
+    if b not in _CODEX_VERSION:
         try:
-            _CODEX_VERSION = subprocess.run([codex_bin(cfg), "--version"], capture_output=True, text=True,
-                                            timeout=30).stdout.strip()
+            _CODEX_VERSION[b] = subprocess.run([b, "--version"], capture_output=True, text=True,
+                                               timeout=30).stdout.strip()
         except (OSError, subprocess.SubprocessError):
-            _CODEX_VERSION = ""
-    return _CODEX_VERSION
+            _CODEX_VERSION[b] = ""
+    return _CODEX_VERSION[b]
+
+
+def worker_engine(worker: str) -> str:
+    return worker.split("-", 1)[0]
+
+
+def worker_number(worker: str) -> int:
+    tail = worker.split("-", 1)[1] if "-" in worker else ""
+    return int(tail) if tail.isdigit() else 1
+
+
+def worker_name(engine: str, n: int) -> str:
+    return engine if n <= 1 else f"{engine}-{n}"
+
+
+def worker_counts(cfg: "Config") -> Dict[str, int]:
+    """How many workers of each engine run at once (`agents workers`): Claude 1-3, GPT 0-3."""
+    w = cfg.get("workers", default={}) or {}
+
+    def num(key: str, low: int) -> int:
+        try:
+            v = int(w.get(key, 1))
+        except (TypeError, ValueError):
+            v = 1
+        return max(low, min(MAX_WORKERS, v))
+    return {"claude": num("claude", 1), "codex": num("codex", 0)}
+
+
+def primary_clone(cfg: "Config") -> Path:
+    """The main agents copy (~/agents/<repo>), also when asked from inside another worker's copy."""
+    configured = cfg.get("paths", "agents_clone") or os.environ.get("AGENTOPS_AGENTS_CLONE")
+    if configured:
+        return xp(configured)
+    m = re.match(r"^(.+?)-(?:claude-\d+|codex(?:-\d+)?)$", REPO_ROOT.name)
+    return REPO_ROOT.parent / m.group(1) if m else REPO_ROOT
+
+
+def worker_clone(cfg: "Config", worker: str) -> Path:
+    """Each worker's own copy of the repo: ~/agents/<repo>, <repo>-claude-2, <repo>-codex, <repo>-codex-2."""
+    n = worker_number(worker)
+    primary = primary_clone(cfg)
+    if worker_engine(worker) == "codex":
+        base = xp(cfg.get("engines", "codex", "clone_dir", default=str(primary.parent / (primary.name + "-codex"))))
+        return base if n == 1 else base.parent / f"{base.name}-{n}"
+    return primary if n == 1 else primary.parent / f"{primary.name}-claude-{n}"
 
 
 def codex_ready(cfg: "Config", state: "State") -> bool:
+    if not cfg.get("engines", "codex", "enabled", default=False) or worker_counts(cfg)["codex"] == 0:
+        return False
     chk = state.doc("codex_check")
-    return bool(cfg.get("engines", "codex", "enabled", default=False) and chk.get("passed")
-                and chk.get("version") and chk.get("version") == codex_version(cfg))
+    return bool(chk.get("passed") and chk.get("version") and chk.get("version") == codex_version(cfg))
+
+
+def codex_off_reason(cfg: "Config", state: "State") -> Optional[str]:
+    """Why the GPT workers are not running, in plain words; None when they run or are switched off on purpose."""
+    if not cfg.get("engines", "codex", "enabled", default=False) or not codex_roles(cfg) \
+            or worker_counts(cfg)["codex"] == 0:
+        return None
+    version = codex_version(cfg)
+    if not version:
+        return ("the `codex` command isn't visible to the scheduler — run `agents codex-check` once in Ubuntu "
+                "(it records where Codex is installed)")
+    chk = state.doc("codex_check")
+    if not chk.get("passed"):
+        return "its one-time safety test hasn't passed yet — run: agents codex-check"
+    if chk.get("version") != version:
+        return f"Codex was updated ({chk.get('version')} → {version}) — run `agents codex-check` again"
+    return None
+
+
+def clone_verified(cfg: "Config", state: "State", worker: str) -> bool:
+    """A GPT worker's copy passed the safety test (the first copy is covered by the main test)."""
+    chk = state.doc("codex_check")
+    if worker_number(worker) == 1:
+        return bool(chk.get("passed"))
+    c = (chk.get("clones") or {}).get(str(worker_clone(cfg, worker))) or {}
+    return bool(c.get("passed") and c.get("version") == chk.get("version"))
+
+
+def active_workers(cfg: "Config", state: "State") -> List[str]:
+    counts = worker_counts(cfg)
+    out = [worker_name("claude", i) for i in range(1, counts["claude"] + 1)]
+    if codex_ready(cfg, state):
+        out += [worker_name("codex", i) for i in range(1, counts["codex"] + 1)
+                if clone_verified(cfg, state, worker_name("codex", i))]
+    return out
+
+
+def unverified_workers(cfg: "Config", state: "State") -> List[str]:
+    """GPT workers you asked for whose copy still needs `agents codex-check`."""
+    if not codex_ready(cfg, state):
+        return []
+    return [worker_name("codex", i) for i in range(2, worker_counts(cfg)["codex"] + 1)
+            if not clone_verified(cfg, state, worker_name("codex", i))]
 
 
 def active_lanes(cfg: "Config", state: "State") -> List[str]:
@@ -601,6 +723,106 @@ def active_lanes(cfg: "Config", state: "State") -> List[str]:
 def engine_for(cfg: "Config", role: str, lanes: Iterable[str]) -> str:
     eng = role_settings(cfg, role).get("engine", "claude")
     return eng if eng in lanes else "claude"
+
+
+# claims: which worker holds which work item, so no two workers take the same one
+def busy_work(state: "State", worker: str) -> set:
+    """(kind, number, action, role) other workers hold right now: claims made when they picked their
+    work, plus any agent run still going (also one started by an older kit version)."""
+    busy: set = set()
+
+    def add(c: Dict[str, Any]) -> None:
+        role, action = c.get("role"), c.get("action")
+        if action == "plan":
+            busy.add(("plan", 0, "plan", role))
+        with contextlib.suppress(TypeError, ValueError):
+            if c.get("issue"):
+                busy.add(("issue", int(c["issue"]), action, role))
+            if c.get("pr"):
+                busy.add(("pr", int(c["pr"]), action, role))
+    for w, c in (state.doc("claims") or {}).items():
+        if w != worker and isinstance(c, dict) and pid_alive(c.get("owner_pid")):
+            add(c)
+    for path in state.dir.glob("current_run*.json"):
+        w = "claude" if path.stem == "current_run" else path.stem[len("current_run-"):]
+        cur = load_json(path) or {}
+        if w != worker and isinstance(cur, dict) and pid_alive(cur.get("pid")):
+            add(cur)
+    return busy
+
+
+def claim(state: "State", worker: str, work: "Work") -> None:
+    with state.locked("claims"):
+        claims = state.doc("claims") or {}
+        claims[worker] = {"role": work.role, "action": work.action, "issue": work.issue, "pr": work.pr,
+                          "owner_pid": os.getpid(), "at": time.time(), "engine": worker_engine(worker)}
+        state.put("claims", claims)
+
+
+def update_claim(state: "State", worker: str, **fields: Any) -> None:
+    with state.locked("claims"):
+        claims = state.doc("claims") or {}
+        if worker in claims:
+            claims[worker].update(fields)
+            state.put("claims", claims)
+
+
+def release(state: "State", worker: str) -> None:
+    with state.locked("claims"):
+        claims = state.doc("claims") or {}
+        if claims.pop(worker, None) is not None:
+            state.put("claims", claims)
+
+
+def running_claims(state: "State", worker: Optional[str] = None, engine: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """Other workers' runs in progress (optionally only those on one engine)."""
+    return {w: c for w, c in (state.doc("claims") or {}).items()
+            if w != worker and isinstance(c, dict) and c.get("running") and pid_alive(c.get("owner_pid"))
+            and (engine is None or worker_engine(w) == engine)}
+
+
+def inflight_pct(cfg: "Config", state: "State", worker: str) -> float:
+    """Plan usage still to come from runs other workers of the same engine have in progress
+    (counted as half a run each: on average they are halfway done)."""
+    engine = worker_engine(worker)
+    return round(sum(0.5 * expected_run_pct(cfg, state, c.get("action") or "implement", engine)[0]
+                     for c in running_claims(state, worker, engine).values()), 1)
+
+
+def overlap_share(state: "State", rec: Dict[str, Any], worker: str) -> float:
+    """The part of the plan-usage change during this run that this run caused, when other runs on the same
+    plan worked at the same time (they are assumed to use the plan at a similar rate)."""
+    start, end = rec.get("started"), rec.get("ended") or time.time()
+    if not start or end <= start:
+        return 1.0
+    engine = worker_engine(worker)
+    other = 0.0
+    for r in state.ledger(start - DAY):
+        if r.get("kind") != "run" or r.get("lane", "claude") != engine or r.get("worker", r.get("lane", "claude")) == worker:
+            continue
+        a, b = float(r.get("started") or 0), float(r.get("ended") or r.get("started") or 0)
+        other += max(0.0, min(b, end) - max(a, start))
+    for w, c in (state.doc("claims") or {}).items():
+        if w != worker and worker_engine(w) == engine and c.get("run_started") and pid_alive(c.get("owner_pid")):
+            other += max(0.0, end - max(float(c["run_started"]), start))
+    mine = end - start
+    return round(mine / (mine + other), 3) if other > 0 else 1.0
+
+
+def mem_available_mb() -> Optional[int]:
+    try:
+        with open("/proc/meminfo", encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
+def worker_port(worker: str) -> int:
+    """A dev/preview server port of its own for each worker, so parallel agents don't collide."""
+    return 4400 + (10 if worker_engine(worker) == "codex" else 0) + worker_number(worker)
 
 
 def codex_snapshot_path(cfg: "Config") -> Path:
@@ -793,13 +1015,16 @@ def claude_processes(ignore_args: Iterable[str]) -> List[Dict[str, Any]]:
     return procs
 
 
-def last_foreign_activity(dirs: Iterable[Path], our_sessions: set, own_project: str) -> Optional[float]:
+def last_foreign_activity(dirs: Iterable[Path], our_sessions: set, own_project: Any) -> Optional[float]:
+    """Newest Claude Code activity that isn't an agent run: own_project is the agents' project folder name
+    (or a set of them, one per agent copy)."""
+    own = {own_project} if isinstance(own_project, str) else set(own_project)
     newest = None
     for base in dirs:
         if not base.exists():
             continue
         for project in base.iterdir():
-            if not project.is_dir() or project.name == own_project:
+            if not project.is_dir() or project.name in own:
                 continue
             for root, _d, files in os.walk(project):
                 for name in files:
@@ -875,9 +1100,13 @@ def in_allowed_hours(spec: str, local: dt.datetime) -> bool:
 
 def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] = None,
          check_idle: bool = True, live: Optional[Dict[str, Any]] = None, action: Optional[str] = None,
-         probe: bool = False, skip_spacing: bool = False, lane: str = "claude") -> Tuple[bool, List[str], Dict[str, Any]]:
+         probe: bool = False, skip_spacing: bool = False, lane: str = "claude", worker: Optional[str] = None,
+         inflight: float = 0.0) -> Tuple[bool, List[str], Dict[str, Any]]:
+    """May a run start now? `lane` is the engine whose plan is checked; `inflight` is the usage still
+    expected from runs other workers of that engine have in progress."""
+    worker = worker or lane
     reasons: List[str] = []
-    info: Dict[str, Any] = {"lane": lane}
+    info: Dict[str, Any] = {"lane": lane, "worker": worker}
     local = dt.datetime.fromtimestamp(now, cfg.tz)
 
     pause = xp(cfg.get("paths", "pause_file", default="~/.claude/agentops/PAUSE"))
@@ -911,13 +1140,16 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
     if len(runs_today) >= sched.get("max_runs_per_day", 8):
         reasons.append(f"daily cap reached ({len(runs_today)} runs)")
     recent = state.ledger(now - sched.get("min_minutes_between_runs", 25) * 60)
-    if not skip_spacing and any(r.get("kind") == "run" and r.get("lane", "claude") == lane for r in recent):
+    if not skip_spacing and any(r.get("kind") == "run" and r.get("worker", r.get("lane", "claude")) == worker
+                                for r in recent):
         reasons.append("last run was too recent")
 
     idle_cfg = cfg.get("idle", default={})
     if check_idle:
         dirs = [xp(d) for d in idle_cfg.get("transcript_dirs", ["~/.claude/projects"])]
-        last = last_foreign_activity(dirs, state.our_sessions(now - 8 * DAY), project_dir_name(REPO_ROOT))
+        own = {project_dir_name(REPO_ROOT)} | {project_dir_name(worker_clone(cfg, worker_name(e, i)))
+                                               for e in ENGINES for i in range(1, MAX_WORKERS + 1)}
+        last = last_foreign_activity(dirs, state.our_sessions(now - 8 * DAY), own)
         info["owner_last_activity_min"] = None if last is None else round((now - last) / 60, 1)
         quiet = idle_cfg.get("quiet_minutes", 20)
         if last is not None and now - last < quiet * 60:
@@ -935,23 +1167,28 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
     info["limits"] = limits
     if usage is None and live is None:
         live = live_usage(cfg, now, lane)
-        if live is None and probe and cfg.get("usage", "live", "probe", default=True):
+        # no usage check while something else already holds the run back (stopped, paused, cooldown …)
+        if live is None and probe and not reasons and cfg.get("usage", "live", "probe", default=True):
             info["usage_check"] = (probe_codex(cfg, state) if lane == "codex" else probe_usage(cfg, state)) or "ok"
             live = live_usage(cfg, time.time(), lane)
     if live is not None:
         info["live"] = live
         exp5 = expected_run_pct(cfg, state, action, lane)[0] if action else 0.0
-        exp7 = exp5 * float(state.doc(lane_doc("run_costs", lane)).get("seven_per_five") or 0.25)
+        ratio = float(state.doc(lane_doc("run_costs", lane)).get("seven_per_five") or 0.25)
         info["expected_run_pct"] = round(exp5, 1)
-        for name, key, exp in (("five_hour", "session", exp5), ("seven_day", "weekly", exp7)):
+        if inflight:
+            info["inflight_pct"] = inflight
+        for name, key, exp, busy in (("five_hour", "session", exp5, inflight),
+                                     ("seven_day", "weekly", exp5 * ratio, inflight * ratio)):
             pct, lim = live[name], limits[key]
             when = f" (resets {clock(live.get(name + '_resets'), cfg.tz, now)})" if live.get(name + "_resets") else ""
             plan = "ChatGPT " if lane == "codex" else ""
+            others = f" + ~{busy:.0f}% still to come from runs in progress" if busy >= 0.5 else ""
             if pct >= lim:
                 reasons.append(f"{plan}{key} usage {pct:.0f}% has reached your limit {lim:.0f}%{when}")
-            elif exp and pct + exp > lim:
-                reasons.append(f"{plan}{key} usage {pct:.0f}% + ~{exp:.0f}% for a {action} run would pass your "
-                               f"limit {lim:.0f}%{when}")
+            elif exp and pct + busy + exp > lim:
+                reasons.append(f"{plan}{key} usage {pct:.0f}%{others} + ~{exp:.0f}% for a {action} run would pass "
+                               f"your limit {lim:.0f}%{when}")
         if lane == "codex":
             return (not reasons), reasons, info
         team = team_share_live(state, now)
@@ -1170,30 +1407,54 @@ DEFAULT_OWNER_MERGE_PATHS = ["CLAUDE.md", "AGENTS.md", ".claude/**", ".codex/**"
                              "docs/product/BRIEF.md", "infra/cloudflare/**"]
 
 
+PHASE_ORDER = ["initiation", "design", "build", "release", "operate"]
+EARLY_LABEL = "early-start"
+
+
 class Dispatcher:
-    """Picks the next unit of work for one lane. Only the Claude lane (the primary) does housekeeping:
-    review summaries, merges, gate notices and unblocking."""
+    """Picks the next unit of work for one worker. Only the first Claude worker (the primary) does
+    housekeeping: review summaries, merges, gate notices and unblocking. Escalations come from the first
+    worker of the engine that owns the role, so they are never posted twice."""
 
     def __init__(self, cfg: Config, gh: GH, state: State, now: float, apply: bool = True,
-                 lane: str = "claude", lanes: Optional[List[str]] = None, busy: Optional[set] = None):
+                 lane: str = "claude", lanes: Optional[List[str]] = None, busy: Optional[set] = None,
+                 worker: Optional[str] = None):
         self.cfg, self.gh, self.state, self.now, self.apply = cfg, gh, state, now, apply
-        self.lane, self.lanes, self.busy = lane, list(lanes or ["claude"]), set(busy or ())
-        self.primary = lane == "claude"
+        self.lane, self.lanes = lane, list(lanes or ["claude"])
+        # (kind, number, action, role) held by other workers; 3-tuples from older callers have no role
+        self.busy = {tuple(b) + (None,) * (4 - len(b)) for b in (busy or ())}
+        self.worker = worker or lane
+        self.primary = self.worker == "claude"
+        self.first = worker_number(self.worker) == 1
         self.actions: List[str] = []
 
     def mine(self, role: Optional[str]) -> bool:
         return bool(role) and engine_for(self.cfg, role, self.lanes) == self.lane
 
+    def escalates(self, role: Optional[str]) -> bool:
+        return self.first and self.mine(role)
+
     def free(self, w: "Work") -> bool:
-        """Not being worked on by the other lane. Two reviews of the same PR may run at once."""
-        for kind, n, action in self.busy:
+        """Not held by another worker. Two different reviewers may review the same PR at once."""
+        for kind, n, action, role in self.busy:
             if (kind == "pr" and w.pr and n == w.pr) or (kind == "issue" and w.issue and n == w.issue):
-                if not (w.action == "review" and action == "review"):
+                if not (w.action == "review" and action == "review" and role != w.role):
                     return False
         return True
 
     def busy_issue(self, n: int) -> bool:
-        return any(kind == "issue" and m == n for kind, m, _a in self.busy)
+        return any(kind == "issue" and m == n for kind, m, _a, _r in self.busy)
+
+    def phase_ok(self, labels: List[str], phase: str) -> bool:
+        """A ticket of the current phase — or of the NEXT phase when labeled `early-start` (Sprint 0
+        groundwork such as the scaffold and CI that can start before the gate)."""
+        phases = [lbl.split(":", 1)[1] for lbl in labels if lbl.startswith("phase:")]
+        if not phases or phase in phases:
+            return True
+        if EARLY_LABEL in labels and self.cfg.get("run", "early_start", default=True) and phase in PHASE_ORDER:
+            nxt = PHASE_ORDER.index(phase) + 1
+            return nxt < len(PHASE_ORDER) and PHASE_ORDER[nxt] in phases
+        return False
 
     def _do(self, desc: str, fn, *args) -> None:
         self.actions.append(desc)
@@ -1218,7 +1479,7 @@ class Dispatcher:
             if "owner-feedback" in labels and author:
                 key = f"owner-fix:{n}:{sha}"
                 if self.state.attempts(key) >= 2:
-                    if self.mine(author):
+                    if self.escalates(author):
                         self._do(f"PR #{n}: drop owner-feedback (no progress)", self.gh.remove_label, n, "owner-feedback")
                         self._escalate(n, f"`{author}` could not address the owner's feedback after 2 attempts.")
                     continue
@@ -1238,7 +1499,7 @@ class Dispatcher:
                     continue
                 key = f"fix:{n}:{sha}"
                 if self.state.attempts(key) >= 2:
-                    if self.mine(author):
+                    if self.escalates(author):
                         self._escalate(n, f"CI still failing after 2 fix attempts by `{author}`.")
                     continue
                 candidates.append(Work(author, "fix", linked_issue(pr), n, sha,
@@ -1260,7 +1521,7 @@ class Dispatcher:
                     continue
                 key = f"fix:{n}:{sha}"
                 if self.state.attempts(key) >= 2:
-                    if self.mine(author):
+                    if self.escalates(author):
                         self._escalate(n, f"`{author}` did not push a fix after 2 attempts.")
                     continue
                 candidates.append(Work(author, "fix", linked_issue(pr), n, sha,
@@ -1272,7 +1533,7 @@ class Dispatcher:
                 for role in missing:
                     key = f"review:{n}:{sha}:{role}"
                     if self.state.attempts(key) >= 2:
-                        if self.mine(role):
+                        if self.escalates(role):
                             self._escalate(n, f"`{role}` failed to record a review twice.")
                         continue
                     candidates.append(Work(role, "review", linked_issue(pr), n, sha,
@@ -1350,12 +1611,14 @@ class Dispatcher:
             if not role or not self.mine(role) or self.busy_issue(n):
                 continue
             if "status:blocked" in labels:
-                self._do(f"#{n}: in-progress → blocked", self.gh.remove_label, n, "status:in-progress")
+                if self.first:
+                    self._do(f"#{n}: in-progress → blocked", self.gh.remove_label, n, "status:in-progress")
                 continue
             key = f"issue:{n}"
             if self.state.attempts(key) >= rcfg.get("max_attempts_per_issue", 2):
-                self._do(f"#{n}: clear in-progress", self.gh.remove_label, n, "status:in-progress")
-                self._escalate(n, f"`{role}` could not open a PR after {self.state.attempts(key)} attempts.")
+                if self.first:
+                    self._do(f"#{n}: clear in-progress", self.gh.remove_label, n, "status:in-progress")
+                    self._escalate(n, f"`{role}` could not open a PR after {self.state.attempts(key)} attempts.")
                 continue
             return Work(role, "implement", n, note=f"Resume issue #{n} (a previous run did not finish). "
                                                    f"Check for an existing branch first.", attempt_key=key)
@@ -1366,8 +1629,7 @@ class Dispatcher:
             labels = label_names(issue)
             if "status:ready" not in labels or "needs-human" in labels or "status:blocked" in labels:
                 continue
-            phases = [lbl.split(":", 1)[1] for lbl in labels if lbl.startswith("phase:")]
-            if phases and phase not in phases:
+            if not self.phase_ok(labels, phase):
                 continue
             role = role_from(labels)
             if not role or issue["number"] in linked or not self.mine(role) or self.busy_issue(issue["number"]):
@@ -1397,15 +1659,19 @@ class Dispatcher:
         work = self.handle_issues(issues, prs, phase)
         if work:
             return work
-        if not (self.primary and self.mine("eng-manager")):
-            return None  # planning belongs to the EM in the Claude lane
+        if not self.mine("eng-manager"):
+            return None  # planning belongs to the EM, on its engine (any of that engine's workers)
+        if any(kind == "plan" for kind, _n, _a, _r in self.busy):
+            return None  # another worker is planning right now
         world = self.world_hash(issues, prs, main_sha)
         last = self.state.doc("last_plan")
+        rcfg = self.cfg.get("run", default={})
+        age, result = self.now - last.get("at", 0), last.get("result")
+        if result in ("nothing", "planned") and age < rcfg.get("plan_min_gap_minutes", 15) * 60:
+            return None  # other agents change GitHub all the time: plan at most every 15 min
         if last.get("world") == world:
             # The EM already looked at exactly this state. Wait for something to change (a merge,
             # a label, a new issue). A failed planning run is retried after a short wait.
-            rcfg = self.cfg.get("run", default={})
-            age, result = self.now - last.get("at", 0), last.get("result")
             if result == "nothing":
                 return None
             if result == "planned" and age < rcfg.get("plan_cooldown_minutes", 180) * 60:
@@ -1445,10 +1711,12 @@ def parse_reset(text: str, now: float, tz: dt.tzinfo) -> Optional[float]:
     return target.timestamp()
 
 
-def render_prompt(work: Work, phase: str, repo: str) -> str:
+def render_prompt(work: Work, phase: str, repo: str, port: int = 4401) -> str:
+    # the template has only the placeholders kit v8 knows: a v8 check still running while v9 lands reads it too
     tpl = (HERE / "prompts" / "work-order.md").read_text(encoding="utf-8")
-    return tpl.format(role=work.role, action=work.action, issue=work.issue or "-", pr=work.pr or "-",
+    text = tpl.format(role=work.role, action=work.action, issue=work.issue or "-", pr=work.pr or "-",
                       head_sha=work.head_sha or "-", phase=phase, repo=repo, action_note=work.note)
+    return text.replace(f"REPO={repo}\n", f"REPO={repo}\nPORT={port}\n", 1)
 
 
 def set_limit_cooldown(cfg: Config, state: State, limit_text: str, resets_at: Optional[float] = None,
@@ -1466,9 +1734,10 @@ def set_limit_cooldown(cfg: Config, state: State, limit_text: str, resets_at: Op
 
 def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = False,
                limits: Optional[Dict[str, float]] = None, budget: Optional[float] = None,
-               timeout_s: Optional[float] = None) -> Dict[str, Any]:
+               timeout_s: Optional[float] = None, worker: str = "claude") -> Dict[str, Any]:
     rcfg = cfg.get("run", default={})
-    prompt = render_prompt(work, phase, cfg["repo"])
+    port = worker_port(worker)
+    prompt = render_prompt(work, phase, cfg["repo"], port)
     cmd = [cfg.get("claude_bin", default="claude"), "-p", prompt,
            "--agent", work.role,
            "--output-format", "stream-json", "--verbose",
@@ -1480,7 +1749,8 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
     env = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_ROLE=work.role, AGENTOPS_ACTION=work.action,
                AGENTOPS_PR=str(work.pr or ""), AGENTOPS_ISSUE=str(work.issue or ""),
                AGENTOPS_HEAD_SHA=work.head_sha or "", AGENTOPS_REPO=cfg["repo"], AGENTOPS_LANE="claude",
-               AGENTOPS_ENGINE="claude", AGENTOPS_REPO_ROOT=str(REPO_ROOT), AGENTOPS_STATE_DIR=str(state.dir))
+               AGENTOPS_ENGINE="claude", AGENTOPS_REPO_ROOT=str(REPO_ROOT), AGENTOPS_STATE_DIR=str(state.dir),
+               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port))
     started = time.time()
     rec: Dict[str, Any] = {"kind": "run", "started": started, "role": work.role, "action": work.action,
                            "issue": work.issue, "pr": work.pr, "head_sha": work.head_sha,
@@ -1492,16 +1762,17 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
         rec.update(outcome="dry-run", cmd=" ".join(cmd[:3]) + " …")
         return rec
     stamp = dt.datetime.fromtimestamp(started).strftime("%Y%m%d-%H%M%S")
-    log_path = state.dir / "logs" / f"{stamp}-{work.role}-{work.action}.jsonl"
+    log_path = state.dir / "logs" / f"{stamp}-{work.role}-{work.action}{'' if worker == 'claude' else '-' + worker}.jsonl"
     rec["log"] = str(log_path)
     timeout = min(rcfg.get("timeout_minutes", 45) * 60, timeout_s) if timeout_s else rcfg.get("timeout_minutes", 45) * 60
     throttles, result, limit_text = 0, None, ""
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, cwd=REPO_ROOT, env=env, stdout=subprocess.PIPE, stderr=logf,
                                 stdin=subprocess.DEVNULL, start_new_session=True)
-        state.put("current_run", {"role": work.role, "action": work.action, "issue": work.issue, "pr": work.pr,
-                                  "note": work.note, "started": started, "log": str(log_path), "pid": proc.pid,
-                                  "budget_usd": rec["budget_usd"]})
+        state.put(lane_doc("current_run", worker),
+                  {"role": work.role, "action": work.action, "issue": work.issue, "pr": work.pr, "note": work.note,
+                   "started": started, "log": str(log_path), "pid": proc.pid, "budget_usd": rec["budget_usd"],
+                   "lane": "claude", "worker": worker})
         sel = selectors.DefaultSelector()
         sel.register(proc.stdout, selectors.EVENT_READ)
         fd = proc.stdout.fileno()
@@ -1647,7 +1918,7 @@ def strip_frontmatter(text: str) -> str:
     return text
 
 
-def render_codex_prompt(work: Work, phase: str, cfg: Config) -> str:
+def render_codex_prompt(work: Work, phase: str, cfg: Config, worker: str = "codex") -> str:
     def read(path: Path) -> str:
         try:
             return strip_frontmatter(path.read_text(encoding="utf-8"))
@@ -1662,7 +1933,7 @@ def render_codex_prompt(work: Work, phase: str, cfg: Config) -> str:
     if skill:
         parts.append(f"=== PROCEDURE `{skill}` (.claude/skills/{skill}/SKILL.md) ===\n"
                      + read(REPO_ROOT / ".claude" / "skills" / skill / "SKILL.md"))
-    parts.append("=== WORK ORDER ===\n" + render_prompt(work, phase, cfg["repo"]))
+    parts.append("=== WORK ORDER ===\n" + render_prompt(work, phase, cfg["repo"], worker_port(worker)))
     parts.append(CODEX_TOOL_NOTES.format(root=REPO_ROOT, role=work.role))
     return "\n\n".join(parts)
 
@@ -1677,14 +1948,16 @@ def pid_alive(pid: Any) -> bool:
         return False
 
 
-def guard_blocks_since(state: State, since: float, lane: str) -> List[str]:
+def guard_blocks_since(state: State, since: float, lane: str, worker: Optional[str] = None) -> List[str]:
+    """Commands the guard refused since `since`, for one engine (and one worker, when the entry says)."""
     out = []
     try:
         with open(state.dir / "guard.log", encoding="utf-8") as fh:
             for line in fh:
                 with contextlib.suppress(json.JSONDecodeError):
                     e = json.loads(line)
-                    if e.get("t", 0) >= since and e.get("lane", "claude") == lane:
+                    if e.get("t", 0) >= since and e.get("lane", "claude") == lane and \
+                            (worker is None or e.get("worker", worker) == worker):
                         out.append(f"{e.get('tool')}: {e.get('what')}")
     except FileNotFoundError:
         pass
@@ -1693,17 +1966,19 @@ def guard_blocks_since(state: State, since: float, lane: str) -> List[str]:
 
 def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optional[Dict[str, float]] = None,
               timeout_s: Optional[float] = None, root: Optional[Path] = None, prompt: Optional[str] = None,
-              model: Optional[str] = None, effort: Optional[str] = None) -> Dict[str, Any]:
+              model: Optional[str] = None, effort: Optional[str] = None, worker: str = "codex") -> Dict[str, Any]:
     rcfg = cfg.get("run", default={})
     ccfg = cfg.get("engines", "codex", default={}) or {}
     rs = role_settings(cfg, work.role)
     root = root or REPO_ROOT
     model = model or rs.get("model") or ccfg.get("default_model", "gpt-6.1-sol")
     effort = effort or rs.get("effort", "medium")
+    port = worker_port(worker)
     started = time.time()
     stamp = dt.datetime.fromtimestamp(started).strftime("%Y%m%d-%H%M%S")
-    log_path = state.dir / "logs" / f"{stamp}-{work.role}-{work.action}.jsonl"
-    last_path = state.dir / "logs" / f"{stamp}-{work.role}-{work.action}.last.txt"
+    base = f"{stamp}-{work.role}-{work.action}{'' if worker == 'codex' else '-' + worker}"
+    log_path = state.dir / "logs" / f"{base}.jsonl"
+    last_path = state.dir / "logs" / f"{base}.last.txt"
     cmd = [codex_bin(cfg), "exec", "--json", "-m", model, "-c", f'model_reasoning_effort="{effort}"',
            "-C", str(root), "--dangerously-bypass-hook-trust", "-o", str(last_path),
            "-c", 'shell_environment_policy.inherit="all"']
@@ -1719,7 +1994,8 @@ def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optiona
     env = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_ROLE=work.role, AGENTOPS_ACTION=work.action,
                AGENTOPS_PR=str(work.pr or ""), AGENTOPS_ISSUE=str(work.issue or ""),
                AGENTOPS_HEAD_SHA=work.head_sha or "", AGENTOPS_REPO=cfg["repo"], AGENTOPS_LANE="codex",
-               AGENTOPS_ENGINE="codex", AGENTOPS_REPO_ROOT=str(root), AGENTOPS_STATE_DIR=str(state.dir))
+               AGENTOPS_ENGINE="codex", AGENTOPS_REPO_ROOT=str(root), AGENTOPS_STATE_DIR=str(state.dir),
+               AGENTOPS_WORKER=worker, AGENTOPS_PORT=str(port), PORT=str(port))
     rec: Dict[str, Any] = {"kind": "run", "lane": "codex", "engine": "codex", "model": model, "effort": effort,
                            "started": started, "role": work.role, "action": work.action, "issue": work.issue,
                            "pr": work.pr, "head_sha": work.head_sha, "log": str(log_path)}
@@ -1734,11 +2010,12 @@ def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optiona
     with open(log_path, "w", encoding="utf-8") as logf:
         proc = subprocess.Popen(cmd, cwd=root, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=logf, start_new_session=True)
-        state.put(lane_doc("current_run", "codex"),
+        state.put(lane_doc("current_run", worker),
                   {"role": work.role, "action": work.action, "issue": work.issue, "pr": work.pr, "note": work.note,
-                   "started": started, "log": str(log_path), "pid": proc.pid, "model": model, "lane": "codex"})
+                   "started": started, "log": str(log_path), "pid": proc.pid, "model": model, "lane": "codex",
+                   "worker": worker})
         with contextlib.suppress(BrokenPipeError):
-            proc.stdin.write((prompt or render_codex_prompt(work, phase, cfg)).encode("utf-8"))
+            proc.stdin.write((prompt or render_codex_prompt(work, phase, cfg, worker)).encode("utf-8"))
             proc.stdin.close()
         sel = selectors.DefaultSelector()
         sel.register(proc.stdout, selectors.EVENT_READ)
@@ -1850,19 +2127,20 @@ def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optiona
         rec["usage_delta"] = {name: round(max(0.0, last[name]["pct"] - first[name]["pct"]), 1)
                               for name in WINDOWS if name in first and name in last
                               and first[name].get("resets_at") == last[name].get("resets_at")}
-    blocks = guard_blocks_since(state, started, "codex")
+    blocks = guard_blocks_since(state, started, "codex", worker)
     if blocks:
         rec["denials_total"], rec["denials"] = len(blocks), [b[:160] for b in blocks[:3]]
     return rec
 
 
 def run_agent(cfg: Config, state: State, work: Work, phase: str, lane: str, limits: Dict[str, float],
-              budget: float, timeout_s: Optional[float]) -> Dict[str, Any]:
+              budget: float, timeout_s: Optional[float], worker: Optional[str] = None) -> Dict[str, Any]:
+    worker = worker or lane
     if lane == "codex":
-        return run_codex(cfg, state, work, phase, limits=limits, timeout_s=timeout_s)
-    rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget, timeout_s=timeout_s)
+        return run_codex(cfg, state, work, phase, limits=limits, timeout_s=timeout_s, worker=worker)
+    rec = run_claude(cfg, state, work, phase, limits=limits, budget=budget, timeout_s=timeout_s, worker=worker)
     rec.update(lane="claude", engine="claude")
-    blocks = guard_blocks_since(state, rec["started"], "claude")
+    blocks = guard_blocks_since(state, rec["started"], "claude", worker)
     if blocks and not rec.get("denials"):
         rec["denials_total"], rec["denials"] = len(blocks), [b[:160] for b in blocks[:3]]
     return rec
@@ -1894,14 +2172,19 @@ def read_phase(root: Path = REPO_ROOT) -> str:
 
 
 # --------------------------------------------------------------------------- commands
+EXIT_RAN, EXIT_IDLE, EXIT_GATED, EXIT_BUSY = 0, 10, 11, 13
+ORCH_LOOP_SECONDS = 3.0
+
+
 @contextlib.contextmanager
-def tick_lock(state: State, lane: str = "claude"):
-    fh = open(state.dir / f"{lane_doc('tick', lane)}.lock", "w")
+def tick_lock(state: State, worker: str = "claude"):
+    """One process per worker. Raises BlockingIOError when that worker is already running."""
+    fh = open(state.dir / f"{lane_doc('tick', worker)}.lock", "w")
     try:
         fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         fh.close()
-        raise SystemExit(f"another {lane} tick is running")
+        raise
     try:
         yield
     finally:
@@ -1909,15 +2192,18 @@ def tick_lock(state: State, lane: str = "claude"):
         fh.close()
 
 
-def ensure_codex_clone(cfg: Config) -> Path:
-    """The Codex lane works in its own copy of the repo, next to the Claude lane's copy."""
-    path = xp(cfg.get("engines", "codex", "clone_dir", default=str(REPO_ROOT.parent / (REPO_ROOT.name + "-codex"))))
+def ensure_worker_clone(cfg: Config, worker: str) -> Path:
+    """Each worker works in its own copy of the repo, created on first use next to the main agents copy."""
+    path = worker_clone(cfg, worker)
+    if worker == "claude":
+        return path  # the main agents copy, made by bootstrap
     if not (path / ".git").exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         res = subprocess.run(["git", "clone", "-q", "--branch", cfg.get("default_branch", default="main"),
-                              f"https://github.com/{cfg['repo']}.git", str(path)], capture_output=True, text=True)
+                              f"https://github.com/{cfg['repo']}.git", str(path)], capture_output=True, text=True,
+                             timeout=900)
         if res.returncode != 0:
-            raise RuntimeError(f"could not create the Codex lane's copy at {path}: {res.stderr.strip()[:200]}")
+            raise RuntimeError(f"could not create {worker}'s copy at {path}: {res.stderr.strip()[:200]}")
     (path / CLONE_MARKER.name).touch()
     exclude = path / ".git" / "info" / "exclude"
     with contextlib.suppress(OSError):
@@ -1931,152 +2217,390 @@ def ensure_codex_clone(cfg: Config) -> Path:
     return path
 
 
+def ensure_codex_clone(cfg: Config) -> Path:
+    return ensure_worker_clone(cfg, "codex")
+
+
+def prepare_worker(cfg: Config, state: State, worker: str) -> Optional[Path]:
+    """Bring a worker's copy up to date with main (so it runs the current kit), unless that worker is
+    still busy from an earlier check. Returns the copy, or None when busy."""
+    clone = ensure_worker_clone(cfg, worker)
+    with open(state.dir / f"{lane_doc('tick', worker)}.lock", "w") as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return None
+        try:
+            branch = cfg.get("default_branch", default="main")
+            for args in (["fetch", "-q", "origin", "--prune"], ["checkout", "-q", "-f", branch],
+                         ["reset", "-q", "--hard", f"origin/{branch}"]):
+                res = subprocess.run(["git", "-C", str(clone), *args], capture_output=True, text=True, timeout=300)
+                if res.returncode != 0:
+                    raise RuntimeError(f"git {args[0]} failed in {clone}: {res.stderr.strip()[:160]}")
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+    return clone
+
+
+def team_started(cfg: Config, now: float) -> bool:
+    """Are the agents allowed to work at all right now (started, not paused, inside allowed hours)?"""
+    if xp(cfg.get("paths", "pause_file", default="~/.claude/agentops/PAUSE")).exists():
+        return False
+    if read_window(cfg, now):
+        return True
+    sched = cfg.get("schedule", default={})
+    if sched.get("mode", "always") == "on-demand":
+        return False
+    local = dt.datetime.fromtimestamp(now, cfg.tz)
+    return in_allowed_hours(sched.get("allowed_hours", "00:00-24:00"), local) and \
+        local.strftime("%a") not in (sched.get("blocked_weekdays") or [])
+
+
+def quiet_log(state: State, worker: str, msg: str, every_minutes: float = 30) -> None:
+    """Log a waiting/idle message once, then again only when it changes or every half hour."""
+    key = lane_doc("last_note", worker)
+    last, now = state.doc(key), time.time()
+    if last.get("msg") == msg and now - float(last.get("at", 0)) < every_minutes * 60:
+        return
+    state.put(key, {"msg": msg, "at": now})
+    log(msg)
+
+
+def worker_busy(state: State, worker: str) -> bool:
+    """Is some process (this check's worker, or one left from an earlier check) running that worker now?"""
+    with open(state.dir / f"{lane_doc('tick', worker)}.lock", "w") as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+        fcntl.flock(fh, fcntl.LOCK_UN)
+        return False
+
+
+def check_lock_free(state: State) -> bool:
+    with open(state.dir / "orchestrator.lock", "w") as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        fcntl.flock(fh, fcntl.LOCK_UN)
+        return True
+
+
 def cmd_tick(args: argparse.Namespace) -> int:
-    """One check. Runs every active lane at the same time; each lane works back-to-back."""
-    lane = getattr(args, "lane", None)
-    if lane:
-        return lane_tick(args, lane)
-    cfg = Config.load()
-    state = State(cfg)
-    lanes = active_lanes(cfg, state)
-    codex_proc = None
-    if "codex" in lanes:
-        if args.dry_run:
-            lane_tick(args, "codex")
-        else:
-            try:
-                clone = ensure_codex_clone(cfg)
-                cmd = [sys.executable, str(clone / "agentops" / "agentops.py"), "tick", "--lane", "codex"]
-                codex_proc = subprocess.Popen(cmd + (["--force"] if args.force else []), cwd=clone)
-            except (RuntimeError, OSError) as exc:
-                log(f"Codex lane not started: {exc}")
-    try:
-        return lane_tick(args, "claude")
-    finally:
-        if codex_proc:
-            limit = float(cfg.get("run", "tick_hard_limit_minutes", default=55)) * 60 + 300
-            try:
-                codex_proc.wait(timeout=limit)
-            except subprocess.TimeoutExpired:
-                codex_proc.terminate()
+    """`tick` = one scheduled check (keeps every worker busy for up to an hour);
+    `tick --worker NAME` = one worker's turn (started by the check)."""
+    worker = getattr(args, "worker", None) or getattr(args, "lane", None)
+    if worker:
+        return worker_tick(args, worker)
+    if getattr(args, "dry_run", False):
+        cfg = Config.load()
+        state = State(cfg)
+        for w in active_workers(cfg, state):
+            if worker_number(w) == 1:  # what the first worker of each engine would do
+                worker_tick(args, w)
+        return 0
+    return orchestrate(args)
 
 
-def lane_tick(args: argparse.Namespace, lane: str) -> int:
+def orchestrate(args: argparse.Namespace) -> int:
     global LOG_LANE
+    LOG_LANE = ""
     cfg = Config.load()
     state = State(cfg)
-    LOG_LANE = lane if "codex" in active_lanes(cfg, state) or lane != "claude" else ""
+    if not CLONE_MARKER.exists():
+        raise SystemExit(f"Refusing to run: {CLONE_MARKER.name} not found. Run agentops only in the dedicated "
+                         "agents clone created by bootstrap (it resets local changes).")
+    fh = open(state.dir / "orchestrator.lock", "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.close()
+        log("a check is already running — it keeps the agents busy; nothing to do here")
+        return 0
+    try:
+        return _orchestrate(args, cfg, state)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            (state.dir / "orchestrator.json").unlink()
+        fcntl.flock(fh, fcntl.LOCK_UN)
+        fh.close()
+
+
+def _orchestrate(args: argparse.Namespace, cfg: Config, state: State) -> int:
+    """Keep every worker busy until the check's time is up. A worker that found nothing to do is asked
+    again every `run.poll_minutes`; one held back by usage limits every `run.gated_poll_minutes`."""
+    rcfg = cfg.get("run", default={})
+    start = time.time()
+    deadline = start + float(rcfg.get("tick_hard_limit_minutes", 55)) * 60
+    continuous = bool(rcfg.get("continuous", True))
+    min_start = float(rcfg.get("min_run_minutes", 8)) * 60
+    procs: Dict[str, Tuple[subprocess.Popen, float]] = {}
+    next_poll: Dict[str, float] = {}
+    info: Dict[str, Dict[str, Any]] = {}
+    spawned: set = set()
+    notes: Dict[str, str] = {}
+    workers: List[str] = []
+    loaded = 0.0
+    stats = {"turns": 0}
+
+    def note(key: str, msg: Optional[str]) -> None:
+        if msg and notes.get(key) != msg:
+            log(msg)
+        notes[key] = msg or ""
+
+    while True:
+        now = time.time()
+        if now - loaded > 60:
+            cfg, loaded = Config.load(), now
+            rcfg = cfg.get("run", default={})
+            poll = float(rcfg.get("poll_minutes", 3)) * 60
+            gated_poll = float(rcfg.get("gated_poll_minutes", 10)) * 60
+            fresh = active_workers(cfg, state)
+            if fresh != workers:
+                log(("check started" if not workers else "workers now") +
+                    f": {', '.join(fresh)} — working until {clock(deadline, cfg.tz)}")
+                workers = fresh
+            off = codex_off_reason(cfg, state)
+            note("codex", f"GPT agents are off: {off}. Their roles run on Claude meanwhile." if off else None)
+            waiting = unverified_workers(cfg, state)
+            note("verify", f"{', '.join(waiting)} wait for `agents codex-check` (a quick safety test of their copy)"
+                 if waiting else None)
+        started = team_started(cfg, now)
+        if not spawned and any(worker_busy(state, w) for w in set(workers) | set(ENGINES)):
+            # agents of an earlier check (possibly an older kit that doesn't know about claims) are still
+            # finishing: start this team only when they are done, so nobody takes the same work twice
+            note("earlier", "an earlier check's agents are still finishing — this check starts when they are done")
+            workers_to_start: List[str] = []
+        else:
+            workers_to_start = workers
+        for w in workers_to_start:
+            if w in procs or now < next_poll.get(w, 0) or deadline - now < min_start:
+                continue
+            if not started and (w != "claude" or w in spawned):
+                continue  # stopped or paused: only the housekeeping pass (merges, reviews routing) runs
+            if not continuous and w in spawned:
+                continue
+            try:
+                clone = prepare_worker(cfg, state, w)
+            except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+                note(f"prep:{w}", f"{w} not started: {exc}")
+                next_poll[w] = now + gated_poll
+                continue
+            if clone is None:
+                note(f"prep:{w}", f"{w} is still busy from an earlier check")
+                next_poll[w] = now + 60
+                continue
+            notes.pop(f"prep:{w}", None)
+            cmd = [sys.executable, str(clone / "agentops" / "agentops.py"), "tick", "--worker", w,
+                   "--deadline", f"{deadline:.0f}"] + (["--force"] if getattr(args, "force", False) else [])
+            env = dict(os.environ, AGENTOPS_AGENTS_CLONE=str(primary_clone(cfg)))
+            procs[w] = (subprocess.Popen(cmd, cwd=clone, stdin=subprocess.DEVNULL, env=env), now)
+            spawned.add(w)
+            info[w] = {"state": "checking", "since": now}
+        for w, (p, t0) in list(procs.items()):
+            rc = p.poll()
+            if rc is None:
+                continue
+            del procs[w]
+            end = time.time()
+            if rc == EXIT_RAN:
+                stats["turns"] += 1
+            if rc not in (EXIT_RAN, EXIT_IDLE, EXIT_GATED, EXIT_BUSY):
+                log(f"{w} stopped with an error (exit {rc}) — see the lines above; it tries again in "
+                    f"{gated_poll / 60:.0f} min")
+            delay = {EXIT_RAN: 20.0, EXIT_IDLE: poll, EXIT_BUSY: 60.0}.get(rc, gated_poll)
+            next_poll[w] = end + delay
+            info[w] = {"state": {EXIT_RAN: "worked", EXIT_IDLE: "idle", EXIT_GATED: "waiting"}.get(rc, "error"),
+                       "since": end, "next": end + delay, "exit": rc}
+        for w, (p, t0) in procs.items():
+            cur = state.doc(lane_doc("current_run", w))
+            info[w] = {"state": "running" if cur and pid_alive(cur.get("pid")) else "checking", "since": t0}
+        with contextlib.suppress(OSError):
+            state.put("orchestrator", {"pid": os.getpid(), "started": start, "deadline": deadline,
+                                       "updated": time.time(), "team_started": started, "continuous": continuous,
+                                       "poll_minutes": poll / 60, "workers": {w: info.get(w, {"state": "starting"})
+                                                                             for w in workers},
+                                       "codex_off": notes.get("codex") or None, "unverified": notes.get("verify") or None})
+        if not procs:
+            if time.time() > deadline - min_start:
+                break
+            if not started and "claude" in spawned:
+                break
+            if not continuous and spawned >= set(workers):
+                break
+        if time.time() > deadline + 600:  # safety net: every run ends before the deadline by itself
+            for w, (p, _t) in procs.items():
+                log(f"{w} still running after the check's time — stopping it")
+                p.terminate()
+            break
+        time.sleep(ORCH_LOOP_SECONDS)
+    log(f"check finished after {int((time.time() - start) / 60)} min")
+    return 0
+
+
+def worker_tick(args: argparse.Namespace, worker: str) -> int:
+    """One worker's turn: claim and run work back-to-back until there is none, a limit holds it back,
+    or the check's time is up. Exit code tells the check what happened (EXIT_*)."""
+    global LOG_LANE
+    if worker_engine(worker) not in ENGINES:
+        raise SystemExit(f"unknown worker {worker!r} (use claude, claude-2, codex, codex-2 …)")
+    cfg = Config.load()
+    state = State(cfg)
+    LOG_LANE = worker
     if not CLONE_MARKER.exists() and not args.dry_run:
         raise SystemExit(f"Refusing to run: {CLONE_MARKER.name} not found. Run agentops only in the dedicated "
                          "agents clone created by bootstrap (it resets local changes).")
-    with tick_lock(state, lane):
-        tick_start = time.time()
-        runs = 0
+    rcfg = cfg.get("run", default={})
+    start = time.time()
+    deadline_arg = getattr(args, "deadline", None)
+    orchestrated = deadline_arg is not None
+    deadline = float(deadline_arg) if orchestrated else start + float(rcfg.get("tick_hard_limit_minutes", 55)) * 60
+    try:
+        lock = tick_lock(state, worker)
+        lock.__enter__()
+    except BlockingIOError:
+        log("already running in another check — skipping")
+        return EXIT_BUSY
+    try:
+        runs, status = 0, EXIT_IDLE
         while True:
-            rcfg = cfg.get("run", default={})
-            rec = tick_step(args, cfg, state, chained=runs > 0, tick_start=tick_start, lane=lane)
-            if rec is None:
+            rec = tick_step(args, cfg, state, chained=runs > 0, deadline=deadline, worker=worker,
+                            orchestrated=orchestrated)
+            if not isinstance(rec, dict):
+                status = EXIT_RAN if runs else (EXIT_GATED if rec in ("gated", "time", "memory") else EXIT_IDLE)
                 break
             runs += 1
+            status = EXIT_RAN
             if rec.get("outcome") != "success":
-                break  # after a failure or a usage stop, let the next check decide
+                break  # after a failure or a usage stop, let the next turn decide
             if runs >= int(rcfg.get("max_runs_per_tick", 8)):
-                log(f"back-to-back: {runs} runs in this check (the most allowed); the next check continues")
+                log(f"back-to-back: {runs} runs in this turn (the most allowed); the next turn continues")
                 break
-            if time.time() - tick_start > float(rcfg.get("chain_minutes", 25)) * 60:
+            if not orchestrated and time.time() - start > float(rcfg.get("chain_minutes", 25)) * 60:
                 log(f"back-to-back: {runs} runs, time is up for this check; the next check continues")
                 break
             cfg = Config.load()  # pick up limit changes made meanwhile
-        return 0
+            rcfg = cfg.get("run", default={})
+        return status
+    finally:
+        lock.__exit__(None, None, None)
 
 
-def other_lane_work(state: State, lane: str) -> set:
-    """(kind, number, action) the other lane is working on right now."""
-    busy = set()
-    for other in LANES:
-        if other == lane:
-            continue
-        cur = state.doc(lane_doc("current_run", other))
-        if cur and pid_alive(cur.get("pid")):
-            if cur.get("issue"):
-                busy.add(("issue", cur["issue"], cur.get("action")))
-            if cur.get("pr"):
-                busy.add(("pr", cur["pr"], cur.get("action")))
-    return busy
+def lane_tick(args: argparse.Namespace, lane: str) -> int:  # kit v8 name
+    return worker_tick(args, lane)
 
 
-def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool, tick_start: float,
-              lane: str = "claude") -> Optional[Dict[str, Any]]:
-    """Housekeeping + at most one agent run in one lane. Returns the run record, or None if nothing ran."""
+def other_lane_work(state: State, lane: str) -> set:  # kit v8 name
+    return busy_work(state, lane)
+
+
+def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool, deadline: float,
+              worker: str = "claude", orchestrated: bool = False) -> Any:
+    """Housekeeping + at most one agent run by one worker. Returns the run record, or why nothing ran:
+    'idle' (no work for this worker), 'gated' (limits, cooldown, not started …), 'time', 'memory'."""
     now = time.time()
     rcfg = cfg.get("run", default={})
+    engine = worker_engine(worker)
     branch = cfg.get("default_branch", default="main")
     main_sha = sync_clone(branch) if not args.dry_run else git("rev-parse", "HEAD", check=False)
     gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
-    disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run, lane=lane, lanes=active_lanes(cfg, state),
-                      busy=other_lane_work(state, lane))
-    work = disp.choose(read_phase(), main_sha)
+    with state.locked("dispatch"):  # choose + claim in one step, so two workers never take the same item
+        disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run, lane=engine, lanes=active_lanes(cfg, state),
+                          busy=busy_work(state, worker), worker=worker)
+        work = disp.choose(read_phase(), main_sha)
+        if work and not args.dry_run:
+            claim(state, worker, work)
     for a in disp.actions:
         log(f"housekeeping: {a}")
     if disp.actions and not args.dry_run:
-        state.append_ledger({"kind": "housekeeping", "started": now, "actions": disp.actions})
+        state.append_ledger({"kind": "housekeeping", "started": now, "actions": disp.actions, "worker": worker})
     if not work:
-        log("nothing to do (waiting for the owner or for CI)" if not chained else "back-to-back: no more ready work")
-        return None
+        if chained:
+            log("back-to-back: no more ready work")
+        else:
+            quiet_log(state, worker, "nothing to do (waiting for the owner, for CI, or for other agents' work)")
+        return "idle"
     if args.dry_run and chained:
-        return None
-    log(f"next: {work.role} {work.action} issue={work.issue} pr={work.pr} — {work.note[:90]}")
-    ok, reasons, info = gate(cfg, state, now, action=work.action, probe=not args.dry_run, skip_spacing=chained,
-                             lane=lane) if not args.force else (True, [], {})
-    if not ok:
-        log("gated: " + "; ".join(reasons))
-        return None
-    if args.dry_run:
-        log("dry-run: would run now")
-        return None
-    # every run must end before the check's hard limit (Windows stops a scheduled task after 1 h)
-    left = float(rcfg.get("tick_hard_limit_minutes", 55)) * 60 - (time.time() - tick_start)
-    if left < float(rcfg.get("min_run_minutes", 8)) * 60:
-        log("not enough time left in this check for another run; the next check continues")
-        return None
-    if any(a.endswith("squash-merge") for a in disp.actions):
-        main_sha = sync_clone(branch)
-    phase = read_phase()
-    limits = effective_limits(cfg, read_window(cfg, now), lane)
-    budget = run_budget(cfg, state, work.action, info.get("live"), limits)
-    if work.attempt_key:
-        state.bump(work.attempt_key)
-    if work.action == "implement" and work.issue:
-        with contextlib.suppress(RuntimeError):
-            gh.add_labels(work.issue, ["status:in-progress"])
-            gh.remove_label(work.issue, "status:ready")
-    live = info.get("live") or {}
-    model = role_settings(cfg, work.role).get("model") if lane == "codex" else ""
-    log(f"running {work.role} ({work.action}){f' on {model}' if model else ''}{' back-to-back' if chained else ''} … "
-        f"{'ChatGPT' if lane == 'codex' else 'session'} usage {live.get('five_hour', '?')}%, your limit "
-        f"{limits['session']:.0f}%" + (f", budget ${budget}" if lane == "claude" else ""))
+        return "idle"
+    what = f"{work.role} {work.action} issue={work.issue} pr={work.pr}"
     try:
-        rec = run_agent(cfg, state, work, phase, lane, limits, budget, left)
+        ok, reasons, info = gate(cfg, state, now, action=work.action, probe=not args.dry_run,
+                                 skip_spacing=chained or orchestrated, lane=engine, worker=worker,
+                                 inflight=inflight_pct(cfg, state, worker)) if not args.force else (True, [], {})
+        if not ok:
+            quiet_log(state, worker, f"next: {what} — waiting: " + "; ".join(reasons))
+            return "gated"
+        if args.dry_run:
+            log(f"next: {what} — {work.note[:90]}")
+            log("dry-run: would run now")
+            return "idle"
+        # every run must end before the check's hard limit (Windows stops a scheduled task after 1 h)
+        left = deadline - time.time()
+        need = float((rcfg.get("min_run_minutes_by_action") or {}).get(work.action, rcfg.get("min_run_minutes", 8)))
+        if left < need * 60:
+            log(f"next: {what} — only {max(0, int(left / 60))} min left in this check, too little for a "
+                f"{work.action} run; the next check takes it")
+            return "time"
+        others = running_claims(state, worker)
+        mem, min_free = mem_available_mb(), float(rcfg.get("min_free_memory_mb", 1200))
+        if others and mem is not None and mem < min_free:
+            quiet_log(state, worker, f"next: {what} — waiting for memory: {mem} MB free, want {min_free:.0f} MB "
+                                     f"while {len(others)} other agent(s) run")
+            return "memory"
+        log(f"next: {what} — {work.note[:90]}")
+        if any(a.endswith("squash-merge") for a in disp.actions):
+            main_sha = sync_clone(branch)
+        phase = read_phase()
+        limits = effective_limits(cfg, read_window(cfg, now), engine)
+        budget = run_budget(cfg, state, work.action, info.get("live"), limits)
+        if work.attempt_key:
+            state.bump(work.attempt_key)
+        if work.action == "implement" and work.issue:
+            with contextlib.suppress(RuntimeError):
+                gh.add_labels(work.issue, ["status:in-progress"])
+                gh.remove_label(work.issue, "status:ready")
+        live = info.get("live") or {}
+        model = role_settings(cfg, work.role).get("model") if engine == "codex" else ""
+        busy = f", {len(others)} other agent(s) working" if others else ""
+        log(f"running {work.role} ({work.action}){f' on {model}' if model else ''}{' back-to-back' if chained else ''} … "
+            f"{'ChatGPT' if engine == 'codex' else 'session'} usage {live.get('five_hour', '?')}%, your limit "
+            f"{limits['session']:.0f}%" + (f", budget ${budget}" if engine == "claude" else "") + busy)
+        update_claim(state, worker, running=True, run_started=time.time())
+        try:
+            rec = run_agent(cfg, state, work, phase, engine, limits, budget, left, worker)
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                (state.dir / f"{lane_doc('current_run', worker)}.json").unlink()
+        rec["chained"], rec["worker"] = chained, worker
+        share = overlap_share(state, rec, worker)
+        if share < 1.0 and rec.get("usage_delta"):
+            # other agents used the same plan during this run: count only this run's part of the change
+            rec["usage_delta_raw"] = dict(rec["usage_delta"])
+            rec["usage_delta"] = {k: round(v * share, 1) for k, v in rec["usage_delta"].items()}
+            rec["usage_share"] = share
     finally:
-        with contextlib.suppress(FileNotFoundError):
-            (state.dir / f"{lane_doc('current_run', lane)}.json").unlink()
-    rec["chained"] = chained
+        release(state, worker)
     if rec.get("outcome") in LIMIT_OUTCOMES and work.attempt_key:
         state.bump(work.attempt_key, -1)  # stopped for usage: not the agent's failure
     if work.action == "plan" and rec.get("outcome") not in LIMIT_OUTCOMES:
         result = plan_result(rec)
-        last = state.doc("last_plan")
-        failures = ((last.get("failures", 0) if last.get("world") == work.world else 0) + 1) \
-            if result == "failed" else 0
-        state.put("last_plan", {"world": work.world, "at": now, "result": result, "failures": failures,
-                                "final": (rec.get("final") or "")[-300:]})
-    learn_run_cost(state, rec)
+        with state.locked():
+            last = state.doc("last_plan")
+            failures = ((last.get("failures", 0) if last.get("world") == work.world else 0) + 1) \
+                if result == "failed" else 0
+            state.put("last_plan", {"world": work.world, "at": now, "result": result, "failures": failures,
+                                    "final": (rec.get("final") or "")[-300:]})
+    with state.locked():
+        learn_run_cost(state, rec)
     if work.action == "fix" and work.pr and "owner-fix" in work.attempt_key:
         with contextlib.suppress(RuntimeError):
             if gh.head_sha(work.pr) != work.head_sha:
                 gh.remove_label(work.pr, "owner-feedback")
                 gh.remove_label(work.pr, "needs-human")
     state.append_ledger(rec)
+    with contextlib.suppress(FileNotFoundError):
+        (state.dir / f"{lane_doc('last_note', worker)}.json").unlink()  # say "nothing to do" again next time
     used = (rec.get("usage_delta") or {}).get("five_hour")
     log(f"run finished: {rec.get('outcome')} turns={rec.get('turns')} est=${rec.get('cost_estimate_usd')} "
         f"session+{used if used is not None else '?'}% log={rec.get('log')}")
@@ -2153,11 +2677,25 @@ def cmd_start(args: argparse.Namespace) -> int:
           f"{lim['weekly']:.0f}%{' (for this start only)' if window_limits else ''}; change with `agents limits`.")
     print("They still wait while you use Claude Code yourself (20 min quiet period)." if not args.now else
           "Quiet-period check is OFF for this window (--now).")
+    counts = worker_counts(cfg)
+    state = State(cfg)
+    gpt = f" + {counts['codex']} GPT" if codex_ready(cfg, state) and counts["codex"] else ""
+    print(f"Team: {counts['claude']} Claude{gpt} agent(s) at a time (change: agents workers).")
+    off = codex_off_reason(cfg, state)
+    if off:
+        print(f"GPT agents are off: {off}.")
     if args.no_tick:
-        print("The scheduler will pick up work at its next tick (every 30 min).")
+        print(f"The scheduler starts the next check within {cfg.get('schedule', 'tick_minutes', default=10)} min.")
         return 0
-    print("Running the first tick now …")
-    return cmd_tick(argparse.Namespace(dry_run=False, force=False))
+    if not check_lock_free(state):
+        print("A check is already running — it picks this up within a minute.")
+    else:
+        subprocess.Popen(["bash", str(HERE / "bin" / "tick.sh")], cwd=REPO_ROOT, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        print("The first check is running in the background; it keeps the agents busy for up to an hour, then "
+              "the scheduler starts the next one.")
+    print("Watch them:  agents dashboard      (or: tail -f ~/.claude/agentops/tick.log)")
+    return 0
 
 
 def cmd_stop(args: argparse.Namespace) -> int:
@@ -2169,8 +2707,8 @@ def cmd_stop(args: argparse.Namespace) -> int:
     if not pids:
         return 0
     if not args.kill:
-        print(f"One run is still finishing (pid {pids[0]}, at most {cfg.get('run', 'timeout_minutes', default=45)} min). "
-              "Use `agents stop --kill` to end it now.")
+        print(f"Agent runs already in progress finish first (at most {cfg.get('run', 'timeout_minutes', default=45)} "
+              "min). Use `agents stop --kill` to end them now.")
         return 0
     for pid in pids:
         with contextlib.suppress(ProcessLookupError, PermissionError):
@@ -2279,41 +2817,23 @@ def codex_model_ok(cfg: Config, state: State, model: str) -> bool:
     return answered and not failed and res.returncode == 0
 
 
-def cmd_codex_check(args: argparse.Namespace) -> int:
-    """Install-time safety test of the Codex lane. The lane runs only after this passes."""
-    cfg = Config.load()
-    state = State(cfg)
-    print("Codex lane safety test")
-    version = codex_version(cfg)
-    if not version:
-        print("  ✘ Codex CLI not found. Install it in Ubuntu: npm install -g @openai/codex, then: codex login")
-        return 1
-    print(f"  ✔ {version}")
-    if subprocess.run([codex_bin(cfg), "login", "status"], capture_output=True, text=True).returncode != 0:
-        print("  ✘ Codex is not signed in. Run: codex login   (choose 'Sign in with ChatGPT')")
-        return 1
-    print("  ✔ signed in")
-    try:
-        clone = ensure_codex_clone(cfg)
-        print(f"  ✔ Codex lane's copy: {clone}")
-        print(f"  ✔ trust for that folder: {ensure_codex_trust(clone)}")
-    except RuntimeError as exc:
-        print(f"  ✘ {exc}")
-        return 1
+def codex_selftest(cfg: Config, state: State, worker: str, clone: Path) -> Tuple[List[Tuple[str, bool]], Dict[str, Any]]:
+    """Ask Codex, in one worker's copy, to try commands the guard must refuse or allow."""
     g = lambda *a: subprocess.run(["git", "-C", str(clone), *a], capture_output=True, text=True)  # noqa: E731
+    branch = cfg.get("default_branch", default="main")
     g("fetch", "-q", "origin")
-    g("checkout", "-q", "-f", "-B", "agentops-selftest", f"origin/{cfg.get('default_branch', default='main')}")
+    g("checkout", "-q", "-f", "-B", "agentops-selftest", f"origin/{branch}")
     outside = Path.home() / "agentops-outside-test.txt"
     with contextlib.suppress(FileNotFoundError):
         outside.unlink()
-    print("  … asking Codex to try 5 commands (one small request on the cheapest model, ~1 minute)")
     started = time.time()
     rec = run_codex(cfg, state, Work("sde2", "implement", note="safety test"), "selftest",
                     timeout_s=300, root=clone, prompt=SELFTEST_PROMPT.format(home=Path.home()),
-                    model=cfg.get("engines", "codex", "probe_model", default="gpt-6-luna"), effort="low")
+                    model=cfg.get("engines", "codex", "probe_model", default="gpt-6-luna"), effort="low",
+                    worker=worker)
     with contextlib.suppress(FileNotFoundError):
-        (state.dir / f"{lane_doc('current_run', 'codex')}.json").unlink()
-    blocks = " ".join(guard_blocks_since(state, started, "codex"))
+        (state.dir / f"{lane_doc('current_run', worker)}.json").unlink()
+    blocks = " ".join(guard_blocks_since(state, started, "codex", worker))
     committed = g("log", "-1", "--format=%s").stdout.strip() == "agentops selftest"
     checks = [
         ("the agentops guard runs on every Codex command", "agentops-guard-selftest" in blocks),
@@ -2321,34 +2841,76 @@ def cmd_codex_check(args: argparse.Namespace) -> int:
         ("nothing can be written outside the repository", not outside.exists()),
         ("git can commit (runs outside the sandbox by rule)", committed),
     ]
-    g("checkout", "-q", "-f", cfg.get("default_branch", default="main"))
-    g("reset", "-q", "--hard", f"origin/{cfg.get('default_branch', default='main')}")
+    g("checkout", "-q", "-f", branch)
+    g("reset", "-q", "--hard", f"origin/{branch}")
     g("branch", "-q", "-D", "agentops-selftest")
     with contextlib.suppress(FileNotFoundError):
         outside.unlink()
-    models = sorted({v.get("model") for v in (cfg.get("roles", default={}) or {}).values()
-                     if isinstance(v, dict) and v.get("engine") == "codex" and v.get("model")})
-    for model in models:
-        checks.append((f"model {model} is available on your ChatGPT plan", codex_model_ok(cfg, state, model)))
-    for label, ok in checks:
-        print(f"  {'✔' if ok else '✘'} {label}")
-    passed = all(ok for _l, ok in checks) and rec.get("outcome") in ("success", "error")
-    if rec.get("outcome") == "usage-limit":
-        print("  ✘ ChatGPT usage limit reached — run this again after it resets")
-        passed = False
+    return checks, rec
+
+
+def cmd_codex_check(args: argparse.Namespace) -> int:
+    """Install-time safety test of the GPT (Codex) workers. They run only after this passes."""
+    import shutil
+    cfg = Config.load()
+    state = State(cfg)
+    print("GPT agents (Codex) safety test")
+    version = codex_version(cfg)
+    if not version:
+        print("  ✘ Codex CLI not found. Install it in Ubuntu: npm install -g @openai/codex, then: codex login")
+        return 1
+    where = shutil.which(codex_bin(cfg)) or codex_bin(cfg)
+    print(f"  ✔ {version}  ({where})")
+    if subprocess.run([codex_bin(cfg), "login", "status"], capture_output=True, text=True).returncode != 0:
+        print("  ✘ Codex is not signed in. Run: codex login   (choose 'Sign in with ChatGPT')")
+        return 1
+    print("  ✔ signed in")
+    workers = [worker_name("codex", i) for i in range(1, max(1, worker_counts(cfg)["codex"]) + 1)]
+    results: Dict[str, Dict[str, Any]] = {}
+    first_rec: Dict[str, Any] = {}
+    all_checks: List[Tuple[str, bool]] = []
+    for w in workers:
+        try:
+            clone = ensure_worker_clone(cfg, w)
+            print(f"  ✔ {w}'s copy: {clone}")
+            print(f"  ✔ trust for that folder: {ensure_codex_trust(clone)}")
+        except (RuntimeError, OSError) as exc:
+            print(f"  ✘ {exc}")
+            return 1
+        print(f"  … asking Codex to try 5 commands in {w}'s copy (one small request on the cheapest model, ~1 min)")
+        checks, rec = codex_selftest(cfg, state, w, clone)
+        first_rec = first_rec or rec
+        for label, ok in checks:
+            print(f"  {'✔' if ok else '✘'} {label}")
+        ok_all = all(ok for _l, ok in checks) and rec.get("outcome") in ("success", "error")
+        if rec.get("outcome") == "usage-limit":
+            print("  ✘ ChatGPT usage limit reached — run this again after it resets")
+            ok_all = False
+        results[str(clone)] = {"worker": w, "passed": ok_all, "version": version, "at": time.time(), "log": rec.get("log")}
+        all_checks += [(f"{w}: {label}", ok) for label, ok in checks]
+        if not ok_all:
+            break
+    for model in sorted({role_settings(cfg, r).get("model") for r in codex_roles(cfg)} - {None}):
+        ok = codex_model_ok(cfg, state, model)
+        print(f"  {'✔' if ok else '✘'} model {model} is available on your ChatGPT plan")
+        all_checks.append((f"model {model} is available on your ChatGPT plan", ok))
+    first = results.get(str(worker_clone(cfg, "codex"))) or {}
+    passed = bool(first.get("passed")) and all(ok for label, ok in all_checks if label.startswith("model "))
     live = live_usage(cfg, time.time(), "codex")
     if live:
         print(f"  ChatGPT plan usage now: session {live['five_hour']:.0f}% · weekly {live['seven_day']:.0f}%")
-    state.put("codex_check", {"passed": passed, "version": version, "at": time.time(),
-                              "checks": {label: ok for label, ok in checks}, "outcome": rec.get("outcome"),
-                              "log": rec.get("log")})
+    state.put("codex_check", {"passed": passed, "version": version, "at": time.time(), "bin": where,
+                              "clones": results if passed else {}, "checks": {label: ok for label, ok in all_checks},
+                              "outcome": first_rec.get("outcome"), "log": first_rec.get("log")})
     if passed:
-        roles = ", ".join(f"{r} ({v.get('model')})" for r, v in (cfg.get("roles", default={}) or {}).items()
-                          if isinstance(v, dict) and v.get("engine") == "codex")
-        print(f"\nPassed. From the next check, these agents run on GPT in parallel with Claude: {roles}.")
+        roles = ", ".join(f"{r} ({role_settings(cfg, r).get('model')})" for r in codex_roles(cfg))
+        ready = [w for w in workers if (results.get(str(worker_clone(cfg, w))) or {}).get("passed")]
+        print(f"\nPassed. {len(ready)} GPT agent(s) now work in parallel with Claude: {roles}.")
+        if len(ready) < len(workers):
+            print(f"Not ready yet: {', '.join(w for w in workers if w not in ready)} — run this again.")
         return 0
-    print(f"\nNot passed — the Codex lane stays off and those agents keep running on Claude. "
-          f"Details: {rec.get('log')}")
+    print(f"\nNot passed — the GPT agents stay off and their roles keep running on Claude. "
+          f"Details: {first_rec.get('log')}")
     if any(label.startswith("model ") and not ok for label, ok in checks):
         print("A model isn't available on your plan: pick another one in ~/.claude/agentops/config.local.json, e.g.\n"
               '  {"roles": {"ux-designer": {"engine": "codex", "model": "gpt-6.1-sol", "effort": "high"}}}')
@@ -2375,18 +2937,28 @@ def cmd_status(args: argparse.Namespace) -> int:
     else:
         print(f"  agents: {'not started (on-demand mode)' if info.get('mode') == 'on-demand' else 'always-on mode'}")
     lanes = active_lanes(cfg, state)
-    gpt_roles = [f"{r} ({v.get('model')})" for r, v in (cfg.get("roles", default={}) or {}).items()
-                 if isinstance(v, dict) and v.get("engine") == "codex"]
-    if "codex" in lanes:
-        print(f"  lanes: Claude + Codex in parallel — on GPT: {', '.join(gpt_roles)}")
-    elif gpt_roles and cfg.get("engines", "codex", "enabled", default=False):
-        print(f"  lanes: Claude only — Codex lane off until `agents codex-check` passes "
-              f"({', '.join(r.split(' ')[0] for r in gpt_roles)} run on Claude meanwhile)")
-    for lane in LANES:
-        cur = state.doc(lane_doc("current_run", lane))
+    workers = active_workers(cfg, state)
+    counts = worker_counts(cfg)
+    gpt_roles = [f"{r} ({role_settings(cfg, r).get('model')})" for r in codex_roles(cfg)]
+    n_gpt = sum(1 for w in workers if worker_engine(w) == "codex")
+    print(f"  team: {counts['claude']} Claude + {n_gpt} GPT agent(s) at a time"
+          + (f" — on GPT: {', '.join(gpt_roles)}" if "codex" in lanes else "") + "   (change: agents workers)")
+    off = codex_off_reason(cfg, state)
+    if off:
+        print(f"  GPT agents are OFF: {off} ({', '.join(r.split(' ')[0] for r in gpt_roles)} run on Claude meanwhile)")
+    waiting = unverified_workers(cfg, state)
+    if waiting:
+        print(f"  {', '.join(waiting)}: waiting for `agents codex-check` (safety test of their copy)")
+    orch = state.doc("orchestrator")
+    if orch and pid_alive(orch.get("pid")):
+        print(f"  check running since {clock(orch.get('started'), tz, now)}, until {clock(orch.get('deadline'), tz, now)}"
+              f"; idle agents look for work every {orch.get('poll_minutes', 3):.0f} min")
+    for path in sorted(state.dir.glob("current_run*.json")):
+        w = "claude" if path.stem == "current_run" else path.stem[len("current_run-"):]
+        cur = load_json(path) or {}
         if cur and pid_alive(cur.get("pid")):
             item = f"PR #{cur['pr']}" if cur.get("pr") else (f"#{cur['issue']}" if cur.get("issue") else "")
-            print(f"  working now ({lane}): {cur.get('role')} {cur.get('action')} {item} — "
+            print(f"  working now ({w}): {cur.get('role')} {cur.get('action')} {item} — "
                   f"{int((now - cur.get('started', now)) / 60)} min")
     lim = info["limits"]
     print(f"  your limits: session {lim['session']:.0f}% · weekly {lim['weekly']:.0f}% · team share of the week "
@@ -2443,6 +3015,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     for r in runs:
         used = (r.get("usage_delta") or {}).get("five_hour")
         tag = f" [{r.get('model')}]" if r.get("lane") == "codex" else ""
+        if r.get("worker") and worker_number(r["worker"]) > 1:
+            tag += f" #{worker_number(r['worker'])}"
         print(f"    {clock(r['started'], tz, now):9s} {(r.get('role') or '') + tag:17s} {r.get('action'):9s} "
               f"#{r.get('issue') or r.get('pr') or '-':<4} → {r.get('outcome')}, {r.get('turns')} turns, "
               f"est ${r.get('cost_estimate_usd')}{f', session +{used:.0f}%' if used is not None else ''}")
@@ -2524,6 +3098,43 @@ def cmd_limits(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_workers(args: argparse.Namespace) -> int:
+    """How many agents work at the same time, per plan."""
+    path = xp(os.environ.get("AGENTOPS_LOCAL_CONFIG", LOCAL_CONFIG))
+    local = load_json(path) or {}
+    if not isinstance(local, dict):
+        raise SystemExit(f"{path} is not a JSON object — fix or delete it")
+    changed = False
+    if args.reset:
+        changed = local.pop("workers", None) is not None
+    for key, value, low in (("claude", args.claude, 1), ("codex", args.gpt, 0)):
+        if value is not None:
+            if not low <= value <= MAX_WORKERS:
+                raise SystemExit(f"--{'gpt' if key == 'codex' else key} must be between {low} and {MAX_WORKERS}")
+            local.setdefault("workers", {})[key] = int(value)
+            changed = True
+    if changed:
+        save_json(path, local)
+        print(f"Saved to {path}")
+    cfg = Config.load()
+    state = State(cfg)
+    counts = worker_counts(cfg)
+    print("Agents working at the same time:")
+    print(f"  Claude plan   {counts['claude']}   (copies: {', '.join(str(worker_clone(cfg, worker_name('claude', i))) for i in range(1, counts['claude'] + 1))})")
+    gpt = ", ".join(str(worker_clone(cfg, worker_name("codex", i))) for i in range(1, counts["codex"] + 1))
+    print(f"  ChatGPT plan  {counts['codex']}" + (f"   (copies: {gpt})" if gpt else ""))
+    off = codex_off_reason(cfg, state)
+    if off:
+        print(f"GPT agents are off: {off}.")
+    waiting = unverified_workers(cfg, state)
+    if waiting:
+        print(f"Run `agents codex-check` once: it safety-tests the new GPT cop{'ies' if len(waiting) > 1 else 'y'} "
+              f"({', '.join(waiting)}).")
+    print("More agents = faster, but each uses memory (~0.5–1.5 GB while building) and the same plan limits.")
+    print("Change:  agents workers --claude 2 --gpt 2      Defaults:  agents workers --reset")
+    return 0
+
+
 def cmd_dashboard(args: argparse.Namespace) -> int:
     sys.path.insert(0, str(HERE))
     import dashboard
@@ -2542,7 +3153,8 @@ def cmd_next(args: argparse.Namespace) -> int:
     cfg = Config.load()
     state = State(cfg)
     gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
-    disp = Dispatcher(cfg, gh, state, time.time(), apply=False)
+    disp = Dispatcher(cfg, gh, state, time.time(), apply=False, lanes=active_lanes(cfg, state),
+                      busy=busy_work(state, "next"))
     work = disp.choose(read_phase(), git("rev-parse", "HEAD", check=False))
     for a in disp.actions:
         print(f"would: {a}")
@@ -2624,13 +3236,47 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     def codex_ok() -> str:
         if not cfg.get("engines", "codex", "enabled", default=False):
             return "off (engines.codex.enabled = false)"
+        if worker_counts(cfg)["codex"] == 0:
+            return "off (agents workers --gpt 0)"
         state = State(cfg)
         if codex_ready(cfg, state):
-            return f"ready — {codex_version(cfg)}, safety test passed"
+            waiting = unverified_workers(cfg, state)
+            return f"ready — {codex_version(cfg)}, safety test passed" + (
+                f"; {', '.join(waiting)} still need `agents codex-check`" if waiting else "")
         if not codex_version(cfg):
             raise RuntimeError("Codex CLI not found — npm install -g @openai/codex, then codex login")
-        raise RuntimeError("GPT lane off until the safety test passes — run: agents codex-check")
-    check("GPT lane (Codex)", codex_ok)
+        raise RuntimeError(f"GPT agents off: {codex_off_reason(cfg, state)}")
+    check("GPT agents (Codex)", codex_ok)
+
+    def codex_sched_ok() -> str:
+        """Can the scheduler (a plain background shell, like tick.sh) start codex?"""
+        if not cfg.get("engines", "codex", "enabled", default=False) or worker_counts(cfg)["codex"] == 0:
+            return "not needed"
+        recorded = State(cfg).doc("codex_check").get("bin") or ""
+        env_cmd = 'export PATH="$HOME/.local/bin:$HOME/bin:$PATH"; export NVM_DIR="$HOME/.nvm"; ' \
+                  '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1; command -v codex || true'
+        out = subprocess.run(["env", "-i", f"HOME={Path.home()}", "PATH=/usr/local/bin:/usr/bin:/bin", "bash", "-c",
+                              env_cmd], capture_output=True, text=True, timeout=60).stdout.strip()
+        if out:
+            return f"found at {out}"
+        if recorded and os.access(recorded, os.X_OK):
+            return f"not on the scheduler's PATH, but agentops uses {recorded} (recorded by codex-check)"
+        raise RuntimeError("the scheduler cannot find `codex` — run `agents codex-check` once (it records where "
+                           "Codex is installed)")
+    check("codex for scheduled runs", codex_sched_ok)
+
+    def memory_ok() -> str:
+        total = 0
+        with contextlib.suppress(OSError, ValueError, IndexError):
+            for line in open("/proc/meminfo", encoding="utf-8"):
+                if line.startswith("MemTotal:"):
+                    total = int(line.split()[1]) // 1024
+        n = len(active_workers(cfg, State(cfg)))
+        if total and n >= 3 and total < 5800:
+            raise RuntimeError(f"Ubuntu has {total / 1024:.1f} GB for {n} agents at once — give WSL 6 GB "
+                               "(README: 'More agents at once'), or use fewer: agents workers --claude 1")
+        return f"{total / 1024:.1f} GB for Ubuntu, {n} agent(s) at once" if total else "unknown"
+    check("memory", memory_ok)
     return 1 if problems else 0
 
 
@@ -2644,11 +3290,18 @@ def cmd_selftest(args: argparse.Namespace) -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(prog="agentops", description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True)
-    t = sub.add_parser("tick", help="housekeeping + at most one agent run")
+    t = sub.add_parser("tick", help="one check: keep the agents busy for up to an hour (the scheduler runs this)")
     t.add_argument("--dry-run", action="store_true", help="show what would happen; change nothing")
     t.add_argument("--force", action="store_true", help="skip the usage/idle gate (use with care)")
-    t.add_argument("--lane", choices=list(LANES), help=argparse.SUPPRESS)
+    t.add_argument("--worker", help=argparse.SUPPRESS)
+    t.add_argument("--lane", help=argparse.SUPPRESS)  # kit v8 name of --worker
+    t.add_argument("--deadline", type=float, help=argparse.SUPPRESS)
     t.set_defaults(fn=cmd_tick)
+    s = sub.add_parser("workers", help="show or set how many agents work at the same time")
+    s.add_argument("--claude", type=int, help="Claude agents at once (1-3)")
+    s.add_argument("--gpt", type=int, help="GPT (Codex) agents at once (0-3; 0 moves their roles back to Claude)")
+    s.add_argument("--reset", action="store_true", help="back to the kit defaults")
+    s.set_defaults(fn=cmd_workers)
     s = sub.add_parser("start", help="let the agents work (until `stop`, or for --hours / --until)")
     s.add_argument("--hours", type=float, help="work for this many hours, e.g. 6")
     s.add_argument("--until", help="work until this local time, e.g. 07:30")

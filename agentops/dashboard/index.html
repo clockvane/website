@@ -316,15 +316,20 @@ function stepList(steps, newestFirst, limit) {
       s.error ? h("div", { class: "why" }, (s.error === "refused" ? "Refused: " : "Failed: ") + (s.why || "")) : null),
     h("time", {}, s.t ? ago(s.t) : ""))));
 }
-function laneTag(lane, model) {
-  return lane === "codex" ? h("span", { class: "lanetag gpt" }, "GPT" + (model ? " · " + model : ""))
-    : h("span", { class: "lanetag" }, "Claude");
+function workerNo(worker) {
+  const m = /-(\d+)$/.exec(worker || "");
+  return m ? Number(m[1]) : 1;
+}
+function laneTag(lane, model, worker) {
+  const no = workerNo(worker) > 1 ? ` ${workerNo(worker)}` : "";
+  return lane === "codex" ? h("span", { class: "lanetag gpt" }, "GPT" + no + (model ? " · " + model : ""))
+    : h("span", { class: "lanetag" }, "Claude" + no);
 }
 function runningBlock(c, i) {
   const kids = [];
   const t = issueTitle(c.pr || c.issue);
   kids.push(h("div", { class: "now-head" }, avatar(c.role, "lg"),
-    h("div", {}, h("div", { class: "now-title" }, `${title(c.role)} is ${ACTION[c.action] || c.action} `, laneTag(c.lane, c.lane === "codex" ? c.model : "")),
+    h("div", {}, h("div", { class: "now-title" }, `${title(c.role)} is ${ACTION[c.action] || c.action} `, laneTag(c.lane, c.lane === "codex" ? c.model : "", c.worker)),
       h("div", { class: "now-sub" }, (c.pr || c.issue) ? itemLink(c.issue, c.pr) : null,
         t ? ` · ${t}` : (c.action === "plan" ? "Looks at GitHub and creates the next tickets" : "")))));
   kids.push(h("div", { class: "chips" },
@@ -359,19 +364,33 @@ function nextLine(lane) {
   if (!gh.at) return null;
   return h("div", { class: "next" }, showTag ? laneTag(lane) : null, h("div", {}, h("b", {}, "Nothing to pick up"),
     h("small", {}, lane === "codex" ? "No ready work for the GPT agents (designer, SDE 3, SDE 2) right now."
-      : "Waiting for you (a gate or a needs-human item) or for CI.")));
+      : "Waiting for you (a gate or a needs-human item), for CI, or for the other agents' work.")));
+}
+function checkLine() {
+  const o = S.orchestrator;
+  if (!o) return null;
+  const n = (S.workers || []).length;
+  return h("p", { class: "hint" }, `${n} agent${n === 1 ? "" : "s"} on duty until ${fmtTime(o.deadline)}; `,
+    `idle ones look for new work every ${pollText(o)}.`);
+}
+function pollText(o) {
+  const m = o.poll_minutes || 3;
+  return m < 1 ? "few seconds" : `${Math.round(m)} min`;
 }
 function renderNow() {
   const card = $("now");
   const currents = S.currents || (S.current ? [S.current] : []);
   const lanes = S.lanes || ["claude"];
+  const counts = S.worker_counts || {};
   const kids = [h("h2", {}, "Right now")];
   if (currents.length) {
     currents.forEach((c, i) => kids.push(runningBlock(c, i)));
-    for (const lane of lanes) if (!currents.some((c) => c.lane === lane)) {
+    for (const lane of lanes) if (currents.filter((c) => c.lane === lane).length < (counts[lane] || 1)) {
       const line = nextLine(lane);
       if (line) kids.push(h("div", { class: "lane-block" }, line));
     }
+    const cl = checkLine();
+    if (cl) kids.push(cl);
   } else {
     if (!S.window) {
       kids.push(h("div", { class: "idle-title" }, "The team is stopped"));
@@ -381,8 +400,10 @@ function renderNow() {
       const until = S.window.until ? ` until ${fmtTime(S.window.until)}` : "";
       let nextCheck = S.last_tick ? S.last_tick + S.tick_minutes * 60 : null;
       if (nextCheck && nextCheck < S.now) nextCheck = null;
+      const o = S.orchestrator;
       kids.push(h("p", { class: "hint" }, `The team is started${until}. `,
-        nextCheck ? `Next check around ${fmtTime(nextCheck)}.` : "The next check is due any moment."));
+        o ? `Idle agents look for new work every ${pollText(o)}.`
+          : nextCheck ? `Next check around ${fmtTime(nextCheck)}.` : "The next check is due any moment."));
       if (S.gate && S.gate.reasons.length) kids.push(h("ul", { class: "reasons" }, S.gate.reasons.map((r) => h("li", {}, plainReason(r)))));
     }
     for (const lane of lanes) { const line = nextLine(lane); if (line) kids.push(line); }
@@ -420,9 +441,12 @@ function renderUsage() {
   if (cx) {
     kids.push(h("div", { class: "usage-sub" }, "ChatGPT plan · GPT agents"));
     if (!cx.active) {
-      kids.push(h("p", { class: "note" }, "The GPT lane is off until its one-time safety test passes: ", h("code", {}, "agents codex-check"),
-        cx.check && cx.check.at ? ` (last try ${fmtWhen(cx.check.at)}: not passed)` : ""));
+      kids.push(cx.off_reason ? h("p", { class: "note" }, `The GPT agents are off: ${cx.off_reason}.`)
+        : h("p", { class: "note" }, "The GPT agents are off until their one-time safety test passes: ", h("code", {}, "agents codex-check"),
+          cx.check && cx.check.at ? ` (last try ${fmtWhen(cx.check.at)}: not passed)` : ""));
     } else {
+      if ((cx.unverified || []).length) kids.push(h("p", { class: "note" }, `${cx.unverified.join(", ")} wait for `,
+        h("code", {}, "agents codex-check"), " (a quick safety test of their copy)."));
       const cl = cx.live, lim = cx.limits;
       kids.push(meter("of this session (5 h)", cl ? cl.five_hour : null, lim.session, cl && cl.five_hour_resets));
       kids.push(meter("of this week", cl ? cl.seven_day : null, lim.weekly, cl && cl.seven_day_resets));
@@ -528,7 +552,7 @@ function renderRuns() {
     rows.push(h("tr", { class: "run", tabindex: "0", onclick: () => toggleRun(r), onkeydown: (e) => { if (e.key === "Enter") toggleRun(r); } },
       h("td", { class: "num" }, fmtWhen(r.started)),
       h("td", {}, h("div", { class: "agentcell" }, avatar(r.role, "mini"), title(r.role)),
-        r.lane === "codex" ? h("div", { class: "final" }, laneTag("codex", r.model)) : null),
+        r.lane === "codex" || workerNo(r.worker) > 1 ? h("div", { class: "final" }, laneTag(r.lane || "claude", r.lane === "codex" ? r.model : "", r.worker)) : null),
       h("td", {}, ACTION_SHORT[r.action] || r.action, r.chained ? h("div", { class: "final", title: "Started right after the previous run, in the same check" }, "back-to-back") : null),
       h("td", {}, itemLink(r.issue, r.pr), h("div", { class: "final hide-sm" }, issueTitle(r.pr || r.issue))),
       h("td", {}, outcomeBadge(r), showFinal ? h("div", { class: "final" }, r.final) : null,

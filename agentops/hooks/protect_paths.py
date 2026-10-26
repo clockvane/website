@@ -79,7 +79,8 @@ def note_block(tool: str, what: str, why: str) -> None:
         return
     try:
         with open(os.path.join(state, "guard.log"), "a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"t": time.time(), "lane": os.environ.get("AGENTOPS_LANE", "claude"),
+            lane = os.environ.get("AGENTOPS_LANE", "claude")
+            fh.write(json.dumps({"t": time.time(), "lane": lane, "worker": os.environ.get("AGENTOPS_WORKER", lane),
                                  "role": os.environ.get("AGENTOPS_ROLE"), "tool": tool,
                                  "what": str(what)[:200], "why": why[:200]}) + "\n")
     except OSError:
