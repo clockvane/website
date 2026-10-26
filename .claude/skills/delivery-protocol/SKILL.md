@@ -21,6 +21,8 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
 
    Agent-Role: sde3
    ```
+   Stage only the files your ticket changes, by name (`git add <file> …`, never `git add -A` or
+   `git add .`), and check `git status` first: stray build output or caches must not be committed.
    Use `git commit -F <file>` or `-m` per paragraph. Never `--no-verify`, never amend pushed commits.
 4. **Verify against the Definition of Done** in CLAUDE.md. Run the project's lint, type-check,
    test and build commands (see the README/ADR-001). Fix failures before pushing.

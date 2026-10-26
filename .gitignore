@@ -3,6 +3,8 @@
 .agentops-scratch/
 .claude/agent-memory-local/
 .claude/settings.local.json
+__pycache__/
+*.py[co]
 
 # secrets
 .env

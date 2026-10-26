@@ -1311,5 +1311,66 @@ class WorkerTurns(unittest.TestCase):
         self.assertTrue(ao.check_lock_free(self.st))
 
 
+class ReviewRoundsAndCommits(unittest.TestCase):
+    """v9.1: rounds are counted per reviewed commit; commits can't carry human-only files."""
+
+    def test_two_reviewers_on_one_commit_are_one_round(self):
+        mark = lambda role, sha: f"<!-- agentops:review role={role} verdict=changes sha={sha} -->\n1. [MAJOR] x"
+        bodies = [mark("tech-lead", "b24d7b9c"), mark("code-reviewer", "267fbec0"), mark("tech-lead", "267fbec0"),
+                  "<!-- agentops:review role=qa-engineer verdict=approve sha=267fbec0 -->"]
+        self.assertEqual(ao.review_rounds(bodies), 2)  # PR #31: was counted as 3 and escalated too early
+        self.assertEqual(ao.review_rounds(bodies + [mark("tech-lead", "9a9a9a9a")]), 3)
+
+    def git(self, repo, *args):
+        import subprocess
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", *args],
+                       cwd=repo, check=True, capture_output=True)
+
+    def test_commit_with_human_only_files_is_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            repo = Path(t)
+            self.git(repo, "init", "-q")
+            (repo / "docs").mkdir()
+            (repo / "docs" / "a.md").write_text("a\n")
+            (repo / "CLAUDE.md").write_text("rules\n")
+            pyc = repo / "agentops" / "hooks" / "__pycache__" / "protect_paths.cpython-312.pyc"
+            pyc.parent.mkdir(parents=True)
+            pyc.write_bytes(b"\0compiled")
+            self.git(repo, "add", "docs/a.md", "CLAUDE.md")
+            self.git(repo, "commit", "-qm", "base")
+            verdict = lambda cmd: guard.analyze(cmd, str(repo), str(repo), "implement")[0]
+            self.assertEqual(verdict('git commit -m "docs: x"'), "allow")       # nothing staged
+            self.git(repo, "add", "-A")                                         # the mistake behind PR #31
+            v, why = guard.analyze('git commit -m "docs: x"', str(repo), str(repo), "implement")
+            self.assertEqual(v, "block")
+            self.assertIn("agentops/hooks/__pycache__/protect_paths.cpython-312.pyc", why)
+            self.git(repo, "restore", "--staged", "agentops")
+            (repo / "docs" / "a.md").write_text("b\n")
+            self.git(repo, "add", "docs/a.md")
+            self.assertEqual(verdict('git commit -m "docs: x"'), "allow")
+            (repo / "CLAUDE.md").write_text("changed\n")                       # tracked + `commit -a`
+            self.assertEqual(verdict('git commit -am "docs: x"'), "block")
+            self.assertEqual(verdict('git commit -m "docs: x"'), "allow")       # without -a it isn't included
+            # removing bytecode that was committed by mistake is fine
+            self.git(repo, "checkout", "-q", "CLAUDE.md")
+            self.git(repo, "add", "-f", str(pyc))
+            self.git(repo, "commit", "-qm", "oops")
+            self.git(repo, "rm", "-q", "--cached", str(pyc))
+            self.assertEqual(verdict('git commit -m "chore: drop compiled file"'), "allow")
+
+    def test_hooks_leave_no_bytecode(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as t:
+            hooks = Path(t) / "hooks"
+            hooks.mkdir()
+            for name in ("guard_bash.py", "protect_paths.py"):
+                (hooks / name).write_text((AGENTOPS / "hooks" / name).read_text())
+            env = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_REPO_ROOT=t)
+            env.pop("PYTHONDONTWRITEBYTECODE", None)
+            subprocess.run([sys.executable, str(hooks / "guard_bash.py")], env=env, capture_output=True,
+                           input=json.dumps({"tool_name": "Bash", "tool_input": {"command": "ls"}, "cwd": t}), text=True)
+            self.assertFalse((hooks / "__pycache__").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
