@@ -56,6 +56,11 @@
     "min_minutes_between_runs": 10,
     "tick_minutes": 10
   },
+  "workers": {
+    "_readme": "How many agents work at the same time on each plan, each in its own copy of the repo (set with `agents workers --claude 2 --gpt 2`). claude: 1-3, codex: 0-3 (0 moves the GPT roles back to Claude).",
+    "claude": 2,
+    "codex": 2
+  },
   "run": {
     "max_turns": {
       "implement": 70,
@@ -81,10 +86,23 @@
     ],
     "plan_retry_minutes": 30,
     "max_plan_failures": 3,
+    "plan_min_gap_minutes": 15,
     "max_runs_per_tick": 8,
     "chain_minutes": 25,
     "tick_hard_limit_minutes": 55,
-    "min_run_minutes": 8
+    "min_run_minutes": 8,
+    "_continuous_readme": "Each scheduled check keeps the agents busy until tick_hard_limit_minutes: a worker that finds nothing to do looks again every poll_minutes; one held back by limits every gated_poll_minutes. A run starts only if the check has min_run_minutes_by_action left, and only if Ubuntu has min_free_memory_mb free while other agents run.",
+    "continuous": true,
+    "poll_minutes": 3,
+    "gated_poll_minutes": 10,
+    "min_run_minutes_by_action": {
+      "implement": 20,
+      "fix": 12,
+      "review": 8,
+      "plan": 8
+    },
+    "min_free_memory_mb": 1200,
+    "early_start": true
   },
   "merge": {
     "auto_merge": true,

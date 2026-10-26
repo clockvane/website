@@ -2,11 +2,12 @@
 
 *Automation that runs like clockwork.*
 
-This repository is built by 12 Claude Code agents that work like an engineering department:
-written requirements, design reviews, ADRs, tickets, pull requests, independent reviewers,
-CI/CD, and three sign-off gates that only you (the owner) can pass. They run in WSL Ubuntu on your
-laptop, one small unit of work at a time, only after you say `agents start`, only when you are
-not using Claude yourself, and only while your plan has room left.
+This repository is built by 12 AI agents (on Claude Code, and some on GPT through Codex) that work
+like an engineering department: written requirements, design reviews, ADRs, tickets, pull requests,
+independent reviewers, CI/CD, and three sign-off gates that only you (the owner) can pass. They run in
+WSL Ubuntu on your laptop, a few at the same time (2 Claude + 2 GPT by default), each on one small unit
+of work, only after you say `agents start`, only when you are not using Claude yourself, and only while
+your plans have room left.
 
 - **Owner:** @MohammedAbdulFarhan08 — you approve the gates, add secrets, approve production deploys.
 - **Brand:** Clockvane · GitHub `clockvane/website` · domain clockvane.com (not live yet). Domain
@@ -39,21 +40,25 @@ patterns. That keeps quality up and usage down.
 ## 2. How it works
 
 ```
- every 30 min (Windows Task Scheduler → WSL)
-   └─ agentops tick
-        1. housekeeping  — no AI cost
+ every 10 min (Windows Task Scheduler → WSL) — skipped while the previous check is still going
+   └─ agentops tick: one CHECK, up to 55 min, keeps a team of WORKERS busy
+        workers: claude, claude-2 (Claude plan) + codex, codex-2 (ChatGPT plan), each in its own
+                 copy of the repo; an idle worker looks for new work every 3 min
+        each worker, again and again:
+        1. housekeeping (first Claude worker only) — no AI cost
            • read open PRs and issues with gh
            • route the next required review (agentops/review-matrix.json)
            • every required review approved on the same commit → set agent-review/summary ✅
            • normal PR → squash-merge      • gate PR → label needs-human, wait for YOU
-        2. choose ONE unit of AI work:  fix > review > resume > next ready ticket > EM planning
-        3. gate it — skip this tick if any of these is true:
+        2. claim ONE unit of work for its plan that no other worker holds:
+           fix > review > resume > next ready ticket > EM planning
+        3. gate it — wait if any of these is true:
            • you haven't run `agents start` (or the window you gave has ended)
-           • you used Claude Code in the last 20 min   • plan usage near the limits
-           • team already used its weekly share       • daily cap / spacing / quiet hours
+           • you used Claude Code in the last 20 min   • plan usage + runs in progress near your limit
+           • team already used its weekly share       • daily cap / quiet hours / low memory
            • a usage-limit cooldown is active          • ~/.claude/agentops/PAUSE exists
-        4. run exactly one:  claude -p --agent <role>  (dontAsk permissions, turn/size caps,
-           45-min timeout, guard hooks, limit detection → cooldown until reset)
+        4. run it:  claude -p --agent <role>  or  codex exec  (locked-down permissions, turn/size caps,
+           45-min timeout, guard hooks, limit detection → cooldown until reset), then the next one
 ```
 
 The phases and gates:
@@ -143,14 +148,15 @@ provides the 30-minute clock through Task Scheduler.
 7. **Install the background ticker** from Windows PowerShell. Bootstrap prints the exact command
    and saves it in `~/.claude/agentops/scheduler-command.txt`. It runs
    `agentops/bin/tick.sh`, which loads nvm and `~/.local/bin` (background shells don't).
-   It ticks every 30 minutes but does nothing until you start the agents.
+   It starts a check every 10 minutes (skipped while one is running) but does nothing until you
+   start the agents.
 8. **Start them** whenever you like — see the next section.
 
 ## 4a. Starting and stopping (you decide when)
 
 | Command (in Ubuntu) | What it does |
 |---------------------|--------------|
-| `agents start` | Agents work until you say stop. The first run starts right away. |
+| `agents start` | Agents work until you say stop. The first check starts right away, in the background. |
 | `agents start --hours 6` | Work for the next 6 hours, then stop by themselves. |
 | `agents start --until 07:30` | Work until 07:30 (your local time), e.g. overnight. |
 | `agents start --now` | Same, but don't wait for the 20-minute quiet period after your own Claude use. |
@@ -159,13 +165,14 @@ provides the 30-minute clock through Task Scheduler.
 | `agents start --hours 2 --session-limit 90` | Same, with a different session limit for this start only. |
 | `agents limits --session 96` | Set how far into your plan the agents may go (saved; see §6). `agents limits` shows them. |
 | `agents limits --runs-per-day 80` | Most agent runs per day (with back-to-back runs this is the main brake). |
-| `agents status` | Started or not, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
+| `agents workers --claude 2 --gpt 2` | How many agents work at the same time on each plan (see "More agents at once"). |
+| `agents status` | Started or not, who is working, live plan usage, your limits, planning state, last runs (add `--live` to check usage now). |
 | `agents dashboard` | Opens a live dashboard in your browser (see below). |
 
 ### GPT agents (the Codex lane)
 
-Some agents run on OpenAI models through the **Codex CLI** with your ChatGPT sign-in, in a second
-copy of the repo, **at the same time** as the Claude agents. Which ones is set in
+Some agents run on OpenAI models through the **Codex CLI** with your ChatGPT sign-in, in their own
+copies of the repo, **at the same time** as the Claude agents. Which ones is set in
 `agentops/config.json → roles`:
 
 | Agent | Engine | Model |
@@ -180,15 +187,16 @@ copy of the repo, **at the same time** as the Claude agents. Which ones is set i
   not on the team's list; file edits to governance files or outside the repo are refused; `.codex/rules/`
   forbids merging, force-push, secrets and cloud tools. git and gh run outside Codex's sandbox (they need
   `.git` and the network); everything else runs inside it.
-- **Switched on by a test.** `agents codex-check` (once, and again after a Codex update) creates the
-  second copy, marks that one folder as trusted in `~/.codex/config.toml`, and has Codex try five
-  commands on the cheapest model. Only if the guard refuses the bad ones and git can still commit does the
-  lane switch on. Until then those agents simply run on Claude.
+- **Switched on by a test.** `agents codex-check` (once, again after a Codex update, and after you add
+  GPT workers) creates each GPT worker's copy, marks those folders as trusted in `~/.codex/config.toml`,
+  and has Codex try five commands in each on the cheapest model. Only if the guard refuses the bad ones
+  and git can still commit does that worker switch on. Until then those agents simply run on Claude. It
+  also records where Codex is installed, so the scheduler finds it even if its PATH doesn't.
 - **Its own limits.** The GPT lane reads your ChatGPT plan usage from Codex and stops at
   `agents limits --engine codex --session N` (default 85% session, 85% week). On Plus, GPT-6 Astra allows
   roughly 5–45 messages per 5 hours, so the designer runs a few times a day; GPT-6.1 Sol allows more.
 - **Reviews stay independent.** GPT work is reviewed by the Claude reviewers and vice versa. Two
-  reviews of the same PR can run at once; a fix and a review of the same PR never overlap.
+  different reviewers can review the same PR at once; a fix and a review of the same PR never overlap.
 - **Owner-only merges.** Any agent PR that changes rules, the scheduler, workflows or deploy files
   (`merge.owner_merge_paths`) waits for you to merge it, even after all reviews approve.
 
@@ -208,11 +216,30 @@ copy of the repo, **at the same time** as the Claude agents. Which ones is set i
 It only reads: your laptop's agent logs, and GitHub (refreshed every minute). It listens only on
 your own computer. Closing it does not affect the agents.
 
-**Back-to-back runs:** a check (every 10 min) keeps starting the next job right after the previous
-one finishes, while there is ready work and room under your limits — up to 8 runs or 25 minutes per
-check, and always finished before 55 minutes (Windows stops a scheduled task after an hour). It stops
-the chain after a failed run and leaves that to the next check. **Auto-unblock:** when every
-`Depends on #N` of a blocked ticket is closed, agentops marks it ready itself (no manager run).
+### More agents at once
+
+By default **2 Claude + 2 GPT agents** work at the same time (`agents workers --claude 2 --gpt 2`;
+Claude 1–3, GPT 0–3, and `--gpt 0` moves the GPT roles back to Claude). Each worker has its own copy of
+the repo (`~/agents/clockvane-website`, `…-claude-2`, `…-codex`, `…-codex-2`), its own dev-server port,
+and claims its work under a shared lock, so two agents never take the same ticket or PR.
+
+- **All check long.** A check runs up to 55 minutes (Windows stops a scheduled task after an hour). A
+  worker goes from one job straight to the next; one with nothing to do looks again every 3 minutes, so
+  a PR opened by one agent gets its reviews within minutes. A job only starts if there is enough time
+  left in the check for it (implement 20 min, fix 12, review/plan 8); otherwise the next check takes it.
+- **Limits count work in progress.** Agents on the same plan share your limits: a run starts only if
+  current usage + half of each run already in progress + its own expected size fits under the limit.
+  When several runs overlap, each run's measured usage is split between them.
+- **Memory.** Each agent needs ~0.5–1.5 GB while it builds or tests. A run waits while Ubuntu has less than
+  1.2 GB free and other agents are running. With 4 agents give WSL 6 GB: in Windows, edit
+  `C:\Users\<you>\.wslconfig` → `[wsl2]` → `memory=6GB`, then run `wsl --shutdown` in PowerShell
+  (Ubuntu restarts on next use). `agents doctor` warns when it's too little.
+- **Early Sprint 0.** Once ADR-001 and ADR-002 are merged, the EM creates the build groundwork tickets
+  (scaffold, CI, preview deploys, headers) labeled `early-start`, and the scheduler lets them run during
+  the design phase, before Gate 2. Nothing visual starts early. CI and deploy PRs still wait for you to
+  merge them.
+- **Auto-unblock:** when every `Depends on #N` of a blocked ticket is closed, agentops marks it ready
+  itself (no manager run).
 
 Even when started, a run only begins if you're not using Claude Code yourself (unless `--now`)
 and the run fits under your usage limits (§6). Prefer a fixed timetable instead? Set
@@ -248,11 +275,17 @@ reset and needs no PR.
 | `usage.stop_runs_at_limit` | true | A run that reaches your limit while working is stopped (picked up again later) |
 | `usage.live.max_age_minutes` | 15 | How old a usage reading may be; older → one tiny check request first (~$0.001) |
 | `run.plan_retry_minutes` / `run.max_plan_failures` | 30 / 3 | A failed planning run is retried after 30 min, at most 3 times per GitHub state |
+| `run.plan_min_gap_minutes` | 15 | The manager plans at most this often (other agents change GitHub all the time) |
 | `usage.safety_margin_pct`, `uncalibrated_max_runs_per_5h` | 8, 2 | Only used if no live reading can be taken |
-| `schedule.max_runs_per_day` | 40 | Hard daily cap (`agents limits --runs-per-day N`) |
-| `schedule.min_minutes_between_runs` | 10 | Gap between checks that start runs; not applied inside a back-to-back chain |
-| `run.max_runs_per_tick` / `run.chain_minutes` | 8 / 25 | How long one check keeps going back-to-back |
-| `run.tick_hard_limit_minutes` | 55 | Every run ends before this (a run near the end gets a shorter timeout) |
+| `schedule.max_runs_per_day` | 40 | Hard daily cap for all agents together (`agents limits --runs-per-day N`; with 4 agents use ~120) |
+| `workers.claude` / `workers.codex` | 2 / 2 | Agents at the same time per plan (`agents workers --claude N --gpt N`) |
+| `run.poll_minutes` / `run.gated_poll_minutes` | 3 / 10 | How often an idle worker / one held back by limits looks again |
+| `run.min_run_minutes_by_action` | implement 20, fix 12, review 8, plan 8 | Time a check must have left to start that kind of run |
+| `run.min_free_memory_mb` | 1200 | A run waits while less memory is free and other agents are running |
+| `run.early_start` | true | Let `early-start` tickets of the next phase run before the gate |
+| `schedule.min_minutes_between_runs` | 10 | Only for manual `agents tick --worker …`; scheduled checks keep agents busy |
+| `run.max_runs_per_tick` | 8 | Most runs one worker does in a row before handing back to the check |
+| `run.tick_hard_limit_minutes` | 55 | Length of one check; every run ends before this |
 | `schedule.allowed_hours` | 00:00-24:00 | Only used in `always` mode, e.g. `"23:00-07:30"` (IST) |
 | `run.max_budget_usd.*` | 1-4 | Per-run size cap from Claude Code's *estimate* (you are not billed this on a subscription) |
 | `run.max_turns.*` | 30-70 | Per-run turn cap |
@@ -299,12 +332,14 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 | Nothing happens at all | `agents status` — most likely "not started": run `agents start`. It also shows the last planning result and refused commands. |
 | "would pass your limit" | Working as intended: the next run doesn't fit under your limit. Raise it (`agents limits --session 96`) or wait for the reset time shown. |
 | Dashboard page doesn't load | Is `agents dashboard` still running in an Ubuntu tab? Try http://127.0.0.1:8765. Another port: `agents dashboard --port 8800`. |
-| Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh`. It opens, approves and merges a governance PR as you, then refreshes the agents' copy. Your own edits to kit files (e.g. a note in `CLAUDE.md`) are kept: each file is merged three ways against the last kit install. If you and the kit changed the same lines, it stops and changes nothing. |
+| Updating the kit | Unzip the new kit, then `bash <kit>/agentops/bin/update-kit.sh`. It opens, approves and merges a governance PR as you, then refreshes the agents' copy. Your own edits to kit files (e.g. a note in `CLAUDE.md`) are kept: each file is merged three ways against the previous kit exactly as it shipped (saved on your laptop after each update; the kit zip carries the one before it in `_previous-kit/`). If you and the kit changed the same lines, it stops and changes nothing. It also adds new labels (like `early-start`). |
 | `status` says "owner active" all the time | A Claude Code session of yours keeps writing. Close it, or lower `idle.quiet_minutes`. |
 | Gate says "usage unknown" | Configure the status line (step 5) and send one message in Claude Code. |
 | A PR sits forever | `python3 agentops/agentops.py next` shows why: CI pending, `needs-human`, or a gate PR waiting for you. |
 | "Refusing to run: .agentops-clone not found" | You ran agentops outside the agents clone. That is the safety catch. |
 | Scheduler does nothing | `wsl -l -v` for the distro name; check `~/.claude/agentops/tick.log`. |
+| "GPT agents are off: …" in `tick.log` / `status` | The reason is in the line. Usually: run `agents codex-check` once (after installing or updating Codex, or adding GPT workers). |
+| "waiting for memory" | Other agents are building. Give WSL more memory (see "More agents at once") or `agents workers --claude 1 --gpt 1`. |
 | Unknown flag `--permission-prompts` | `claude update` (needs 2.1.259+). |
 
 Unit tests for the scheduler: `python3 agentops/agentops.py selftest`.

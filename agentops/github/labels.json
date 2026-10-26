@@ -17,6 +17,7 @@
   {"name": "needs-human",             "color": "d93f0b", "description": "Waiting for the owner. Agents will not touch it."},
   {"name": "owner-feedback",          "color": "fef2c0", "description": "Owner left feedback in comments; author agent addresses it next"},
   {"name": "do-not-merge",            "color": "000000", "description": "Never auto-merge"},
+  {"name": "early-start",             "color": "0b7285", "description": "Next-phase groundwork (Sprint 0) allowed to start before the gate"},
   {"name": "governance",              "color": "5319e7", "description": "Change to rules, agents or agentops (owner only)"},
   {"name": "gate:1",                  "color": "c5def5", "description": "Gate 1 — scope approval (owner merges)"},
   {"name": "gate:2",                  "color": "c5def5", "description": "Gate 2 — design approval (owner merges)"},

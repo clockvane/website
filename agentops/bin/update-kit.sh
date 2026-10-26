@@ -33,13 +33,29 @@ cp agentops/config.json "$work/old-config.json"
 branch="chore/agentops-$(printf '%s' "$VERSION" | cut -d' ' -f1)-$(date +%H%M%S)"
 git checkout -q -b "$branch"
 # Bring the kit's files in WITHOUT losing changes you made to them since the last kit install
-# (for example a note you added to CLAUDE.md): a three-way merge per file, like git does.
+# (for example a note you added to CLAUDE.md): a three-way merge per file, like git does. The merge
+# base is the previous kit exactly as it shipped: saved on this laptop by the last update, or shipped
+# inside this kit (_previous-kit/). Only if neither matches the repo's kit version, the repo's files at
+# the last kit install are used (that can't see edits you made before that install).
+current="$(cat agentops/VERSION 2>/dev/null || true)"
+base_dir=""
+for cand in "$STATE_DIR/kit-base" "$KIT_DIR/_previous-kit"; do
+  if [[ -n "$current" && -f "$cand/agentops/VERSION" && "$(cat "$cand/agentops/VERSION")" == "$current" ]]; then
+    base_dir="$cand"; break
+  fi
+done
 base="$(git log -1 --format=%H --grep='^chore(agentops): update agent kit' || true)"
 [[ -n "$base" ]] || base="$(git rev-list --max-parents=0 HEAD | tail -1)"
-echo "comparing with the last kit install: $(git log -1 --format='%h %s' "$base" | cut -c1-80)"
-python3 - "$KIT_DIR" "$base" <<'PY' || die "nothing was changed — see the message above"
+if [[ -n "$base_dir" ]]; then
+  echo "comparing with the kit as it shipped: $current ($base_dir)"
+else
+  warn "no original copy of kit '$current' found — comparing with the repo at the last kit install instead"
+  echo "   ($(git log -1 --format='%h %s' "$base" | cut -c1-80)). Edits you made before that install"
+  echo "   can't be told apart from the kit: check the PR diff of CLAUDE.md and README.md before you continue."
+fi
+python3 - "$KIT_DIR" "$base" "$base_dir" <<'PY' || die "nothing was changed — see the message above"
 import os, subprocess, sys, tempfile
-kit, base = sys.argv[1], sys.argv[2]
+kit, base, base_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 DIRS = ["agentops", ".claude/agents", ".claude/skills", ".github/ISSUE_TEMPLATE", ".codex"]
 FILES = ["CLAUDE.md", "AGENTS.md", "README.md", ".github/pull_request_template.md", ".github/CODEOWNERS"]
 
@@ -57,16 +73,20 @@ def read(path):
 
 
 def at_base(path):
+    if base_dir:
+        return read(os.path.join(base_dir, path))
     r = git("show", f"{base}:{path}")
     return r.stdout if r.returncode == 0 else None
 
 
 paths = set(FILES)
 for d in DIRS:
-    for root, _dirs, files in os.walk(os.path.join(kit, d)):
-        paths.update(os.path.relpath(os.path.join(root, f), kit) for f in files)
+    for top in (kit, base_dir) if base_dir else (kit,):
+        for root, _dirs, files in os.walk(os.path.join(top, d)):
+            paths.update(os.path.relpath(os.path.join(root, f), top) for f in files)
     paths.update(git("ls-files", d).stdout.decode().splitlines())
-    paths.update(git("ls-tree", "-r", "--name-only", base, "--", d).stdout.decode().splitlines())
+    if not base_dir:
+        paths.update(git("ls-tree", "-r", "--name-only", base, "--", d).stdout.decode().splitlines())
 paths = sorted(p for p in paths if p and "__pycache__" not in p.split("/") and not p.endswith(".pyc"))
 
 taken, kept, merged, conflicts = [], [], [], []
@@ -154,6 +174,40 @@ else
   echo "merged"
 fi
 
+# remember this kit exactly as it shipped: the merge base for the next update
+snap="$STATE_DIR/kit-base"
+mkdir -p "$STATE_DIR"
+rm -rf "$snap.new" && mkdir -p "$snap.new"
+(
+  cd "$KIT_DIR"
+  for p in agentops .claude/agents .claude/skills .github/ISSUE_TEMPLATE .codex CLAUDE.md AGENTS.md README.md \
+           .github/pull_request_template.md .github/CODEOWNERS; do
+    [[ -e "$p" ]] && cp -r --parents "$p" "$snap.new/"
+  done
+)
+find "$snap.new" -name __pycache__ -type d -prune -exec rm -rf {} +
+rm -rf "$snap" && mv "$snap.new" "$snap"
+
+say "Labels"
+# labels a newer kit uses (for example `early-start`) — existing labels are left as they are
+python3 - "$REPO" "$KIT_DIR/agentops/github/labels.json" <<'PY' || warn "could not check labels — run bootstrap's label step later"
+import json, subprocess, sys
+repo, path = sys.argv[1], sys.argv[2]
+res = subprocess.run(["gh", "label", "list", "--repo", repo, "--limit", "500", "--json", "name", "--jq", ".[].name"],
+                     capture_output=True, text=True)
+if res.returncode != 0:
+    sys.exit(1)
+have = set(res.stdout.split("\n"))
+added = []
+for label in json.load(open(path)):
+    if label["name"] in have:
+        continue
+    r = subprocess.run(["gh", "label", "create", label["name"], "--repo", repo, "--color", label["color"],
+                        "--description", label.get("description", "")], capture_output=True, text=True)
+    added.append(label["name"] + ("" if r.returncode == 0 else " (failed)"))
+print("added: " + ", ".join(added) if added else "all labels present")
+PY
+
 say "Agents' copy → $AGENTS_DIR"
 if [[ -d "$AGENTS_DIR/.git" ]]; then
   mkdir -p "$STATE_DIR"
@@ -175,8 +229,10 @@ fi
 cat <<EOF
 
 $(printf '\033[1;32m')Done.$(printf '\033[0m') Next, in this terminal:
-  agents codex-check                                     # once: safety test that switches on the GPT lane
-  agents limits --engine codex                           # see/adjust the ChatGPT plan limits (default 85%)
-  agents start --now --until 08:00 --session-limit 90    # let them work
-  agents dashboard                                       # watch both lanes (in its own tab)
+  agents codex-check                    # safety-tests every GPT agent's copy (needed for the 2nd GPT agent), ~2-3 min
+  agents workers                        # how many agents work at once (default 2 Claude + 2 GPT)
+  agents limits --runs-per-day 120      # more agents use the daily cap faster
+  agents doctor                         # checks memory for 4 agents and that the scheduler finds codex
+  agents start --now --until 08:00      # let them work (the check runs in the background)
+  agents dashboard                      # watch them (in its own tab)
 EOF

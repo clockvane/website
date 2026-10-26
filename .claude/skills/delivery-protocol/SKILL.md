@@ -25,7 +25,9 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
 4. **Verify against the Definition of Done** in CLAUDE.md. Run the project's lint, type-check,
    test and build commands (see the README/ADR-001). Fix failures before pushing.
 5. **Self-review.** `git diff origin/main...HEAD`. Remove debug code, unrelated changes and
-   secrets. Keep the PR focused on this ticket.
+   secrets. Keep the PR focused on this ticket. Run your role file's self-check if it has one, and
+   check the diff the way its reviewers will (accessibility and contrast for anything visual, the
+   ADRs and `docs/engineering/standards.md` for code): fixing it now is cheaper than a review round.
 6. **Push.** `git push -u origin HEAD`.
 7. **Open the PR.** Write the body from `.github/pull_request_template.md` (all sections, evidence
    included, `Closes #<ISSUE>`) into a file under `.agentops-scratch/`, then:
@@ -44,7 +46,7 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
    - CI: `gh pr checks <PR>`, then `gh run view <run-id> --log-failed | tail -n 150`
 3. Fix every BLOCKER and MAJOR. Fix MINORs when cheap. If you disagree with a finding, reply once
    in a PR comment with a concrete technical reason instead of changing the code.
-4. Verify (step 4 above), commit with the trailer, `git push`.
+4. Verify (steps 4 and 5 above — including your role's self-check), commit with the trailer, `git push`.
 5. `gh pr comment <PR> --body "Addressed: <bullets of what changed> — <ROLE>"`. Stop.
 
 ## Never

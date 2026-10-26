@@ -48,7 +48,9 @@ independent reviewers, CI/CD and human sign-off gates. Speed is never a reason t
 | build      | Sprint 0 walking skeleton (scaffold, CI, preview deploys), then feature sprints | — (EM opens Gate 3 when MVP is done) |
 | release    | release checklist, staging sign-off, production deploy | Gate 3: go-live approved |
 | operate    | monitoring, dependency updates, retros, iterations | — |
-Detail and RACI: `docs/sdlc/WORKFLOW.md`. Never start work that belongs to a later phase.
+Detail and RACI: `docs/sdlc/WORKFLOW.md`. Never start work that belongs to a later phase, with one
+exception: tickets of the NEXT phase labeled `early-start` (Sprint 0 groundwork the EM creates: scaffold,
+CI, preview deploys; never visual design, pages or copy) may run before the gate.
 
 ## Tickets
 - GitHub Issues are the backlog. Labels: `agent:<role>` (owner), `status:ready|in-progress|blocked`,
@@ -90,6 +92,8 @@ The scheduler (`agentops/`) chooses one work item and starts you with a work ord
 your role file says, finish with a short hand-off comment signed `— <role>`, and stop.
 If the work order is impossible (missing input, dependency not merged), comment why, set
 `status:blocked` or `needs-human`, and stop. Do not pick up other work.
+Several agents work at the same time, each in its own copy of the repo: use the dev-server port your
+work order gives you, and never touch another agent's branch or PR unless your work order names it.
 
 ## Machine and tools
 - WSL Ubuntu on an 8 GB laptop. Run at most one dev server and one headless browser at a time and
