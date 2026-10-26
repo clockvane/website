@@ -23,7 +23,7 @@ Low fidelity only: structure, order, content slots and CTAs. No colour, type or 
 - Focus order follows DOM order, which follows visual order. No positive `tabindex`. Wide layouts reorder only with CSS grid placement that keeps reading order identical to DOM order.
 - Every interactive target is at least 44 x 44 px on M.
 - Primary CTA label is always "Start a conversation" (Contact submit: "Submit enquiry").
-- Diagrams (workflow illustrations) are inline SVG with `role="img"` and a text alternative, or marked decorative with `aria-hidden="true"` when the text beside them says the same thing.
+- Diagrams (workflow illustrations) are inline SVG with `role="img"` and a text alternative, or marked decorative with `aria-hidden="true"` when the text beside them says the same thing. Inline SVGs count towards the P-8 page weight: keep them simple, with no embedded raster and no fonts inside the SVG.
 
 ## 0. Shared components
 
@@ -40,11 +40,11 @@ M (closed)                     M (menu open)                 D
                                | [ Start a conversation ]  |
                                +---------------------------+
 ```
-- M and T: logo, then a Menu button (`aria-expanded`, `aria-controls`). The CTA button sits inside the open menu **and** a compact copy of "Start a conversation" remains visible beside Menu from 480 px up. `[[DECISION for Gate 2: below 480 px, CTA only inside menu (default) or icon-only CTA]]`
-- D: full nav inline, sticky. Services is a link to `/services/` with a disclosure button next to it (`aria-expanded`) opening the five service links. Opens on click or Enter/Space, closes on Escape and when focus leaves.
+- M and T: logo, then a Menu built as `<details>`/`<summary>` (base pattern, no script). The CTA button sits inside the open menu **and** a compact copy of "Start a conversation" remains visible beside Menu from 480 px up. `[[DECISION for Gate 2: below 480 px, CTA only inside menu (default) or icon-only CTA]]`. Whichever option wins, update `user-flows.md` (mobile paragraph, which currently says the CTA stays visible outside the panel below 768 px) to match.
+- D: full nav inline, sticky. Services is a link to `/services/` with a separate `<details>`/`<summary>` toggle next to it opening the five service links (base pattern, no script). Optional JS enhancement, not in v1: close on Escape and when focus leaves.
 - Tab order: skip link, logo, Services link, Services disclosure, How we work, About, CTA.
 - Current page: `aria-current="page"` plus underline.
-- No-JS: Menu becomes a `<details>`; Services link goes to the overview.
+- No script is required for navigation: the menu and Services disclosure are native `<details>`. v1 ships exactly one script (contact-form enhancement), per architecture.md.
 
 ### Footer
 ```
@@ -251,7 +251,7 @@ Fields (PRD section 6: name, reply contact, short description; nothing more is r
 |-------|----------|------|-------|
 | Name | yes | text, `autocomplete="name"` | |
 | Reply contact | yes | text accepting email or phone `[[PLACEHOLDER: Q4 email only, or email or phone]]` | label says what is accepted; `autocomplete="email"` if email only |
-| Message | yes | textarea, `maxlength` shown as a counter near the limit | prompt: "What would you like off your plate?" is a label, final in `contact.form` |
+| Message | yes | textarea, native `maxlength` is the limit (no-JS); a character counter near the limit is JS-only | prompt: "What would you like off your plate?" is a label, final in `contact.form` |
 | Company | no | text, `autocomplete="organization"` | marked "(optional)" in the label, not with colour |
 | Honeypot | n/a | hidden | `aria-hidden`, `tabindex="-1"`, removed from layout, not display-only dependent |
 
@@ -264,16 +264,16 @@ Copy: `contact.intro`, `contact.form` (labels, hints, errors), `contact.next-ste
 | State | What the user sees | Focus / announcement |
 |-------|--------------------|----------------------|
 | Initial | Empty fields, labels above inputs (never placeholder-only) | Focus stays on page start |
-| Filling | Native validation hints only on blur for already-touched fields | |
-| Validation error (JS) | Error summary (`role="alert"` region) at the top of the form listing each problem as a link to its field; inline message under each invalid field (`aria-describedby`, `aria-invalid="true"`), icon plus text, not colour only | Focus moves to the summary; links move focus to the field |
+| Filling (JS) | Hints on blur for already-touched fields (script only; the no-JS path shows native messages on submit) | |
+| Validation error (JS) | Error summary container (`tabindex="-1"`, labelled by its heading, no `role="alert"`) at the top of the form listing each problem as a link to its field; inline message under each invalid field (`aria-describedby`, `aria-invalid="true"`), icon plus text, not colour only | Focus moves to the summary; links move focus to the field |
 | Validation error (no JS) | Browser's native messages from `required`, `type`, `maxlength` | Browser-managed |
 | Sending (JS) | Button reads "Sending…", disabled, `aria-busy="true"`; fields stay filled and read-only | Status text in a polite live region |
-| Delivery failure (JS) | Inline banner above the form: "We could not send this. Your text is still here. Try again or use [fallback contact]" | Focus moves to the banner; button re-enabled |
+| Delivery failure (JS) | Inline banner (focus container, `tabindex="-1"`, no `role="alert"`) above the form: "We could not send this. Your text is still here. Try again or use [fallback contact]" | Focus moves to the banner; button re-enabled |
 | Success (JS) | Form is replaced by the confirmation content (same as Enquiry sent), `h1` stays | Focus moves to the confirmation heading |
 | Success (no JS) | `303` to `/contact/thanks/` | New page load |
 | Failure (no JS) | `303` to `/contact/error/` | New page load |
 
-Breakpoints: M single column, button full width, side panel content moves below the button as "What happens next". T: single column at 560 px max width. D: form 7 cols, side panel 4 cols sticky; DOM order is form first, panel second.
+Breakpoints: M single column, button full width, side panel content moves below the button as "What happens next". T: single column at 560 px max width. D: form 7 cols, side panel 4 cols sticky; DOM order is form first, panel second. Structured data: `ContactPage`.
 Tab order: skip link, header, Name, Reply contact, Message, Company, Submit, fallback link, footer links. The honeypot is skipped (`tabindex="-1"`, hidden). Headings: h1; h2 "What happens next".
 
 ## 7. Enquiry sent `/contact/thanks/`
@@ -347,7 +347,7 @@ Copy: `errors.404`. Must work at any URL depth, so all asset and link paths are 
 ## 12. Accessibility notes (all pages)
 
 - Landmarks: `header`, `nav` (labelled), `main`, `footer`; one `h1` per page; heading outlines are given per page above.
-- Keyboard: every control reachable and operable by keyboard; the skip link target is `main` with `tabindex="-1"`. Disclosures and the mobile menu respond to Enter and Space; Escape closes the open one and returns focus to its button.
+- Keyboard: every control reachable and operable by keyboard; the skip link target is `main` with `tabindex="-1"`. Native `<details>` disclosures and the mobile menu respond to Enter and Space. Escape-to-close and close-on-focus-leave are an optional JS enhancement, not in v1 (matches sitemap.md).
 - Focus: visible focus indicator on every interactive element, not obscured by the sticky header (WCAG 2.2 SC 2.4.11 Focus Not Obscured); use `scroll-margin-top` equal to the header height on anchor targets and focus targets.
 - Target size: at least 24 x 24 px (SC 2.5.8) and 44 x 44 px on M by our own rule.
 - Forms: visible labels, hint text and errors tied with `aria-describedby`; SC 3.3.7 Redundant Entry (nothing asked twice); SC 3.3.8 Accessible Authentication does not apply (no login). No CAPTCHA.

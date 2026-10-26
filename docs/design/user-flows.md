@@ -95,7 +95,7 @@ flowchart TD
   end
 ```
 
-Mobile: header collapses to logo, CTA button and a menu button below 768 px. The menu is a no-JS `<details>` disclosure (or a button with `aria-expanded`) opening a full-width panel with the same items in the same order, closed by the menu button. Focus order follows the panel and is not trapped; Escape returns focus to the menu button (optional JS enhancement). The CTA button stays visible outside the panel so the primary action is always one tap away.
+Mobile: header collapses to logo, CTA button and a menu button below 768 px. The menu is a no-JS `<details>` disclosure (or a button with `aria-expanded`) opening a full-width panel with the same items in the same order, closed by the menu button. Focus order follows the panel and is not trapped; Escape returns focus to the menu button (optional JS enhancement, not in v1). The CTA button sits inside the panel and, from 480 px up, also beside the menu button (wireframes.md §0; below 480 px is a Gate 2 decision, update this line to match the outcome).
 
 ## 6. Interactive states per flow step
 
