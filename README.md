@@ -355,10 +355,16 @@ Requires Node.js 24 LTS (`.nvmrc`) and npm. Start from a clean clone with `npm c
 | `npm run dev`          | Dev server on `$PORT` (default 4321)                            |
 | `npm run build`        | Static build into `dist/`                                       |
 | `npm run preview`      | Serves `dist/` on `$PORT` (default 4321)                        |
-| `npm run lint`         | ESLint (TypeScript + Astro)                                     |
+| `npm run lint`         | ESLint (TypeScript + Astro) and Prettier check                   |
 | `npm run format:check` | Prettier check (`npm run format` writes changes)                |
 | `npm run typecheck`    | `astro check` (TypeScript strict + `noUncheckedIndexedAccess`)  |
 | `npm run check`        | `astro check` plus `tsc --noEmit`, the CI `typecheck` job       |
-| `npm test`             | Vitest unit tests                                               |
+| `npm test`             | Vitest with V8 coverage (text + `coverage/lcov.info`)            |
 
 Brand, domain, email, socials and analytics IDs live only in `site.config.ts`.
+
+Coverage requires at least 80% lines per file for `site.config.ts` and `src/lib/`.
+ESLint blocks host SDK/`infra/` imports and direct `process.env` access in `src/`.
+Stylelint will be added with the first CSS/token implementation; this scaffold has no CSS.
+Astro jsx-a11y rules are tracked in [#43](https://github.com/clockvane/website/issues/43):
+the available plugin's ESLint peer range currently excludes ESLint 10.

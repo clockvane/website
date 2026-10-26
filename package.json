@@ -10,12 +10,12 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "lint": "eslint .",
+    "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "astro check",
     "check": "astro check && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "astro": "^7.4.2",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.13.0",
     "eslint-plugin-astro": "^1.0.0",
     "prettier": "^3.0.0",
