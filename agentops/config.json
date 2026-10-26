@@ -88,15 +88,71 @@
   },
   "merge": {
     "auto_merge": true,
-    "method": "squash"
+    "method": "squash",
+    "owner_merge_paths": [
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/**",
+      ".codex/**",
+      "agentops/**",
+      ".github/workflows/**",
+      ".github/actions/**",
+      ".github/CODEOWNERS",
+      "docs/product/BRIEF.md",
+      "infra/cloudflare/**"
+    ]
   },
   "paths": {
     "_readme": "Personal overrides (any key in this file) go in ~/.claude/agentops/config.local.json — it survives the agents clone reset.",
     "state_dir": "~/.claude/agentops/clockvane-website",
     "snapshot_file": "~/.claude/agentops/usage-snapshot.json",
     "pause_file": "~/.claude/agentops/PAUSE",
-    "window_file": "~/.claude/agentops/RUN_WINDOW.json"
+    "window_file": "~/.claude/agentops/RUN_WINDOW.json",
+    "codex_snapshot_file": "~/.claude/agentops/codex-usage-snapshot.json"
   },
   "claude_bin": "claude",
-  "gh_bin": "gh"
+  "gh_bin": "gh",
+  "engines": {
+    "_readme": "Codex lane: roles with engine 'codex' run on the Codex CLI (your ChatGPT plan) in a second copy of the repo, at the same time as the Claude lane. It switches on only after `agents codex-check` passes.",
+    "codex": {
+      "enabled": true,
+      "bin": "codex",
+      "clone_dir": "~/agents/clockvane-website-codex",
+      "sessions_dir": "~/.codex/sessions",
+      "sandbox": "workspace-write",
+      "writable_dirs": [
+        "~/.npm",
+        "~/.cache"
+      ],
+      "probe_model": "gpt-6-luna",
+      "default_model": "gpt-6.1-sol",
+      "five_hour_stop_pct": 85,
+      "seven_day_stop_pct": 85,
+      "max_runs_per_5h_without_reading": 3,
+      "expected_run_pct": {
+        "implement": 15,
+        "fix": 8,
+        "review": 5,
+        "plan": 3
+      }
+    }
+  },
+  "roles": {
+    "_readme": "Which engine and model runs each agent. Roles not listed run on Claude Code with the model in their .claude/agents file.",
+    "ux-designer": {
+      "engine": "codex",
+      "model": "gpt-6-astra",
+      "effort": "high"
+    },
+    "sde3": {
+      "engine": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "high"
+    },
+    "sde2": {
+      "engine": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium"
+    }
+  }
 }

@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${AGENTOPS_REPO_ROOT:-$(git rev-parse --show-toplevel)}/agentops/hooks/guard_bash.py\"",
+            "statusMessage": "agentops guard"
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${AGENTOPS_REPO_ROOT:-$(git rev-parse --show-toplevel)}/agentops/hooks/protect_paths.py\"",
+            "statusMessage": "agentops guard"
+          }
+        ]
+      }
+    ]
+  }
+}

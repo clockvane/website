@@ -17,7 +17,7 @@ import shlex
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from protect_paths import GOVERNANCE, REVIEW_WRITABLE  # noqa: E402
+from protect_paths import GOVERNANCE, REVIEW_WRITABLE, note_block  # noqa: E402
 
 # Command-position prefix: start of line or after ; && || | $( `
 CMD = r"(?:^|[;&|`]\s*|\$\(\s*)(?:\w+=\S*\s+)*(?:sudo\s+)?"
@@ -50,8 +50,9 @@ RULES = [
     (r"\bAGENTOPS_[A-Z_]+\s*=", "Agents may not set AGENTOPS_* variables."),
     (r"(?:^|[\s'\"=/])\.env(?:\.(?!example\b|sample\b|template\b)[\w-]+)?(?=$|[\s'\";|&)])",
      "Agents never read or write .env files (only .env.example)."),
-    (r"(?:~|\$HOME|/home/[^/\s]+)/(?:\.ssh|\.aws|\.config/gh|\.config/gcloud|\.claude\.json|"
-     r"\.claude/\.credentials)", "Reading credential stores is not allowed."),
+    (r"(?:~|\$HOME|/home/[^/\s]+|/root)/(?:\.ssh|\.aws|\.config/gh|\.config/gcloud|\.claude\.json|"
+     r"\.claude/\.credentials|\.codex)", "Reading credential stores is not allowed."),
+    (r"agentops-guard-selftest", "guard self-test: this command is blocked on purpose."),
 ]
 COMPILED = [(re.compile(p, re.IGNORECASE | re.MULTILINE), msg) for p, msg in RULES]
 
@@ -369,9 +370,18 @@ def main() -> int:
     except Exception:
         return 0
     command = (data.get("tool_input") or {}).get("command") or ""
-    root = os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd()
+    if isinstance(command, list):  # some tools pass argv
+        command = command[-1] if len(command) >= 3 and command[0].endswith("sh") and command[1] in ("-c", "-lc") \
+            else shlex.join(str(c) for c in command)
+    root = (os.environ.get("AGENTOPS_REPO_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+            or data.get("cwd") or os.getcwd())
     verdict, why = analyze(command, root, data.get("cwd") or root, os.environ.get("AGENTOPS_ACTION", ""))
+    if verdict == "pass" and os.environ.get("AGENTOPS_ENGINE") == "codex":
+        # Codex has no "deny anything not allowed" mode like Claude Code's dontAsk, so the guard does it.
+        verdict, why = "block", (f"not on the team's command list ({why}). Use git, gh, npm/npx/node and plain "
+                                 "file tools, one command per call; edit files with apply_patch.")
     if verdict == "block":
+        note_block("Bash", command, why)
         print(f"Blocked by agentops guard: {why}", file=sys.stderr)
         return 2
     if verdict == "allow":

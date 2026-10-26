@@ -1,0 +1,19 @@
+# Codex command rules for agent runs (governance file — human-only).
+# The agentops guard hook checks every command first; these rules are a second layer.
+# "allow" = run outside the sandbox without asking. git needs it to write .git (read-only in the
+# sandbox); gh needs it for its login and the network. Everything else runs inside the sandbox.
+prefix_rule(pattern = ["git"], decision = "allow", match = ["git status", "git commit -m x"])
+prefix_rule(pattern = ["gh"], decision = "allow", match = ["gh pr view 5"])
+
+prefix_rule(pattern = ["git", "push", ["--force", "-f", "--force-with-lease"]], decision = "forbidden",
+            justification = "Force-push is not allowed. Add new commits instead.")
+prefix_rule(pattern = ["git", "config", "--global"], decision = "forbidden")
+prefix_rule(pattern = ["gh", "pr", "merge"], decision = "forbidden",
+            justification = "Agents never merge. The dispatcher merges after all checks pass.")
+prefix_rule(pattern = ["gh", ["secret", "variable", "ruleset", "auth"]], decision = "forbidden")
+prefix_rule(pattern = ["gh", "repo", ["delete", "edit", "rename", "archive"]], decision = "forbidden")
+prefix_rule(pattern = [["sudo", "wget", "gcloud", "gsutil", "bq", "aws", "az", "kubectl", "helm", "doctl",
+                        "flyctl", "vercel", "netlify", "wrangler", "firebase"]], decision = "forbidden",
+            justification = "Not allowed on the owner's laptop. Deploys happen in CI.")
+prefix_rule(pattern = ["terraform", ["apply", "destroy", "import", "state"]], decision = "forbidden")
+prefix_rule(pattern = ["npm", ["publish", "login", "adduser", "token"]], decision = "forbidden")

@@ -770,5 +770,196 @@ class BackToBack(unittest.TestCase):
         self.assertEqual(len(self.run_tick(self.issues(21, 22, 23), ["error_max_turns"])), 1)
 
 
+FAKE_CODEX = r"""#!/usr/bin/env python3
+import json, os, sys
+args = sys.argv[1:]
+if args[:1] == ["--version"]:
+    print("codex-cli 9.9.9"); sys.exit(0)
+prompt = sys.stdin.read()
+out = args[args.index("-o") + 1] if "-o" in args else None
+sessions = os.environ["FAKE_SESSIONS"]
+mode = os.environ.get("FAKE_MODE", "ok")
+def ev(**k): print(json.dumps(k), flush=True)
+ev(type="thread.started", thread_id="th-123")
+day = os.path.join(sessions, "2026", "10", "26"); os.makedirs(day, exist_ok=True)
+with open(os.path.join(day, "rollout-2026-10-26T10-00-00-th-123.jsonl"), "w") as fh:
+    for p5, p7 in ((20.0, 40.0), (23.0, 41.0)):
+        fh.write(json.dumps({"timestamp": "2026-10-26T10:00:00Z", "type": "event_msg", "payload": {"type": "token_count",
+            "rate_limits": {"primary": {"used_percent": p5, "window_minutes": 300, "resets_at": 4102444800},
+                            "secondary": {"used_percent": p7, "window_minutes": 10080, "resets_at": 4102444800}}}}) + "\n")
+if mode == "limit":
+    ev(type="error", message="You've hit your usage limit. Try again at 9:15 PM.")
+    sys.exit(1)
+ev(type="item.completed", item={"id": "i1", "type": "command_execution", "command": "gh issue view 30", "exit_code": 0})
+ev(type="item.completed", item={"id": "i2", "type": "file_change", "changes": [{"path": "docs/design/tokens.json", "kind": "add"}]})
+ev(type="item.completed", item={"id": "i3", "type": "agent_message", "text": "Opened PR #44.\nDONE: PR #44"})
+ev(type="turn.completed", usage={"input_tokens": 1000, "cached_input_tokens": 500, "output_tokens": 200, "reasoning_output_tokens": 50})
+if out:
+    open(out, "w").write("Opened PR #44.\nDONE: PR #44")
+assert "ux-designer" in prompt and "WORK ORDER" in prompt
+"""
+
+
+class CodexLane(unittest.TestCase):
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        (self.tmp / "projects").mkdir()
+        fake = self.tmp / "codex"
+        fake.write_text(FAKE_CODEX)
+        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+        self.cfg = make_cfg(self.tmp)
+        self.cfg.d["engines"]["codex"].update(bin=str(fake), sessions_dir=str(self.tmp / "sessions"),
+                                              writable_dirs=[str(self.tmp / "npm")])
+        self.cfg.d["paths"]["codex_snapshot_file"] = str(self.tmp / "codex-snap.json")
+        self.st = ao.State(self.cfg)
+        os.environ["FAKE_SESSIONS"] = str(self.tmp / "sessions")
+
+    def tearDown(self):
+        os.environ.pop("FAKE_MODE", None)
+        self._t.cleanup()
+
+    def test_reading_and_reset_parsing(self):
+        line = {"type": "event_msg", "payload": {"type": "token_count", "info": {"used_percent": 99, "window_minutes": 1},
+                "rate_limits": {"primary": {"used_percent": 12.5, "window_minutes": 300, "resets_at": 1900000000},
+                                "secondary": {"used_percent": 33.0, "window_minutes": 10080, "resets_at": 1900500000}}}}
+        r = ao.codex_reading(line)
+        self.assertEqual((r["five_hour"]["pct"], r["seven_day"]["pct"]), (12.5, 33.0))
+        now = dt.datetime(2026, 10, 26, 20, 0).timestamp()
+        t = ao.parse_codex_reset("You've hit your usage limit. Try again at 9:15 PM.", now)
+        self.assertEqual(dt.datetime.fromtimestamp(t).strftime("%H:%M"), "21:15")
+        t = ao.parse_codex_reset("try again at Oct 27, 2026 1:05 AM", now)
+        self.assertEqual(dt.datetime.fromtimestamp(t).strftime("%d %H:%M"), "27 01:05")
+
+    def test_run_codex_records_usage_and_final(self):
+        rec = ao.run_codex(self.cfg, self.st, ao.Work("ux-designer", "implement", 30, note="x"), "design",
+                           limits={"session": 85.0, "weekly": 85.0})
+        self.assertEqual(rec["outcome"], "success", rec)
+        self.assertEqual((rec["session_id"], rec["turns"], rec["final"]), ("th-123", 2, "Opened PR #44.\nDONE: PR #44"))
+        self.assertEqual(rec["usage_delta"], {"five_hour": 3.0, "seven_day": 1.0})
+        self.assertEqual(rec["model"], "gpt-6-astra")
+        snap = json.loads((self.tmp / "codex-snap.json").read_text())
+        self.assertEqual(snap["five_hour"]["used_percentage"], 23.0)
+
+    def test_run_codex_usage_limit_sets_codex_cooldown(self):
+        os.environ["FAKE_MODE"] = "limit"
+        rec = ao.run_codex(self.cfg, self.st, ao.Work("sde2", "implement", 31, note="x"), "build")
+        self.assertEqual(rec["outcome"], "usage-limit")
+        self.assertGreater(self.st.doc("cooldown-codex").get("until", 0), time.time())
+        self.assertEqual(self.st.doc("cooldown"), {})  # the Claude lane is not affected
+
+    def test_trust_entry(self):
+        home = self.tmp / "codex-home"
+        home.mkdir()
+        (home / "config.toml").write_text('model = "gpt-6-luna"\n')
+        old = os.environ.get("CODEX_HOME")
+        os.environ["CODEX_HOME"] = str(home)
+        try:
+            self.assertIn("added", ao.ensure_codex_trust(Path("/home/me/agents/site-codex")))
+            self.assertEqual(ao.ensure_codex_trust(Path("/home/me/agents/site-codex")), "already trusted")
+            import tomllib
+            data = tomllib.loads((home / "config.toml").read_text())
+            self.assertEqual(data["projects"]["/home/me/agents/site-codex"]["trust_level"], "trusted")
+            self.assertEqual(data["model"], "gpt-6-luna")
+        finally:
+            if old is None:
+                os.environ.pop("CODEX_HOME", None)
+            else:
+                os.environ["CODEX_HOME"] = old
+
+    def test_lane_gate_uses_chatgpt_limits(self):
+        live = {"five_hour": 80.0, "seven_day": 20.0, "five_hour_resets": NOW + 3600, "seven_day_resets": NOW + 9e4,
+                "age_min": 1, "source": "test"}
+        okay, reasons, info = ao.gate(self.cfg, self.st, NOW, live=live, action="implement", lane="codex")
+        self.assertFalse(okay)
+        self.assertIn("ChatGPT session usage 80%", reasons[0])
+        self.assertEqual(info["limits"]["session"], 85.0)
+
+
+class Lanes(unittest.TestCase):
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        self.cfg = make_cfg(self.tmp)
+        self.st = ao.State(self.cfg)
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def d(self, gh, lane, lanes=("claude", "codex"), busy=()):
+        return ao.Dispatcher(self.cfg, gh, self.st, NOW, apply=True, lane=lane, lanes=list(lanes), busy=set(busy))
+
+    def test_issues_split_by_lane_and_fallback(self):
+        L = lambda *n: [{"name": x} for x in n]
+        issues = [{"number": 30, "labels": L("status:ready", "agent:ux-designer", "priority:p0"), "body": ""},
+                  {"number": 31, "labels": L("status:ready", "agent:content-writer", "priority:p1"), "body": ""}]
+        gh = FakeGH(issues=issues)
+        self.assertEqual(self.d(gh, "claude").choose("design", "m").issue, 31)
+        self.assertEqual(self.d(gh, "codex").choose("design", "m").issue, 30)
+        # Codex lane not ready yet: everything runs on Claude, highest priority first
+        self.assertEqual(self.d(gh, "claude", lanes=("claude",)).choose("design", "m").issue, 30)
+        # the codex lane never plans
+        self.assertIsNone(self.d(FakeGH(), "codex").choose("design", "m"))
+
+    def test_parallel_reviews_but_no_review_during_a_fix(self):
+        gh = FakeGH(prs=[pr(40, "sha40", ["agent:sde2", "ui-review"], branch="sde2/31-hero")],
+                    files={40: ["src/components/Hero.astro"]})
+        w = self.d(gh, "claude").handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action), ("code-reviewer", "review"))
+        w = self.d(gh, "codex", busy={("pr", 40, "review")}).handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action), ("ux-designer", "review"))
+        self.assertIsNone(self.d(gh, "claude", busy={("pr", 40, "fix")}).handle_prs(gh.prs))
+
+    def test_agent_pr_touching_workflows_waits_for_owner(self):
+        approve = [ok("devops-lead"), ok("security-reviewer")]
+        gh = FakeGH(prs=[pr(41, "s41", ["agent:devops-engineer"], branch="devops-engineer/9-ci")],
+                    files={41: [".github/workflows/ci.yml"]}, statuses={"s41": approve})
+        self.d(gh, "claude").handle_prs(gh.prs)
+        self.assertIn(("label", 41, ["needs-human"]), gh.calls)
+        self.assertFalse(any(c[0] == "merge" for c in gh.calls))
+        # the same change from the owner merges normally after review
+        gh2 = FakeGH(prs=[pr(42, "s42", [], branch="owner/ci")], files={42: [".github/workflows/ci.yml"]},
+                     statuses={"s42": approve})
+        self.d(gh2, "claude").handle_prs(gh2.prs)
+        self.assertTrue(any(c[0] == "merge" for c in gh2.calls))
+        # the codex lane never merges
+        gh3 = FakeGH(prs=[pr(43, "s43", ["agent:sde2"])], files={43: ["src/a.ts"]},
+                     statuses={"s43": [ok("code-reviewer"), ok("qa-engineer")]})
+        self.d(gh3, "codex").handle_prs(gh3.prs)
+        self.assertEqual(gh3.calls, [])
+
+    def test_codex_prompt_has_role_procedure_and_rules(self):
+        text = ao.render_codex_prompt(ao.Work("ux-designer", "implement", 22, note="Implement issue #22."), "design", self.cfg)
+        for needle in ("Senior UX/UI Designer", "PROCEDURE `delivery-protocol`", "WORK ORDER", "ISSUE=22",
+                       "apply_patch", "CLAUDE.md"):
+            self.assertIn(needle, text)
+
+
+class CodexGuards(unittest.TestCase):
+    def run_hook(self, script, payload, **env):
+        import subprocess
+        e = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_ACTION="implement", AGENTOPS_REPO_ROOT="/tmp/repo", **env)
+        return subprocess.run([sys.executable, str(AGENTOPS / "hooks" / script)], input=json.dumps(payload),
+                              capture_output=True, text=True, env=e)
+
+    def test_strict_for_codex(self):
+        cmd = {"tool_name": "Bash", "tool_input": {"command": "python3 -c 'print(1)'"}, "cwd": "/tmp/repo"}
+        self.assertEqual(self.run_hook("guard_bash.py", cmd).returncode, 0)            # Claude: its own rules decide
+        self.assertEqual(self.run_hook("guard_bash.py", cmd, AGENTOPS_ENGINE="codex").returncode, 2)
+        ok_cmd = {"tool_name": "Bash", "tool_input": {"command": "gh issue view 3"}, "cwd": "/tmp/repo"}
+        out = self.run_hook("guard_bash.py", ok_cmd, AGENTOPS_ENGINE="codex")
+        self.assertEqual(json.loads(out.stdout)["hookSpecificOutput"]["permissionDecision"], "allow")
+
+    def test_apply_patch_paths(self):
+        patch = "*** Begin Patch\n*** Update File: CLAUDE.md\n@@\n-a\n+b\n*** End Patch\n"
+        res = self.run_hook("protect_paths.py", {"tool_name": "apply_patch", "tool_input": {"command": patch}})
+        self.assertEqual(res.returncode, 2)
+        patch = "*** Begin Patch\n*** Add File: docs/design/tokens.json\n+{}\n*** End Patch\n"
+        self.assertEqual(self.run_hook("protect_paths.py", {"tool_name": "apply_patch", "tool_input": {"command": patch}}).returncode, 0)
+        patch = "*** Begin Patch\n*** Add File: /home/me/.bashrc\n+x\n*** End Patch\n"
+        self.assertEqual(self.run_hook("protect_paths.py", {"tool_name": "apply_patch", "tool_input": {"command": patch}}).returncode, 2)
+        self.assertEqual(protect.target_paths({"command": "*** Begin Patch\n*** Update File: a.md\n*** Move to: b.md\n"}), ["a.md", "b.md"])
+
+
 if __name__ == "__main__":
     unittest.main()
