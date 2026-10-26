@@ -6,7 +6,7 @@ Flows and navigation diagrams: `user-flows.md`.
 
 Personas: **P1** owner-operator, **P2** ops/IT manager, **P3** technical founder.
 Tags: **MVP** = p0/p1 in the PRD, needed for go-live. **Later** = p2/p3.
-The one primary CTA label site-wide is **"Start a conversation"** (PRD section 6). On the Contact page the submit button reads "Submit enquiry".
+The one primary CTA label site-wide is **"Book a free audit call"** (PRD section 6). On the Contact page the submit button reads "Send message".
 
 ## Structure
 
@@ -53,22 +53,22 @@ URL rules (NFR-SEO-5): lowercase, hyphenated, trailing slash, no dates or IDs. S
 
 | Page | URL | Purpose | Persona | Primary CTA | Tag |
 |------|-----|---------|---------|-------------|-----|
-| Home | `/` | Say what Clockvane does, for whom and the next step in under 10 s; route to services; show the way of working; repeat the CTA | P1, P2, P3 | Start a conversation | MVP (p0) |
-| Services overview | `/services/` | Explain all five services in concrete terms; link to detail | P1, P2 | Start a conversation | MVP (p0) |
-| Business process automation | `/services/process-automation/` | Named chores that get automated, deliverables, how an engagement runs | P1 | Start a conversation | MVP (p1) |
-| Websites and apps | `/services/websites-and-apps/` | Site or app scope, deliverables, performance and accessibility stance | P1, P3 | Start a conversation | MVP (p1) |
-| Custom software | `/services/custom-software/` | When off-the-shelf does not fit; deliverables, ownership of code | P2, P3 | Start a conversation | MVP (p1) |
-| Cloud and DevOps | `/services/cloud-devops/` | Delivery pipelines, cloud setup and cost, security and handover | P2, P3 | Start a conversation | MVP (p1) |
-| AI automation | `/services/ai-automation/` | Targeted AI steps in real workflows, human checks, risk | P2, P1 | Start a conversation | MVP (p1) |
-| How we work | `/how-we-work/` | Steps from first call to delivery, engagement models, pricing stance (CR-4) | P1, P2 | Start a conversation | MVP (p1) |
-| About | `/about/` | Who is behind Clockvane, name story, expertise. Owner-supplied facts only | P1, P3 | Start a conversation | MVP (p1) |
-| Contact | `/contact/` | The conversion page: enquiry form, fallback contact method, response-time promise | All | Submit enquiry | MVP (p0) |
+| Home | `/` | Say what Clockvane does, for whom and the next step in under 10 s; route to services; show the way of working; repeat the CTA | P1, P2, P3 | Book a free audit call | MVP (p0) |
+| Services overview | `/services/` | Explain all five services in concrete terms; link to detail | P1, P2 | Book a free audit call | MVP (p0) |
+| Business process automation | `/services/process-automation/` | Named chores that get automated, deliverables, how an engagement runs | P1 | Book a free audit call | MVP (p1) |
+| Websites and apps | `/services/websites-and-apps/` | Site or app scope, deliverables, performance and accessibility stance | P1, P3 | Book a free audit call | MVP (p1) |
+| Custom software | `/services/custom-software/` | When off-the-shelf does not fit; deliverables, ownership of code | P2, P3 | Book a free audit call | MVP (p1) |
+| Cloud and DevOps | `/services/cloud-devops/` | Delivery pipelines, cloud setup and cost, security and handover | P2, P3 | Book a free audit call | MVP (p1) |
+| AI automation | `/services/ai-automation/` | Targeted AI steps in real workflows, human checks, risk | P2, P1 | Book a free audit call | MVP (p1) |
+| How we work | `/how-we-work/` | Steps from first call to delivery, engagement models, pricing stance (CR-4) | P1, P2 | Book a free audit call | MVP (p1) |
+| About | `/about/` | Who is behind Clockvane, name story, expertise. Owner-supplied facts only | P1, P3 | Book a free audit call | MVP (p1) |
+| Contact | `/contact/` | The conversion page: enquiry form, fallback contact method, response-time promise | All | Send message | MVP (p0) |
 | Enquiry sent | `/contact/thanks/` | On-page confirmation, expected response time, what happens next. Reached via `303` after a successful non-JS submit; with JS the confirmation shows inline and this URL is the same content | All | None (links: How we work, Home) | MVP (p0) |
 | Privacy notice | `/privacy/` | What is collected (enquiry data, analytics) and why (CR-6) | All | None | MVP (p0) |
 | Enquiry failed | `/contact/error/` | No-JS fallback only: plain-language message that the enquiry was not sent and the text was not kept, the fallback contact, a link back to the form. `noindex`, not in the sitemap | All | Back to the form | MVP (p0) |
 | 404 | `404.html` (the host serves it for unknown paths; not a routable URL, no trailing-slash rule) | Recover lost visitors | All | Back home, Contact | MVP (p0) |
-| Proof | `/work/` | Real work and quotes. Empty-safe (FR-5) | P1, P2, P3 | Start a conversation | Later (p2) |
-| FAQ | `/faq/` (or a section on How we work) | Pricing, timeline, process, ownership answers | P1 | Start a conversation | Later (p2) |
+| Proof | `/work/` | Real work and quotes. Empty-safe (FR-5) | P1, P2, P3 | Book a free audit call | Later (p2) |
+| FAQ | `/faq/` (or a section on How we work) | Pricing, timeline, process, ownership answers | P1 | Book a free audit call | Later (p2) |
 | Blog, case studies, client portal | n/a | Future | n/a | n/a | Later (p3), no URL reserved |
 
 Non-page files: `sitemap.xml`, `robots.txt`, OG image. Non-production builds are `noindex`. The 404 page, `/contact/thanks/` and `/contact/error/` are `noindex` and excluded from `sitemap.xml`.
@@ -80,7 +80,7 @@ Non-page files: `sitemap.xml`, `robots.txt`, OG image. Non-production builds are
 ## Navigation
 
 **Header** (all pages, sticky on desktop, collapsing menu below 768 px):
-Logo (to Home) · Services · How we work · About · **Start a conversation** (button, links to `/contact/`).
+Logo (to Home) · Services · How we work · About · **Book a free audit call** (button, links to `/contact/`).
 The Services sub-list is a disclosure (`<details>` or a button with `aria-expanded`) opened by click or tap, not by hover alone, plus an "All services" link. The Services label itself always links to `/services/` so it works without JS. If a hover-open is added, it must meet WCAG 1.4.13 (dismissible, hoverable, persistent). Escape-to-close is an optional JS enhancement. Contact is reached via the CTA button, not a separate text link, so there is one label for one action.
 
 **Footer** (all pages):
