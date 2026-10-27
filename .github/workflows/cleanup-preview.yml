@@ -1,0 +1,42 @@
+name: cleanup-preview
+
+# Deletes a PR's preview deployments when the PR closes. pull_request_target runs this file
+# from main and checks out main only; no PR code is ever fetched or executed.
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+concurrency:
+  group: cleanup-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup-preview:
+    name: cleanup-preview
+    # Fork PRs were never deployed.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: preview
+    permissions:
+      contents: read
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check configuration
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$CF_PAGES_PROJECT" ]; then
+            echo "::error::Missing preview secrets/variable (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID in the 'preview' environment; CF_PAGES_PROJECT repository variable)."
+            exit 1
+          fi
+      # No ref given: the base branch (main) is checked out, never the PR head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Delete preview deployments
+        run: infra/cloudflare/delete-preview.sh "$PR_NUMBER"
