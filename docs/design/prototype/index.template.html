@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Automate repetitive business work | {{brand.name}}</title>
+    <meta name="description" content="We take over copy-paste chores, report building and approval chasing, so your team can do real work. Book a free audit call.">
+    <link rel="preload" href="fonts/public-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+      /* Generated from ../tokens.json; change the tokens, then run render.mjs. */
+      :root { {{tokens}} }
+      @font-face { font-family: "Public Sans"; src: url("fonts/public-sans-latin-wght-normal.woff2") format("woff2"); font-style: normal; font-weight: 100 900; font-display: swap; }
+      @font-face { font-family: "Newsreader"; src: url("fonts/newsreader-latin-wght-normal.woff2") format("woff2"); font-style: normal; font-weight: 200 800; font-display: swap; }
+      * { box-sizing: border-box; }
+      body { container-type: inline-size; container-name: page; }
+      html { scroll-padding-block-start: var(--layout-anchor-offset); }
+      body { margin: var(--space-0); background: var(--color-light-background); color: var(--color-light-text); font-family: var(--font-family-body); font-size: var(--font-size-body); font-weight: var(--font-weight-regular); line-height: var(--font-line-height-body); letter-spacing: var(--font-tracking); font-synthesis: none; font-optical-sizing: none; overflow-wrap: anywhere; }
+      h1, h2, h3, p, figure, ul, ol { margin: var(--space-0); }
+      h1, h2, h3 { font-family: var(--font-family-heading); font-weight: var(--font-weight-regular); line-height: var(--font-line-height-heading); text-wrap: pretty; }
+      h1 { font-size: var(--font-size-h1-mobile); }
+      h2 { font-size: var(--font-size-h2-mobile); }
+      h3 { font-size: var(--font-size-h3); }
+      p + p, h1 + p, h2 + p, h3 + p { margin-block-start: var(--space-4); }
+      a { color: var(--color-light-link); text-decoration: underline; text-underline-offset: var(--space-1); text-decoration-thickness: var(--stroke-border); }
+      a:hover, a:active { color: var(--color-light-link-hover); text-decoration-thickness: var(--stroke-focus); }
+      :focus-visible, [tabindex="-1"]:focus { outline: var(--stroke-focus) solid var(--color-light-focus); outline-offset: var(--stroke-focus-gap); }
+      /* Full-width landmarks put an outer ring offscreen; indicate their focus on the heading. */
+      main:focus, #services:focus { outline: none; }
+      main:focus #hero-title, #services:focus > h2 { outline: var(--stroke-focus) solid var(--color-light-focus); outline-offset: var(--stroke-focus-gap); }
+      [id] { scroll-margin-block-start: var(--layout-anchor-offset); }
+      .container { width: 100%; max-inline-size: calc(var(--layout-content) + var(--gutter) * 2); margin-inline: auto; padding-inline: var(--gutter); --gutter: var(--space-4); }
+      .section { padding-block: var(--space-14); }
+      .stack, .hero, .closing, .footer-grid { display: grid; gap: var(--space-6); }
+      .stack > *, .hero > *, .closing > *, .footer-grid > * { min-inline-size: 0; }
+      .measure { max-inline-size: calc(var(--layout-measure) * 1ch); }
+      .lede { font-size: var(--font-size-lede); }
+      .small, figcaption { font-size: var(--font-size-small); }
+      .muted { color: var(--color-light-muted); }
+      .surface { background: var(--color-light-surface); }
+      .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6); margin-block-start: var(--space-6); padding: var(--space-2); }
+      .standalone, summary { display: inline-flex; align-items: center; min-block-size: var(--size-target); min-inline-size: var(--size-target); font-size: var(--font-size-small); font-weight: var(--font-weight-semibold); line-height: var(--font-line-height-ui); }
+      .button { justify-content: center; text-align: center; inline-size: 100%; min-block-size: var(--size-control); padding: var(--space-3) var(--space-6); border: var(--stroke-border) solid var(--color-light-action); border-radius: var(--radius-small); color: var(--color-light-on-action); background: var(--color-light-action); text-decoration: none; }
+      .button:hover { color: var(--color-light-on-action); background: var(--color-light-action-hover); border-color: var(--color-light-action-hover); }
+      .button:active { color: var(--color-light-on-action); background: var(--color-light-action-active); border-color: var(--color-light-action-active); }
+      .hero .button { min-block-size: var(--size-large-control); }
+      .skip { position: absolute; inset-inline-start: var(--space-4); inset-block-start: var(--space-4); transform: translateY(-200%); z-index: var(--elevation-skip-link); padding: var(--space-4); background: var(--color-light-background); }
+      .skip:focus { transform: none; }
+      .site-header { background: var(--color-light-background); border-block-end: var(--stroke-border) solid var(--color-light-border); z-index: var(--elevation-header); }
+      .header-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); min-block-size: var(--layout-header); padding-block: var(--space-2); }
+      .brand { font-family: var(--font-family-heading); font-size: var(--font-size-h3); font-weight: var(--font-weight-semibold); }
+      .desktop-nav, .compact-cta { display: none; }
+      .mobile-nav { margin-inline-start: auto; }
+      summary { display: list-item; cursor: pointer; padding: var(--space-2) var(--space-4); border: var(--stroke-border) solid var(--color-light-border); border-radius: var(--radius-small); background: var(--color-light-background); color: var(--color-light-text); }
+      summary:hover, details[open] > summary { background: var(--color-light-surface); }
+      summary:active, details[open] > summary { border-color: var(--color-light-text); }
+      .open-label, details[open] > summary .closed-label { display: none; }
+      details[open] > summary .open-label { display: inline; }
+      .mobile-nav:has(details[open]) { inline-size: 100%; }
+      .nav-list { list-style: none; padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-2); }
+      .disclosure-panel { padding: var(--space-4); border: var(--stroke-border) solid var(--color-light-border); margin-block-start: var(--space-2); }
+      .disclosure-panel .nav-list .nav-list { padding-inline-start: var(--space-4); }
+      .workflow { padding: var(--space-6); border: var(--stroke-border) solid var(--color-light-border); border-radius: var(--radius-small); background: var(--color-light-surface); align-self: start; }
+      .workflow-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-block-end: var(--space-4); }
+      .workflow-label { font-size: var(--font-size-small); font-weight: var(--font-weight-semibold); margin-block-end: var(--space-3); }
+      .pipeline { list-style: none; padding: var(--space-0); }
+      .node { display: grid; place-items: center; min-block-size: var(--size-control); padding: var(--space-2); background: var(--color-light-background); border: var(--stroke-diagram) solid var(--color-light-text); border-radius: var(--radius-small); font-size: var(--font-size-small); }
+      .connector { display: block; width: var(--size-icon); height: var(--space-10); margin-inline: auto; fill: none; stroke: var(--color-light-text); stroke-width: var(--stroke-diagram); }
+      .person { inline-size: var(--size-icon); block-size: var(--size-icon); fill: none; stroke: var(--color-light-text); stroke-width: var(--stroke-diagram); }
+      .automated .connector { stroke: var(--color-light-action); }
+      .chores { padding-inline-start: var(--space-6); display: grid; gap: var(--space-3); }
+      .service-list { margin-block-start: var(--space-8); }
+      .service-row { padding-block: var(--space-8); border-block-start: var(--stroke-border) solid var(--color-light-border); display: grid; gap: var(--space-4); }
+      .service-row:last-child { border-block-end: var(--stroke-border) solid var(--color-light-border); }
+      .service-row a { margin-block-start: var(--space-4); }
+      .process { list-style: none; padding: var(--space-0); display: grid; gap: var(--space-6); counter-reset: step; }
+      .process li { counter-increment: step; border-inline-start: var(--stroke-border) solid var(--color-light-border); padding-inline-start: var(--space-6); }
+      .process li::before { content: "0" counter(step); display: inline-grid; place-items: center; min-inline-size: var(--size-target); min-block-size: var(--size-target); border: var(--stroke-border) solid var(--color-light-border); background: var(--color-light-background); color: var(--color-light-muted); margin-block-end: var(--space-4); font-size: var(--font-size-small); }
+      .inverse { background: var(--color-inverse-background); color: var(--color-inverse-text); }
+      .inverse a { color: var(--color-inverse-link); }
+      .inverse a:hover { color: var(--color-inverse-link-hover); }
+      .inverse a:active { color: var(--color-inverse-link-active); }
+      .inverse :focus-visible { outline-color: var(--color-inverse-focus); }
+      .inverse .button { color: var(--color-inverse-on-action); background: var(--color-inverse-action); border-color: var(--color-inverse-action); }
+      .inverse .button:hover { color: var(--color-inverse-on-action); background: var(--color-inverse-action-hover); border-color: var(--color-inverse-action-hover); }
+      .inverse .button:active { color: var(--color-inverse-on-action); background: var(--color-inverse-action-active); border-color: var(--color-inverse-action-active); }
+      .inverse .muted { color: var(--color-inverse-muted); }
+      .site-footer { padding-block: var(--space-12); border-block-start: var(--stroke-border) solid var(--color-inverse-border); }
+      .footer-heading { font-family: var(--font-family-body); font-size: var(--font-size-small); font-weight: var(--font-weight-semibold); line-height: var(--font-line-height-ui); }
+      .footer-bottom { margin-block-start: var(--space-8); padding-block-start: var(--space-6); border-block-start: var(--stroke-border) solid var(--color-inverse-border); }
+      .prototype-note { display: none; padding-block: var(--space-8); }
+      .prototype-note:target { display: block; }
+      /* Thresholds are substituted from breakpoint tokens at render time. */
+      @media (min-width: {{breakpoint.compactCta}}) { .compact-cta { display: inline-flex; inline-size: auto; min-block-size: var(--size-target); padding-inline: var(--space-4); } }
+      @media (min-width: {{breakpoint.tablet}}) {
+        .container { --gutter: var(--space-6); }
+        .section { padding-block: var(--space-18); }
+        h1 { font-size: var(--font-size-h1-tablet); }
+        .button { inline-size: auto; }
+        .workflow { inline-size: 60%; justify-self: center; }
+        .process { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (min-width: {{breakpoint.desktop}}) {
+        .container { --gutter: var(--space-8); }
+        .section { padding-block: var(--space-24); }
+        h1 { font-size: var(--font-size-h1-desktop); }
+        h2 { font-size: var(--font-size-h2-desktop); }
+        .mobile-nav, .compact-cta { display: none; }
+        .desktop-nav { display: block; margin-inline-start: auto; }
+        .desktop-nav > .nav-list { flex-direction: row; flex-wrap: wrap; align-items: start; gap: var(--space-4); }
+        .desktop-nav .button { min-block-size: var(--size-target); padding: var(--space-2) var(--space-4); }
+        .desktop-nav .disclosure-panel { max-inline-size: var(--layout-form); }
+        .hero, .closing { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); align-items: center; }
+        .workflow { inline-size: 100%; }
+        .service-row { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--space-6); }
+        .process { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .footer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      }
+      /* Container rem units follow enlarged root text; media rem units do not. */
+      @media (min-height: {{layout.stickyMinHeight}}) { @container page (min-width: {{breakpoint.desktop}}) { .site-header:not(:has(details[open])) { position: sticky; inset-block-start: var(--space-0); } } }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none; transition: none; scroll-behavior: auto; } }
+      @media (forced-colors: active) { :focus-visible, [tabindex="-1"]:focus, main:focus #hero-title, #services:focus > h2, .inverse :focus-visible { outline-color: Highlight; } .connector, .automated .connector { stroke: CanvasText; } }
+    </style>
+  </head>
+  <body>
+    <a class="skip standalone" href="#main">Skip to main content</a>
+    <header class="site-header">
+      <div class="container header-row">
+        <a class="brand standalone" href="#main" aria-label="{{brand.name}} home" aria-current="page">{{brand.name}}</a>
+        <nav class="mobile-nav" aria-label="Main, compact">
+          <details><summary><span class="closed-label">Menu</span><span class="open-label">Close</span></summary>
+            <div class="disclosure-panel"><ul class="nav-list">
+              <li><a class="standalone" href="#services">Services</a><ul class="nav-list">{{services.links}}</ul></li>
+              <li><a class="standalone" href="#preview-how">How we work</a></li>
+              <li><a class="standalone" href="#preview-about">About</a></li>
+              <li><a class="button standalone" href="#preview-contact">Book a free audit call</a></li>
+            </ul></div>
+          </details>
+        </nav>
+        <a class="button standalone compact-cta" href="#preview-contact">Book a free audit call</a>
+        <nav class="desktop-nav" aria-label="Main, desktop"><ul class="nav-list">
+          <li><a class="standalone" href="#services">Services</a></li>
+          <li><details><summary><span class="closed-label">Show services</span><span class="open-label">Hide services</span></summary><ul class="nav-list disclosure-panel">{{services.links}}</ul></details></li>
+          <li><a class="standalone" href="#preview-how">How we work</a></li>
+          <li><a class="standalone" href="#preview-about">About</a></li>
+          <li><a class="button standalone" href="#preview-contact">Book a free audit call</a></li>
+        </ul></nav>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <!-- copy: home.hero -->
+      <section class="container section hero" aria-labelledby="hero-title">
+        <div>
+          <h1 id="hero-title">We automate the boring work in your business</h1>
+          <p class="lede measure">Your team re-types orders, chases approvals and builds the same report every Monday. {{brand.name}} makes that work run by itself, so people can spend their time on customers.</p>
+          <div class="actions"><a class="button standalone" href="#preview-contact">Book a free audit call</a><a class="standalone" href="#services">See what we do</a></div>
+          <p class="small muted">We reply within 1 business day.</p>
+        </div>
+        <figure class="workflow">
+          <div class="workflow-grid" aria-hidden="true">
+            <div><p class="workflow-label">Before</p><ol class="pipeline">{{diagram.before}}</ol></div>
+            <div class="automated"><p class="workflow-label">After</p><ol class="pipeline">{{diagram.after}}</ol></div>
+          </div>
+          <figcaption class="muted">Before: three people copy data between a shop, a spreadsheet and an invoice tool. After: the same data moves between them on its own.</figcaption>
+        </figure>
+      </section>
+      <!-- copy: home.chores -->
+      <section class="surface section" aria-labelledby="chores-title"><div class="container stack">
+        <div><h2 id="chores-title">Chores we take off your hands</h2><p>These are typical examples. Yours will look a little different.</p></div>
+        <ul class="chores"><li>Re-typing orders from one system into another</li><li>Chasing people for invoice approvals</li><li>Building the same weekly report by hand</li><li>Sorting incoming emails and forms into the right place</li><li>Reading an invoice and filling in a spreadsheet</li></ul>
+        <p class="small muted measure">A weekly report that takes someone 2–3 hours by hand can often run by itself. [[PLACEHOLDER: Q1 owner to confirm or replace these example chores with real ones]]</p>
+      </div></section>
+      <!-- copy: home.services and shared service table -->
+      <section class="container section" id="services" tabindex="-1" aria-labelledby="services-title">
+        <h2 id="services-title">What we do</h2><p>Most clients start with an audit or a website, then automate from there.</p>
+        <div class="service-list">{{services.rows}}</div>
+        <p class="small muted">[[PLACEHOLDER: Q1 confirm custom software is offered at launch; the owner's four packages do not list it]]</p>
+      </section>
+      <!-- copy: home.process; home.about and home.proof intentionally absent -->
+      <section class="surface section" aria-labelledby="process-title"><div class="container stack">
+        <h2 id="process-title">How an engagement runs</h2>
+        <ol class="process"><li><h3>Talk.</h3><p>A free audit call about one slow process.</p></li><li><h3>Scope.</h3><p>We write down what we will build, for how much and by when.</p></li><li><h3>Build.</h3><p>We build it in small steps and show you as we go.</p></li><li><h3>Hand over.</h3><p>You get the working system, the accounts and the documents.</p></li></ol>
+        <div><a class="standalone" href="#preview-how">Read how we work</a></div>
+      </div></section>
+      <!-- copy: closing-cta -->
+      <section class="inverse section" aria-labelledby="closing-title"><div class="container closing">
+        <div><h2 id="closing-title">Tell us about one slow process</h2><p class="measure">Book a free audit call. We will look at one slow process and tell you what we would automate. We reply within 1 business day.</p></div>
+        <div><div class="actions"><a class="button standalone" href="#preview-contact">Book a free audit call</a></div><p class="small muted">[[PLACEHOLDER: audit call length, for example "about 30 minutes"]] No obligation.</p></div>
+      </div></section>
+    </main>
+    <footer class="site-footer inverse"><div class="container">
+      <div class="footer-grid">
+        <div><p class="brand">{{brand.name}}</p><p class="small">{{brand.name}} automates the boring work in small businesses, and builds the websites and cloud setups that run it. India · working with clients worldwide.</p></div>
+        <nav aria-label="Services"><h2 class="footer-heading">Services</h2><ul class="nav-list">{{services.links}}</ul></nav>
+        <nav aria-label="Company"><h2 class="footer-heading">Company</h2><ul class="nav-list"><li><a class="standalone" href="#preview-how">How we work</a></li><li><a class="standalone" href="#preview-about">About</a></li><li><a class="standalone" href="#preview-contact">Book a free audit call</a></li></ul></nav>
+      </div>
+      <div class="footer-bottom small"><a class="standalone" href="#preview-privacy">Privacy notice</a><p>© {{year}} {{brand.name}} · [[PLACEHOLDER: Q9 registered name and address, once registered]]</p><p class="muted">DRAFT · Home-page prototype. Links preview destinations; no booking is sent.</p></div>
+    </div></footer>
+    <!-- Prototype-only destination notes, exposed only when their fragment is selected. -->
+    <aside aria-label="Prototype destinations" class="container">
+      {{services.destinations}}
+      <section class="prototype-note" id="preview-how" tabindex="-1"><h2>DRAFT · How we work</h2><p>Destination: /how-we-work/. This offline prototype shows only the home page.</p><a class="standalone" href="#main">Back to home</a></section>
+      <section class="prototype-note" id="preview-about" tabindex="-1"><h2>DRAFT · About</h2><p>Destination: /about/. [[PLACEHOLDER: Q6 one-line roles for each founder, and consent to name them on the home page]]</p><a class="standalone" href="#main">Back to home</a></section>
+      <section class="prototype-note" id="preview-contact" tabindex="-1"><h2>DRAFT · Book a free audit call</h2><p>Destination: /contact/. This prototype does not submit enquiries or book calls. [[PLACEHOLDER: Q4 Cal.com URL via site config]]</p><a class="standalone" href="#main">Back to home</a></section>
+      <section class="prototype-note" id="preview-privacy" tabindex="-1"><h2>DRAFT · Privacy notice</h2><p>Destination: /privacy/. [[PLACEHOLDER: Q9 legal review before publication]]</p><a class="standalone" href="#main">Back to home</a></section>
+    </aside>
+  </body>
+</html>
