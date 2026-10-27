@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { csp, renderPagesHeaders, rules } from './render';
+import { csp, renderPagesHeaders, rules } from '../../../infra/headers/render';
 
 const REQUIRED = [
   'Content-Security-Policy',

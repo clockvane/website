@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPlaceholder, siteConfig, siteConfigSchema } from './site.config';
+import { isPlaceholder, siteConfig, siteConfigSchema } from '../../site.config';
 
 describe('site config', () => {
   it('matches its schema and names the brand', () => {

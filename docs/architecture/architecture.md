@@ -78,13 +78,18 @@ src/
   styles/                 # tokens.css (generated from docs/design), base.css, utilities.css
   scripts/                # tiny progressive-enhancement scripts (form validation)
 public/                   # robots.txt template, favicons, static OG fallback
-tests/
-  unit/                   # Vitest
+tests/                    # all tests, at the path of the code they test (ADR-003)
+  unit/                   # Vitest: src/ and site.config.ts
+  infra/                  # Vitest: infra/ tooling
   e2e/                    # Playwright + axe
-infra/                    # host adapters + Dockerfile/nginx.conf (ADR-002); never imported by src/
+infra/                    # host adapter, security headers, deploy scripts (ADR-002); never imported by src/
 .github/workflows/        # CI/CD; host specifics here, not in src/
 docs/                     # product, design, content, adr, architecture, engineering
 ```
+
+The root holds only files a tool requires there, `site.config.ts` and the repository's own files
+(README, SECURITY, CLAUDE.md, AGENTS.md); see [ADR-003](../adr/ADR-003-repository-structure.md) for the
+full rule and why infrastructure for this site lives in this repository.
 
 ## 4. Rendering strategy
 - Every v1 page is **pre-rendered at build time** (`output: 'static'`). No client-side routing.
