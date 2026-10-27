@@ -1267,7 +1267,7 @@ class GH:
 
     def open_prs(self) -> List[Dict[str, Any]]:
         return self._json(["pr", "list", "--repo", self.repo, "--state", "open", "--limit", "50", "--json",
-                           "number,title,isDraft,labels,headRefName,headRefOid,createdAt,body,author"]) or []
+                           "number,title,isDraft,labels,headRefName,headRefOid,createdAt,body,author,mergeable"]) or []
 
     def pr_files(self, n: int) -> List[str]:
         data = self._json(["pr", "view", str(n), "--repo", self.repo, "--json", "files"]) or {}
@@ -1468,10 +1468,19 @@ class Dispatcher:
             return nxt < len(PHASE_ORDER) and PHASE_ORDER[nxt] in phases
         return False
 
-    def _do(self, desc: str, fn, *args) -> None:
-        self.actions.append(desc)
-        if self.apply:
+    def _do(self, desc: str, fn, *args) -> bool:
+        """Do one GitHub write. A failure (a merge GitHub refuses, a hiccup) is recorded, never fatal:
+        the next turn sees the new state and tries again."""
+        if not self.apply:
+            self.actions.append(desc)
+            return True
+        try:
             fn(*args)
+        except RuntimeError as exc:
+            self.actions.append(f"{desc} FAILED: {str(exc)[:160]}")
+            return False
+        self.actions.append(desc)
+        return True
 
     def _escalate(self, number: int, reason: str) -> None:
         self._do(f"#{number}: needs-human ({reason})", self.gh.add_labels, number, ["needs-human"])
@@ -1500,6 +1509,20 @@ class Dispatcher:
                                        key))
                 continue
             if "needs-human" in labels:
+                continue
+            if pr.get("mergeable") == "CONFLICTING":
+                # main moved under this PR (another merge, a layout change): its author merges main in
+                if not author:
+                    continue  # the owner's own PR: GitHub shows him the conflict
+                key = f"conflict:{n}:{sha}"
+                if self.state.attempts(key) >= 2:
+                    if self.escalates(author):
+                        self._escalate(n, f"`{author}` could not resolve the merge conflicts with main after 2 attempts.")
+                    continue
+                candidates.append(Work(author, "fix", linked_issue(pr), n, sha,
+                                       "This PR has merge conflicts with main. Merge origin/main into the branch, "
+                                       "resolve every conflict keeping both sides' intent (main's current layout and "
+                                       "your change), run the checks, and push.", key))
                 continue
             created = parse_iso(pr.get("createdAt", "")) or self.now
             statuses = self.gh.statuses(sha)
@@ -2741,7 +2764,7 @@ def setup_statusline(settings_path: Path, script: Path) -> str:
             data = json.loads(raw) if raw.strip() else {}
         except json.JSONDecodeError:
             raise SystemExit(f"{settings_path} is not valid JSON — fix it first, or add the status line by hand "
-                             "(README step 5).")
+                             "(agentops/README.md, setup step 5).")
         backup = settings_path.with_name(settings_path.name + ".bak-agentops")
         if not backup.exists():
             backup.write_text(raw, encoding="utf-8")
@@ -3263,7 +3286,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         lines = out.stdout.split()
         if out.returncode != 0 or len(lines) < 3:
             raise RuntimeError("node/npm/claude not found the way the scheduler starts them — install Node LTS "
-                               "with nvm (README step 1) and Claude Code with its normal installer")
+                               "with nvm (agentops/README.md, step 1) and Claude Code with its normal installer")
         return f"node {lines[0]}, npm {lines[1]} (as the scheduler sees it)"
 
     version = (HERE / "VERSION").read_text().strip() if (HERE / "VERSION").exists() else "unknown"
@@ -3321,7 +3344,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         n = len(active_workers(cfg, State(cfg)))
         if total and n >= 3 and total < 5800:
             raise RuntimeError(f"Ubuntu has {total / 1024:.1f} GB for {n} agents at once — give WSL 6 GB "
-                               "(README: 'More agents at once'), or use fewer: agents workers --claude 1")
+                               "(agentops/README.md: 'More agents at once'), or use fewer: agents workers --claude 1")
         return f"{total / 1024:.1f} GB for Ubuntu, {n} agent(s) at once" if total else "unknown"
     check("memory", memory_ok)
     return 1 if problems else 0

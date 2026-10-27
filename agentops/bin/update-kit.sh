@@ -2,7 +2,7 @@
 # Install a newer agent kit into the repo, as the owner. Run inside WSL from the unzipped NEW kit:
 #     bash agentops/bin/update-kit.sh
 # It opens a pull request with only the kit's governance files (agentops/, .claude/agents,
-# .claude/skills, CLAUDE.md, README.md, .github templates), records your approval as the
+# .claude/skills, .codex, CLAUDE.md, AGENTS.md, .github templates), records your approval as the
 # owner, merges it, and refreshes the agents' copy. The agents' own work is never touched.
 set -euo pipefail
 
@@ -51,13 +51,14 @@ if [[ -n "$base_dir" ]]; then
 else
   warn "no original copy of kit '$current' found — comparing with the repo at the last kit install instead"
   echo "   ($(git log -1 --format='%h %s' "$base" | cut -c1-80)). Edits you made before that install"
-  echo "   can't be told apart from the kit: check the PR diff of CLAUDE.md and README.md before you continue."
+  echo "   can't be told apart from the kit: check the PR diff of CLAUDE.md before you continue."
 fi
 python3 - "$KIT_DIR" "$base" "$base_dir" <<'PY' || die "nothing was changed — see the message above"
 import os, subprocess, sys, tempfile
 kit, base, base_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 DIRS = ["agentops", ".claude/agents", ".claude/skills", ".github/ISSUE_TEMPLATE", ".codex"]
-FILES = ["CLAUDE.md", "AGENTS.md", "README.md", ".github/pull_request_template.md", ".github/CODEOWNERS"]
+# The root README.md describes the website and belongs to the team; the kit's manual is agentops/README.md.
+FILES = ["CLAUDE.md", "AGENTS.md", ".github/pull_request_template.md", ".github/CODEOWNERS"]
 
 
 def git(*args):
@@ -178,7 +179,7 @@ else
   say "Pull request"
   url="$(gh pr create --repo "$REPO" --base main --head "$branch" \
         --title "chore(agentops): update agent kit to $VERSION" \
-        --body "Owner-applied update of the agent kit (governance files only) to **$VERSION**. See README for what changed.")"
+        --body "Owner-applied update of the agent kit (governance files only) to **$VERSION**. See agentops/README.md for how the team works.")"
   echo "$url"
   gh pr edit "$url" --add-label governance >/dev/null 2>&1 || true
   gh api -X POST "repos/$REPO/statuses/$(git rev-parse HEAD)" -f state=success -f context=agent-review/summary \
@@ -198,7 +199,7 @@ mkdir -p "$STATE_DIR"
 rm -rf "$snap.new" && mkdir -p "$snap.new"
 (
   cd "$KIT_DIR"
-  for p in agentops .claude/agents .claude/skills .github/ISSUE_TEMPLATE .codex CLAUDE.md AGENTS.md README.md \
+  for p in agentops .claude/agents .claude/skills .github/ISSUE_TEMPLATE .codex CLAUDE.md AGENTS.md \
            .github/pull_request_template.md .github/CODEOWNERS; do
     [[ -e "$p" ]] && cp -r --parents "$p" "$snap.new/"
   done

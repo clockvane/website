@@ -6,7 +6,7 @@ time) to the status line script after each response. This script stores them so 
 gate knows how much of your plan is left — including usage from claude.ai and other devices,
 because the percentages come from Anthropic's servers.
 
-Configure once in ~/.claude/settings.json (README step 6):
+Configure once in ~/.claude/settings.json (agentops/README.md, setup step 5):
   "statusLine": {"type": "command",
                  "command": "python3 ~/agents/clockvane-website/agentops/bin/statusline.py"}
 To keep an existing status line, set AGENTOPS_STATUSLINE_CHAIN to its command; its first output

@@ -1466,5 +1466,43 @@ class CodexSelftest(unittest.TestCase):
             self.assertTrue(clones[str(tmp / "site-codex-2")]["passed"])
 
 
+class ConflictsAndFailedWrites(unittest.TestCase):
+    """v9.3: a PR that conflicts with main goes back to its author; a refused GitHub write never crashes a worker."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.cfg = make_cfg(Path(self._t.name))
+        self.st = ao.State(self.cfg)
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def test_conflicting_pr_goes_back_to_its_author(self):
+        p = dict(pr(60, "s60", ["agent:sde2"], branch="sde2/44-hero"), mergeable="CONFLICTING")
+        gh = FakeGH(prs=[p], files={60: ["src/a.ts"]})
+        w = ao.Dispatcher(self.cfg, gh, self.st, NOW, lanes=["claude"]).handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action, w.pr), ("sde2", "fix", 60))
+        self.assertIn("merge conflicts with main", w.note)
+        self.st.bump("conflict:60:s60", 2)
+        ao.Dispatcher(self.cfg, gh, self.st, NOW, lanes=["claude"]).handle_prs(gh.prs)
+        self.assertIn(("label", 60, ["needs-human"]), gh.calls)
+        owner = dict(pr(61, "s61", [], branch="chore/repo-structure"), mergeable="CONFLICTING")
+        gh2 = FakeGH(prs=[owner], files={61: ["README.md"]})
+        self.assertIsNone(ao.Dispatcher(self.cfg, gh2, self.st, NOW, lanes=["claude"]).handle_prs(gh2.prs))
+        self.assertEqual(gh2.calls, [])
+
+    def test_refused_merge_is_recorded_not_fatal(self):
+        class Refusing(FakeGH):
+            def merge(self, *a):
+                raise RuntimeError("gh pr merge 62… failed: Pull request is not mergeable")
+        approve = [ok("code-reviewer"), ok("qa-engineer")]
+        gh = Refusing(prs=[pr(62, "s62", ["agent:sde2"]), pr(63, "s63", ["agent:sde2"])],
+                      files={62: ["src/a.ts"], 63: ["src/b.ts"]}, statuses={"s62": approve, "s63": approve})
+        d = ao.Dispatcher(self.cfg, gh, self.st, NOW, lanes=["claude"])
+        d.handle_prs(gh.prs)
+        self.assertTrue(any(a.startswith("PR #62: squash-merge FAILED") for a in d.actions), d.actions)
+        self.assertIn("PR #63: summary=success", d.actions)  # the next PR is still handled
+
+
 if __name__ == "__main__":
     unittest.main()
