@@ -1,0 +1,97 @@
+---
+import { siteConfig } from '../../site.config';
+import { company, services } from '../content/navigation';
+import { footerLine } from '../content/site';
+import { publicDetails } from '../lib/config/public-details';
+import NavLinks from './ui/NavLinks.astro';
+interface Props {
+  currentPath: string;
+}
+const { currentPath } = Astro.props;
+const details = publicDetails(siteConfig);
+---
+
+<footer class="site-footer inverse">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a
+          class="brand standalone"
+          href="/"
+          aria-label={`${siteConfig.brand} home`}>{siteConfig.brand}</a
+        >
+        <p>{footerLine}</p>
+        {
+          details.email && (
+            <a class="standalone" href={`mailto:${details.email}`}>
+              {details.email}
+            </a>
+          )
+        }
+        {
+          details.phone && (
+            <a class="standalone" href={`tel:${details.phone}`}>
+              {details.phone}
+            </a>
+          )
+        }
+      </div>
+      <nav aria-label="Services">
+        <h2>Services</h2><NavLinks links={services} {currentPath} />
+      </nav>
+      <nav aria-label="Company">
+        <h2>Company</h2><NavLinks
+          links={[...company, { href: '/contact/', label: 'Contact' }]}
+          {currentPath}
+        />
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <a class="standalone" href="/privacy/">Privacy notice</a>
+      <p>© {new Date().getUTCFullYear()} {siteConfig.brand}</p>
+      {
+        details.socials.length > 0 && (
+          <nav aria-label="Social links">
+            <NavLinks
+              links={details.socials.map(({ label, href }) => ({
+                label: label === 'github' ? 'GitHub' : 'LinkedIn',
+                href,
+              }))}
+              {currentPath}
+            />
+          </nav>
+        )
+      }
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding-block: var(--space-12);
+    font-size: var(--font-size-small);
+    border-block-start: var(--stroke-border) solid var(--color-inverse-border);
+  }
+  .footer-grid {
+    display: grid;
+    gap: var(--space-6);
+  }
+  .footer-grid > * {
+    min-inline-size: 0;
+  }
+  .brand {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-h3);
+  }
+  h2 {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--font-line-height-ui);
+  }
+  .footer-bottom {
+    margin-block-start: var(--space-8);
+    padding-block-start: var(--space-6);
+    border-block-start: var(--stroke-border) solid var(--color-inverse-border);
+  }
+</style>

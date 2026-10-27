@@ -1,0 +1,23 @@
+---
+interface Props {
+  links: readonly { href: string; label: string }[];
+  currentPath: string;
+}
+const { links, currentPath } = Astro.props;
+---
+
+<ul class="nav-list">
+  {
+    links.map(({ href, label }) => (
+      <li>
+        <a
+          class="standalone"
+          href={href}
+          aria-current={currentPath === href ? 'page' : undefined}
+        >
+          {label}
+        </a>
+      </li>
+    ))
+  }
+</ul>

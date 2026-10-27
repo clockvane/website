@@ -1,0 +1,13 @@
+.container {
+  inline-size: 100%;
+  max-inline-size: calc(var(--layout-content) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  --gutter: var(--space-4);
+}
+.section {
+  padding-block: var(--space-14);
+}
+.measure {
+  max-inline-size: calc(var(--layout-measure) * 1ch);
+}

@@ -10,12 +10,41 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "lint": "eslint . && prettier --check .",
+    "lint": "eslint . && stylelint 'src/**/*.{css,astro}' --ignore-pattern src/styles/tokens.css && prettier --check .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "astro check",
     "check": "astro check && tsc --noEmit",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.ts"
+  },
+  "stylelint": {
+    "overrides": [
+      {
+        "files": [
+          "**/*.astro"
+        ],
+        "customSyntax": "postcss-html"
+      }
+    ],
+    "rules": {
+      "color-no-hex": true,
+      "function-disallowed-list": [
+        "rgb",
+        "rgba",
+        "hsl",
+        "hsla",
+        "color-mix"
+      ],
+      "declaration-property-value-disallowed-list": {
+        "/^(margin|padding|gap|row-gap|column-gap|font-size|border-radius)/": [
+          "/\\d+(px|rem|em)/"
+        ],
+        "/^(color|background|background-color|border-color|outline-color)$/": [
+          "/^(?!.*var\\(|Highlight|CanvasText|transparent|currentColor).*$/"
+        ]
+      }
+    }
   },
   "dependencies": {
     "astro": "^7.4.2",
@@ -23,12 +52,19 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@astrojs/sitemap": "^3.7.4",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.10.1",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.13.0",
     "eslint-plugin-astro": "^3.2.1",
     "eslint-plugin-jsx-a11y-x": "^0.2.0",
+    "postcss-html": "^2.0.0",
     "prettier": "^3.0.0",
     "prettier-plugin-astro": "^0.14.0",
+    "sharp": "^0.35.5",
+    "stylelint": "^17.16.0",
     "typescript": "^6.0.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^5.0.5"

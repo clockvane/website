@@ -1,21 +1,11 @@
 ---
 import { siteConfig } from '../../site.config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { homeSeo } from '../content/site';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{siteConfig.brand}</title>
-    <meta
-      name="description"
-      content="[[PLACEHOLDER: home page description from the copy deck]]"
-    />
-  </head>
-  <body>
-    <main>
-      <h1>{siteConfig.brand}</h1>
-    </main>
-  </body>
-</html>
+<BaseLayout {...homeSeo}>
+  <section class="container section">
+    <h1 class="measure">{siteConfig.brand}</h1>
+  </section>
+</BaseLayout>

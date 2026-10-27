@@ -1,0 +1,60 @@
+/* Shared responsive classes. Thresholds are replaced from tokens at config load. */
+@media (min-width: token(breakpoint.compactCta)) {
+  .compact-cta {
+    display: inline-flex;
+  }
+}
+@media (min-width: token(breakpoint.tablet)) {
+  .container {
+    --gutter: var(--space-6);
+  }
+  .section {
+    padding-block: var(--space-18);
+  }
+  h1 {
+    font-size: var(--font-size-h1-tablet);
+  }
+  .button {
+    inline-size: auto;
+  }
+}
+@media (min-width: token(breakpoint.desktop)) {
+  .container {
+    --gutter: var(--space-8);
+  }
+  .section {
+    padding-block: var(--space-24);
+  }
+  h1 {
+    font-size: var(--font-size-h1-desktop);
+  }
+  h2 {
+    font-size: var(--font-size-h2-desktop);
+  }
+  .mobile-nav,
+  .compact-cta {
+    display: none;
+  }
+  .desktop-nav {
+    display: block;
+    margin-inline-start: auto;
+  }
+  .desktop-nav > .nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: var(--space-4);
+  }
+  .footer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* Container units follow enlarged root text; wrapped headers remain static. */
+@media (min-height: token(layout.stickyMinHeight)) {
+  @container page (min-width: token(breakpoint.desktop)) {
+    .site-header:not(:has(details[open])) {
+      position: sticky;
+      inset-block-start: var(--space-0);
+    }
+  }
+}
