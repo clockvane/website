@@ -59,6 +59,14 @@ CI, preview deploys; never visual design, pages or copy) may run before the gate
   dependencies written as `Depends on #N`, size ≤ L. The EM does not mark a ticket ready without these.
 - One ticket = one PR, ideally under 400 changed lines (excluding lockfiles and assets).
 
+## Repository layout (`docs/adr/ADR-003-repository-structure.md`)
+- Code in `src/`; host adapter, headers and deploy scripts in `infra/`; CI/CD in `.github/workflows/`;
+  documents in `docs/<area>/` (index: `docs/README.md`); decisions in `docs/adr/`.
+- Every test lives under `tests/` at the path of the code it tests: `tests/unit/` (for `src/` and
+  `site.config.ts`), `tests/infra/`, `tests/e2e/`. No tests inside `src/`, `infra/` or at the root.
+- The root holds only files a tool requires there, `site.config.ts` and the repository's own files.
+  A new root file or top-level folder needs the `arch-impact` label and an update to ADR-003.
+
 ## Branches, commits, pull requests
 - Branch: `<role>/<issue>-<slug>` from the latest `main`, e.g. `sde2/42-contact-form`.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`, `refactor:`), each with

@@ -271,7 +271,7 @@ class Dashboard:
                            "number,title,labels,state,url,createdAt,closedAt,body"]) or []
         prs = gh._json(["pr", "list", "--repo", gh.repo, "--state", "all", "--limit", "40", "--json",
                         "number,title,state,labels,headRefOid,headRefName,url,isDraft,createdAt,mergedAt,"
-                        "closedAt,body,author"]) or []
+                        "closedAt,body,author,mergeable"]) or []
         cached = make_cached_gh(ao, gh)(issues, prs)
         out_prs = []
         for pr in prs:
