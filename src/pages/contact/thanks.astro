@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ContactResult from '../../components/ContactResult.astro';
+import { contactCopy } from '../../content/contact';
+import { siteConfig } from '../../../site.config';
+const copy = contactCopy.thanks;
+---
+
+<BaseLayout
+  title={`${copy.title} | ${siteConfig.brand}`}
+  description={copy.description}
+  noindex
+>
+  <div class="container section"><ContactResult kind="thanks" /></div>
+</BaseLayout>

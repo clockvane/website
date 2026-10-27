@@ -1,0 +1,178 @@
+---
+import { siteConfig } from '../../site.config';
+import { contactCopy as copy } from '../content/contact';
+import { fieldNames, limits } from '../lib/contact/schema';
+import ContactFallback from './ContactFallback.astro';
+import ContactResult from './ContactResult.astro';
+---
+
+<div data-contact>
+  <div data-contact-fields>
+    <h2>{copy.formHeading}</h2>
+    <section
+      class="feedback"
+      data-errors
+      hidden
+      tabindex="-1"
+      aria-labelledby="contact-errors-title"
+    >
+      <h3 id="contact-errors-title">{copy.summary}</h3>
+      <p>{copy.summaryIntro}</p>
+      <ul></ul>
+    </section>
+    <section
+      class="feedback"
+      data-failure
+      hidden
+      tabindex="-1"
+      aria-labelledby="contact-failure-title"
+    >
+      <h3 id="contact-failure-title">{copy.error.heading}</h3>
+      <p data-failure-message></p>
+      <ContactFallback />
+    </section>
+    <p class="status" role="status" data-status></p>
+    <form
+      action={siteConfig.contact.endpoint}
+      method="post"
+      enctype="application/x-www-form-urlencoded"
+    >
+      {
+        fieldNames.map((field) => (
+          <div class="field">
+            <label for={`contact-${field}`}>{copy.fields[field].label}</label>
+            <p class="hint" id={`${field}-hint`}>
+              {copy.fields[field].hint}
+            </p>
+            {field === 'message' ? (
+              <textarea
+                id={`contact-${field}`}
+                name={field}
+                required
+                minlength="10"
+                maxlength={limits[field]}
+                aria-describedby={`${field}-hint`}
+              />
+            ) : (
+              <input
+                id={`contact-${field}`}
+                name={field}
+                type="text"
+                autocomplete={field === 'name' ? 'name' : undefined}
+                required
+                maxlength={limits[field]}
+                aria-describedby={`${field}-hint`}
+              />
+            )}
+            <p class="field-error" id={`${field}-error`} hidden />
+          </div>
+        ))
+      }
+      <div hidden aria-hidden="true">
+        <input
+          name="website"
+          type="text"
+          tabindex="-1"
+          autocomplete="off"
+          aria-label="Website"
+        />
+        <input name="started" type="hidden" value="" />
+      </div>
+      <button class="button standalone" type="submit">{copy.send}</button>
+      <p class="hint">
+        {copy.privacy}
+        <a class="standalone" href="/privacy/">{copy.privacyLink}</a>
+      </p>
+      <p class="hint">{copy.sensitive}</p>
+    </form>
+  </div>
+  <div data-contact-success hidden><ContactResult kind="thanks" inline /></div>
+</div>
+
+<script>
+  import '../scripts/contact';
+</script>
+
+<style>
+  form {
+    margin-block-start: var(--space-6);
+  }
+  .field {
+    display: grid;
+    gap: var(--space-2);
+    margin-block-end: var(--space-6);
+  }
+  label {
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-small);
+  }
+  .hint {
+    font-size: var(--font-size-small);
+    margin-block-start: var(--space-0);
+  }
+  input,
+  textarea {
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: var(--size-control);
+    padding: var(--space-3);
+    border: var(--stroke-border) solid var(--color-light-border);
+    border-radius: var(--radius-small);
+    background: var(--color-light-background);
+    color: var(--color-light-text);
+    font: inherit;
+  }
+  textarea {
+    min-block-size: var(--size-textarea);
+    resize: vertical;
+  }
+  input:hover,
+  textarea:hover,
+  input:active,
+  textarea:active {
+    border-color: var(--color-light-text);
+  }
+  input:read-only,
+  textarea:read-only {
+    background: var(--color-light-disabled-fill);
+    color: var(--color-light-disabled-text);
+  }
+  input[aria-invalid='true'],
+  textarea[aria-invalid='true'] {
+    border-color: var(--color-light-error);
+  }
+  .field-error,
+  .feedback {
+    color: var(--color-light-error);
+  }
+  .feedback {
+    margin-block: var(--space-6);
+    padding: var(--space-6);
+    border: var(--stroke-border) solid var(--color-light-error);
+    border-radius: var(--radius-small);
+  }
+  .feedback ul {
+    padding-inline-start: var(--space-6);
+  }
+  .feedback a {
+    display: inline-flex;
+    min-block-size: var(--size-target);
+    align-items: center;
+  }
+  .status:empty {
+    display: none;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  button[aria-disabled='true'] {
+    cursor: wait;
+  }
+  form > .hint {
+    margin-block-start: var(--space-4);
+  }
+  .hint a {
+    display: flex;
+  }
+</style>

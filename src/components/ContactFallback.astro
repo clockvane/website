@@ -1,0 +1,24 @@
+---
+import { siteConfig } from '../../site.config';
+import { publicDetails } from '../lib/config/public-details';
+import { contactCopy as copy } from '../content/contact';
+const { email, phone } = publicDetails(siteConfig);
+---
+
+{
+  email ? (
+    <p>
+      {copy.fallback}{' '}
+      <a class="standalone" href={`mailto:${email}`}>
+        {email}
+      </a>
+    </p>
+  ) : phone ? (
+    <p>
+      {copy.fallback}{' '}
+      <a class="standalone" href={`tel:${phone.replace(/[^+\d]/g, '')}`}>
+        {phone}
+      </a>
+    </p>
+  ) : null
+}

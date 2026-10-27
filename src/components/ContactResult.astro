@@ -1,0 +1,69 @@
+---
+import { contactCopy as copy } from '../content/contact';
+import ContactFallback from './ContactFallback.astro';
+interface Props {
+  kind: 'thanks' | 'error';
+  inline?: boolean;
+}
+const { kind, inline = false } = Astro.props;
+const Heading = inline ? 'h2' : 'h1';
+const NextHeading = inline ? 'h3' : 'h2';
+const result = copy[kind];
+---
+
+<div class="contact-result">
+  <Heading tabindex={inline ? '-1' : undefined} data-result-heading
+    >{kind === 'thanks' && !inline ? copy.next : result.heading}</Heading
+  >
+  <p>{kind === 'thanks' && !inline ? copy.thanks.neutral : result.body}</p>
+  {
+    kind === 'thanks' ? (
+      <>
+        {inline && <NextHeading>{copy.next}</NextHeading>}
+        <ol>
+          {copy.steps.map((step) => (
+            <li>{step}</li>
+          ))}
+        </ol>
+        <a class="standalone" href="/how-we-work/">
+          {copy.how}
+        </a>
+        <a class="standalone" href="/">
+          {copy.home}
+        </a>
+        {!inline && (
+          <a class="standalone" href="/contact/">
+            {copy.back}
+          </a>
+        )}
+      </>
+    ) : (
+      <>
+        <ContactFallback />
+        <a class="button standalone" href="/contact/">
+          {copy.back}
+        </a>
+      </>
+    )
+  }
+</div>
+
+<style>
+  .contact-result {
+    max-inline-size: var(--layout-result);
+  }
+  ol {
+    padding-inline-start: var(--space-6);
+    margin-block: var(--space-6);
+  }
+  li + li {
+    margin-block-start: var(--space-3);
+  }
+  h3,
+  .button {
+    margin-block-start: var(--space-6);
+  }
+  a + a {
+    margin-inline-start: var(--space-4);
+  }
+</style>

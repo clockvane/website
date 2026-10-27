@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import ContactFallback from '../../components/ContactFallback.astro';
+import { contactCopy as copy } from '../../content/contact';
+import { siteConfig } from '../../../site.config';
+---
+
+<BaseLayout
+  title={`${copy.title} ${siteConfig.brand} | Book a free audit call`}
+  description={copy.description}
+>
+  <article
+    class="container section"
+    itemscope
+    itemtype="https://schema.org/ContactPage"
+  >
+    <header class="measure">
+      <h1 itemprop="name">{copy.heading}</h1><p itemprop="description">
+        {copy.intro}
+      </p>
+    </header>
+    <div class="contact-grid">
+      <ContactForm />
+      <aside class="contact-next" aria-labelledby="contact-next-title">
+        <h2 id="contact-next-title">{copy.next}</h2>
+        <ol>{copy.steps.map((step) => <li>{step}</li>)}</ol>
+        <ContactFallback />
+      </aside>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .contact-grid {
+    display: grid;
+    gap: var(--space-8);
+    margin-block-start: var(--space-10);
+  }
+  .contact-grid > * {
+    min-inline-size: 0;
+  }
+  .contact-next {
+    align-self: start;
+    background: var(--color-light-surface);
+    padding: var(--space-6);
+    border: var(--stroke-border) solid var(--color-light-border);
+    border-radius: var(--radius-small);
+  }
+  .contact-next ol {
+    padding-inline-start: var(--space-6);
+    margin-block: var(--space-6);
+  }
+  li + li {
+    margin-block-start: var(--space-3);
+  }
+  .contact-grid:has([data-contact-success]:not([hidden])) .contact-next {
+    display: none;
+  }
+</style>
