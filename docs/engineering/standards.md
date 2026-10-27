@@ -34,6 +34,11 @@ Local runs: one `astro dev` or `astro preview` at a time; stop it before finishi
 - Comments explain *why*. `TODO` only as `TODO(#123): …`.
 
 ## 3. Folder and boundary rules
+- Where files go is decided in [ADR-003](../adr/ADR-003-repository-structure.md): code in `src/`, host
+  and deploy code in `infra/`, every test under `tests/` at the path of the code it tests
+  (`src/lib/seo/meta.ts` → `tests/unit/lib/seo/meta.test.ts`, `infra/headers/render.ts` →
+  `tests/infra/headers/render.test.ts`, browser journeys in `tests/e2e/`). Nothing new at the repo
+  root without `arch-impact`.
 - `src/pages/` contains routing only: fetch content, choose layout, compose sections. No business logic.
 - `src/lib/` is **framework-free TypeScript**: no `astro:*` imports, no DOM, no host APIs. It is
   where all testable logic lives (SEO builders, contact schema/handler, config accessors).
