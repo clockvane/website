@@ -31,10 +31,38 @@ npm run dev    # http://localhost:4321 (or $PORT)
 | `npm run typecheck`    | `astro check` (TypeScript strict + `noUncheckedIndexedAccess`)  |
 | `npm run check`        | `astro check` plus `tsc --noEmit`, the CI `typecheck` job       |
 | `npm test`             | Vitest with V8 coverage (text + `coverage/lcov.info`)           |
+| `npm run test:e2e`     | Chromium navigation, reflow and axe checks against a built site |
 
 Coverage must stay at 80% of lines or more per file for `site.config.ts` and `src/lib/`. ESLint blocks
-host SDK and `infra/` imports and direct `process.env` access in `src/`. Stylelint arrives with the first
-CSS; Astro accessibility lint rules are tracked in [#43](https://github.com/clockvane/website/issues/43).
+host SDK and `infra/` imports and direct `process.env` access in `src/`. Stylelint checks CSS and Astro
+styles for raw colors, font sizes and spacing; Astro accessibility rules check markup.
+
+## Shared page shell
+
+Pages compose `src/layouts/BaseLayout.astro` with required, unique `title` and `description` props
+and one `h1` in their content. The layout supplies metadata, skip navigation, header, main and footer;
+`noindex` is optional for utility pages. Copy and shared navigation labels live in `src/content/`.
+Navigation targets follow the approved sitemap; destination pages belong to their feature tickets.
+
+Astro config runs `src/styles/generate.mjs` before dev, check or build. It generates ignored
+`src/styles/tokens.css` from `docs/design/tokens.json`, including literal media thresholds from
+`src/styles/responsive.template.css`. Edit those sources, then restart the command to regenerate.
+Base styles and component styles consume CSS custom properties. Keep responsive classes in the
+template so breakpoints also come from tokens. Production CSS stays external for the existing CSP.
+The approved sitemap integration includes every built page and excludes utility pages; `robots.txt`
+references its index. Preview deployment still supplies its existing disallow-all robots override.
+
+The two licensed WOFF2 files under `public/fonts/` total 84,916 bytes. Only the body face is preloaded.
+The shared 1200×630 PNG social image is rasterized from the token-colored workflow motif at build time;
+it adds no client JavaScript. Canonical/social URLs read the configured domain; while that domain is
+a placeholder they use a reserved non-live origin defined only in `site.config.ts`.
+
+For browser checks, run `npx playwright install chromium` once, then `npm run build` and
+`npm run test:e2e`. Tests use one worker and manage a foreground preview on `$PORT` (default 4411).
+Screenshots go to ignored `.agentops-scratch/`; reviewed shell evidence is under
+`docs/engineering/evidence/`. The suite covers keyboard/no-JS disclosures, axe, 44 px targets,
+320 px reflow, 200% text, forced colors and reduced motion. Page content, closing CTA sections and
+the contact journey are separate feature work.
 
 ## Repository layout
 
