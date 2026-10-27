@@ -125,8 +125,8 @@ main:focus h1 {
   justify-content: center;
   text-align: center;
   inline-size: 100%;
-  min-block-size: var(--size-target);
-  padding: var(--space-2) var(--space-4);
+  min-block-size: var(--size-control);
+  padding: var(--space-3) var(--space-6);
   border: var(--stroke-border) solid var(--color-light-action);
   border-radius: var(--radius-small);
   color: var(--color-light-on-action);
