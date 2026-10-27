@@ -1,0 +1,173 @@
+@font-face {
+  font-family: 'Public Sans';
+  src: url('/fonts/public-sans-latin-wght-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Newsreader';
+  src: url('/fonts/newsreader-latin-wght-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-padding-block-start: var(--layout-anchor-offset);
+}
+body {
+  min-block-size: 100svh;
+  display: flex;
+  flex-direction: column;
+  container: page / inline-size;
+  margin: var(--space-0);
+  background: var(--color-light-background);
+  color: var(--color-light-text);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-body);
+  letter-spacing: var(--font-tracking);
+  font-synthesis: none;
+  font-optical-sizing: none;
+  overflow-wrap: anywhere;
+}
+main {
+  flex: 1;
+}
+h1,
+h2,
+h3,
+p,
+ul {
+  margin: var(--space-0);
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--font-line-height-heading);
+}
+h1 {
+  font-size: var(--font-size-h1-mobile);
+}
+h2 {
+  font-size: var(--font-size-h2-mobile);
+}
+h3 {
+  font-size: var(--font-size-h3);
+}
+p + p,
+h1 + p,
+h2 + p {
+  margin-block-start: var(--space-4);
+}
+a {
+  color: var(--color-light-link);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  text-decoration-thickness: var(--stroke-border);
+}
+a:hover,
+a:active {
+  color: var(--color-light-link-hover);
+  text-decoration-thickness: var(--stroke-focus);
+}
+a[aria-current='page'] {
+  text-decoration-thickness: var(--stroke-focus);
+}
+:focus-visible,
+[tabindex='-1']:focus {
+  outline: var(--stroke-focus) solid var(--color-light-focus);
+  outline-offset: var(--stroke-focus-gap);
+}
+/* Keep the skip destination's indicator inside the viewport. */
+main:focus {
+  outline: none;
+}
+main:focus h1 {
+  outline: var(--stroke-focus) solid var(--color-light-focus);
+  outline-offset: var(--stroke-focus-gap);
+}
+[id] {
+  scroll-margin-block-start: var(--layout-anchor-offset);
+}
+.inverse {
+  background: var(--color-inverse-background);
+  color: var(--color-inverse-text);
+}
+.inverse a {
+  color: var(--color-inverse-link);
+}
+.inverse a:hover {
+  color: var(--color-inverse-link-hover);
+}
+.inverse a:active {
+  color: var(--color-inverse-link-active);
+}
+.inverse :focus-visible {
+  outline-color: var(--color-inverse-focus);
+}
+.standalone {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--size-target);
+  min-inline-size: var(--size-target);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-ui);
+}
+.button {
+  justify-content: center;
+  text-align: center;
+  inline-size: 100%;
+  min-block-size: var(--size-control);
+  padding: var(--space-3) var(--space-6);
+  border: var(--stroke-border) solid var(--color-light-action);
+  border-radius: var(--radius-small);
+  color: var(--color-light-on-action);
+  background: var(--color-light-action);
+  text-decoration: none;
+}
+.button:hover {
+  color: var(--color-light-on-action);
+  background: var(--color-light-action-hover);
+  border-color: var(--color-light-action-hover);
+}
+.button:active {
+  color: var(--color-light-on-action);
+  background: var(--color-light-action-active);
+  border-color: var(--color-light-action-active);
+}
+.nav-list {
+  list-style: none;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.desktop-nav,
+.compact-cta {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
+@media (forced-colors: active) {
+  :focus-visible,
+  [tabindex='-1']:focus,
+  main:focus h1,
+  .inverse :focus-visible {
+    outline-color: Highlight;
+  }
+}

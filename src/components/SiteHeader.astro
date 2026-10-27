@@ -1,0 +1,159 @@
+---
+import { siteConfig } from '../../site.config';
+import { company, primaryCta, services } from '../content/navigation';
+import NavLinks from './ui/NavLinks.astro';
+interface Props {
+  currentPath: string;
+}
+const { currentPath } = Astro.props;
+---
+
+<header class="site-header">
+  <div class="container header-row">
+    <a
+      class="brand standalone"
+      href="/"
+      aria-label={`${siteConfig.brand} home`}
+      aria-current={currentPath === '/' ? 'page' : undefined}
+      >{siteConfig.brand}</a
+    >
+    <nav class="mobile-nav" aria-label="Main, compact">
+      <details>
+        <summary
+          ><span class="closed-label">Menu</span><span class="open-label"
+            >Close</span
+          ></summary
+        >
+        <div class="disclosure-panel">
+          <NavLinks
+            links={[{ href: '/services/', label: 'Services' }]}
+            {currentPath}
+          />
+          <NavLinks links={services} {currentPath} />
+          <NavLinks links={company} {currentPath} />
+          <a
+            class="button standalone"
+            href={primaryCta.href}
+            aria-current={currentPath === primaryCta.href ? 'page' : undefined}
+            >{primaryCta.label}</a
+          >
+        </div>
+      </details>
+    </nav>
+    <a class="button standalone compact-cta" href={primaryCta.href}
+      >{primaryCta.label}</a
+    >
+    <nav class="desktop-nav" aria-label="Main, desktop">
+      <ul class="nav-list">
+        <li>
+          <a
+            class="standalone"
+            href="/services/"
+            aria-current={currentPath === '/services/' ? 'page' : undefined}
+            >Services</a
+          >
+        </li>
+        <li>
+          <details>
+            <summary
+              ><span class="closed-label">Show services</span><span
+                class="open-label">Hide services</span
+              ></summary
+            ><div class="disclosure-panel">
+              <NavLinks links={services} {currentPath} />
+            </div>
+          </details>
+        </li>
+        {
+          company.map(({ href, label }) => (
+            <li>
+              <a
+                class="standalone"
+                href={href}
+                aria-current={currentPath === href ? 'page' : undefined}
+              >
+                {label}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a
+            class="button standalone"
+            href={primaryCta.href}
+            aria-current={currentPath === primaryCta.href ? 'page' : undefined}
+            >{primaryCta.label}</a
+          >
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--color-light-background);
+    border-block-end: var(--stroke-border) solid var(--color-light-border);
+    z-index: var(--elevation-header);
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    min-block-size: var(--layout-header);
+    padding-block: var(--space-2);
+  }
+  .brand {
+    font-family: var(--font-family-heading);
+    font-size: var(--font-size-h3);
+  }
+  .compact-cta {
+    inline-size: auto;
+  }
+  .button {
+    min-block-size: var(--size-target);
+    padding: var(--space-2) var(--space-4);
+  }
+  .mobile-nav {
+    margin-inline-start: auto;
+  }
+  summary {
+    display: list-item;
+    cursor: pointer;
+    min-block-size: var(--size-target);
+    min-inline-size: var(--size-target);
+    padding: var(--space-2) var(--space-4);
+    border: var(--stroke-border) solid var(--color-light-border);
+    border-radius: var(--radius-small);
+    background: var(--color-light-background);
+    color: var(--color-light-text);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--font-line-height-ui);
+  }
+  summary:hover,
+  details[open] > summary {
+    background: var(--color-light-surface);
+  }
+  summary:active,
+  details[open] > summary {
+    border-color: var(--color-light-text);
+  }
+  .open-label,
+  details[open] > summary .closed-label {
+    display: none;
+  }
+  details[open] > summary .open-label {
+    display: inline;
+  }
+  .mobile-nav:has(details[open]) {
+    inline-size: 100%;
+  }
+  .disclosure-panel {
+    padding: var(--space-4);
+    border: var(--stroke-border) solid var(--color-light-border);
+    margin-block-start: var(--space-2);
+    max-inline-size: var(--layout-form);
+  }
+</style>

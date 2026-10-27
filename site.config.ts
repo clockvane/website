@@ -34,3 +34,12 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
 export function isPlaceholder(value: string): boolean {
   return value.startsWith('[[PLACEHOLDER:') && value.endsWith(']]');
 }
+
+/** Reserved, non-live origin until the owner supplies the production domain. */
+export const siteOrigin = isPlaceholder(siteConfig.domain)
+  ? 'https://example.invalid'
+  : new URL(
+      siteConfig.domain.includes('://')
+        ? siteConfig.domain
+        : `https://${siteConfig.domain}`,
+    ).origin;
