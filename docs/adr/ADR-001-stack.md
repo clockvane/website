@@ -71,7 +71,7 @@ We will build the site with **Astro (7.x) in static output mode**, with this too
 | Unit tests | Vitest | Vite-native, fast, same config as Astro |
 | E2E + a11y | Playwright (Chromium only locally, to respect 8 GB) + `@axe-core/playwright` | FR-2 flows, WCAG checks in CI |
 | Perf/SEO | Lighthouse CI (`@lhci/cli`) against the built `dist/` with budgets from `nfr.md` | Lighthouse ≥ 95 gate |
-| Lint/format | ESLint (flat config, `typescript-eslint`, `eslint-plugin-astro`, `eslint-plugin-jsx-a11y` rules for Astro), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check` for types | One command each, all in CI |
+| Lint/format | ESLint (flat config, `typescript-eslint`, `eslint-plugin-astro` with its `jsx-a11y-recommended` config backed by `eslint-plugin-jsx-a11y-x`, see "Toolchain versions"), Prettier (+ `prettier-plugin-astro`), Stylelint, `astro check` for types | One command each, all in CI |
 | Validation of HTML/links | `html-validate` and a link checker on `dist/` in CI | Catch broken markup/links that Lighthouse misses |
 
 Exact versions are pinned by the lockfile at scaffold time (Sprint 0); minor/patch updates via the
@@ -87,12 +87,21 @@ the resolved version differs from the registry's `latest`. Re-checked 2026-10-27
 | @astrojs/check | 0.9.12 | `^0.9.12` | 0.9.12 | Powers `astro check` (type-check gate) |
 | typescript | **6.0.3** | `^6.0.0` | 7.0.2 | `@astrojs/check@0.9.12` declares peer `typescript: ^5.0.0 \|\| ^6.0.0`; TypeScript 7 would break `npm ci` peer resolution and the type-check gate |
 | vitest | **5.0.5** | `^5.0.5` | 5.0.5 | The earlier "4.3.3" was wrong: `npm view vitest@4.3.3` returns E404 (the 4.x line ends at 4.1.12) |
+| eslint-plugin-astro | 3.2.1 | `^3.2.1` | 3.2.1 | 3.2.0 added `eslint-plugin-jsx-a11y-x` as an alternative optional peer; 1.x only loads `eslint-plugin-jsx-a11y` (#43) |
+| eslint-plugin-jsx-a11y-x | 0.2.0 | `^0.2.0` | 0.2.0 | MIT fork of `eslint-plugin-jsx-a11y` (es-tooling) with peer `eslint: ^9 \|\| ^10`. The original `eslint-plugin-jsx-a11y@6.10.2` declares peer `eslint` up to `^9` only, so it fails `npm ci` against ESLint 10 (#43) |
 
 Upgrade rules:
 - **TypeScript 7** is blocked until a released `@astrojs/check` (or its replacement in Astro's
   toolchain) declares `^7` in its `peerDependencies`. Check with
   `npm view @astrojs/check peerDependencies`; the upgrade is a normal dependency PR that must pass
   `astro check`, lint, tests and build. No `--legacy-peer-deps` or `overrides` to force it.
+- **Astro a11y lint** uses `eslint-plugin-jsx-a11y-x` because the original plugin has no ESLint 10
+  peer. Options weighed in #43: (a) the fork with ESLint 10 — chosen, no overrides, rule names and the
+  `astro/jsx-a11y/*` prefix are unchanged; (b) downgrade to ESLint 9 — rejected, steps back a major
+  line and holds every other lint plugin back; (c) original plugin with `overrides` — rejected, the
+  ticket forbids peer overrides. Migrating back is a dev-dependency swap with no config change: when
+  `npm view eslint-plugin-jsx-a11y peerDependencies` includes `^10`, swap the dev dependency;
+  `eslint-plugin-astro` prefers the original plugin when both are installed.
 - Any version written in an ADR or doc must be verified against the registry (`npm view <pkg>@<version> version`)
   on the day it is written, and the lockfile wins if they disagree.
 

@@ -14,6 +14,9 @@ export default [
   },
   ...tseslint.configs.recommended,
   ...eslintPluginAstro.configs.recommended,
+  // Accessibility rules for .astro markup. eslint-plugin-astro resolves the
+  // ESLint 10-compatible eslint-plugin-jsx-a11y-x fork (ADR-001).
+  ...eslintPluginAstro.configs['jsx-a11y-recommended'],
   {
     files: ['src/**/*.{ts,js,astro}'],
     rules: {
