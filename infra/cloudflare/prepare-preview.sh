@@ -26,8 +26,7 @@ rm -f "$out/SHA256SUMS"
 # Previews are never indexed (NFR-SEO-2): header and robots.txt, in the deployed copy only.
 printf 'User-agent: *\nDisallow: /\n' > "$out/robots.txt"
 
-dir="$(dirname "${BASH_SOURCE[0]}")/../headers"
-{
-  if [ -f "$dir/_headers" ]; then cat "$dir/_headers"; printf '\n'; fi
-  printf '/*\n  X-Robots-Tag: noindex, nofollow\n'
-} > "$out/_headers"
+# Security headers come from the single source in infra/headers (docs/security/headers.md).
+# ENQUIRY_WORKER_ORIGIN (optional https origin) is added to connect-src and form-action.
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+node "$root/infra/headers/cli.ts" --noindex > "$out/_headers"

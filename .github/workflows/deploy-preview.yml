@@ -66,12 +66,12 @@ jobs:
           run-id: ${{ env.RUN_ID }}
           github-token: ${{ github.token }}
 
-      - name: Verify artifact and add preview-only files
-        run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/preview"
-
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
+
+      - name: Verify artifact and add preview-only files and headers
+        run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/preview"
 
       - name: Deploy to Cloudflare Pages
         working-directory: ${{ runner.temp }}
@@ -87,12 +87,15 @@ jobs:
           url="https://pr-${PR_NUMBER}.${CF_PAGES_PROJECT}.pages.dev/"
           for _ in 1 2 3 4 5 6; do
             if curl -fsS -D "$RUNNER_TEMP/headers.txt" -o /dev/null "$url" &&
-               grep -qi '^x-robots-tag:.*noindex' "$RUNNER_TEMP/headers.txt"; then
-              echo "OK: $url is up and noindex"; exit 0
+               grep -qi '^x-robots-tag:.*noindex' "$RUNNER_TEMP/headers.txt" &&
+               grep -qi "^content-security-policy:.*frame-ancestors 'none'" "$RUNNER_TEMP/headers.txt" &&
+               grep -qi '^strict-transport-security:.*max-age=31536000' "$RUNNER_TEMP/headers.txt" &&
+               grep -qi '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/headers.txt"; then
+              echo "OK: $url is up, noindex, with CSP/HSTS/nosniff"; exit 0
             fi
             sleep 10
           done
-          echo "::error::Smoke test failed for $url (unreachable or missing X-Robots-Tag noindex)"
+          echo "::error::Smoke test failed for $url (unreachable, or missing noindex/CSP/HSTS/nosniff headers)"
           exit 1
 
       - name: Comment preview URL on the PR
