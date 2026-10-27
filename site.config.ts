@@ -14,6 +14,9 @@ export const siteConfigSchema = z.object({
     github: z.string().min(1),
   }),
   analyticsId: z.string().min(1),
+  contact: z.object({
+    endpoint: z.url().refine((value) => value.startsWith('https://')),
+  }),
 });
 
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
@@ -28,6 +31,7 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
     github: '[[PLACEHOLDER: GitHub organisation URL]]',
   },
   analyticsId: '[[PLACEHOLDER: analytics ID, PRD Q10]]',
+  contact: { endpoint: 'https://example.invalid/enquiry' },
 });
 
 /** True while a config value still holds a `[[PLACEHOLDER: ...]]` marker. */
