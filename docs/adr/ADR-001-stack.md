@@ -42,7 +42,8 @@ like Next.js), Hugo (fast, but Go templates and no TypeScript for the form/valid
 
 Facts checked on: 2026-10-22 via `npm view` (registry is the source of truth for versions) and the links below.
 - astro 7.4.2 (engines: node ≥ 22.23.4), @astrojs/mdx 8.1.1, next 16.4.2, @11ty/eleventy 3.1.7,
-  typescript 7.0.2, vitest 4.3.3, @playwright/test 1.64.1, eslint 10.13.0, zod 4.6.7, tailwindcss 5.0.5.
+  @playwright/test 1.64.1, eslint 10.13.0, zod 4.6.7, tailwindcss 5.0.5. TypeScript and Vitest
+  versions were corrected on 2026-10-27 (#42), see "Toolchain versions" below.
 - Next.js static export limits: <https://nextjs.org/docs/app/guides/static-exports>
 - Node.js release schedule: <https://nodejs.org/en/about/previous-releases>, <https://endoflife.date/nodejs>
   (Node 24 is LTS, security support to 2028-04-30; Node 26 becomes LTS in late October 2026).
@@ -75,6 +76,25 @@ We will build the site with **Astro (7.x) in static output mode**, with this too
 
 Exact versions are pinned by the lockfile at scaffold time (Sprint 0); minor/patch updates via the
 dependency-update bot.
+
+### Toolchain versions (reconciled with the Sprint 0 scaffold, #36 / PR #40)
+`package-lock.json` is the source of truth for exact versions; this table records the reasons where
+the resolved version differs from the registry's `latest`. Re-checked 2026-10-27 with `npm view`.
+
+| Package | Resolved (lockfile) | `package.json` range | Registry `latest` | Why |
+|---------|--------------------|----------------------|-------------------|-----|
+| astro | 7.4.2 | `^7.4.2` | 7.4.2 | As decided above |
+| @astrojs/check | 0.9.12 | `^0.9.12` | 0.9.12 | Powers `astro check` (type-check gate) |
+| typescript | **6.0.3** | `^6.0.0` | 7.0.2 | `@astrojs/check@0.9.12` declares peer `typescript: ^5.0.0 \|\| ^6.0.0`; TypeScript 7 would break `npm ci` peer resolution and the type-check gate |
+| vitest | **5.0.5** | `^5.0.5` | 5.0.5 | The earlier "4.3.3" was wrong: `npm view vitest@4.3.3` returns E404 (the 4.x line ends at 4.1.12) |
+
+Upgrade rules:
+- **TypeScript 7** is blocked until a released `@astrojs/check` (or its replacement in Astro's
+  toolchain) declares `^7` in its `peerDependencies`. Check with
+  `npm view @astrojs/check peerDependencies`; the upgrade is a normal dependency PR that must pass
+  `astro check`, lint, tests and build. No `--legacy-peer-deps` or `overrides` to force it.
+- Any version written in an ADR or doc must be verified against the registry (`npm view <pkg>@<version> version`)
+  on the day it is written, and the lockfile wins if they disagree.
 
 ## Consequences
 - Positive:
