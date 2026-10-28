@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ResultPanel from '../components/sections/ResultPanel.astro';
+import { notFoundCopy as copy } from '../content/not-found';
+---
+
+<BaseLayout title={copy.title} description={copy.description} noindex>
+  <div class="container section">
+    <ResultPanel title={copy.heading} body={copy.body} actions={copy.actions} />
+  </div>
+</BaseLayout>
