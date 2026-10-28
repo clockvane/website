@@ -1504,5 +1504,33 @@ class ConflictsAndFailedWrites(unittest.TestCase):
         self.assertIn("PR #63: summary=success", d.actions)  # the next PR is still handled
 
 
+class DependencyLines(unittest.TestCase):
+    def test_only_the_dependency_sentence_counts(self):
+        # issue #65 on 28 Oct: "Blocks …" on the same line made it wait for the issues waiting for it
+        self.assertEqual(ao.dependencies("Depends on #57 (merged). Blocks #58, #59, #62."), [57])
+        self.assertEqual(ao.dependencies("- Depends on: #57, #60 and #61"), [57, 60, 61])
+        self.assertEqual(ao.dependencies("Depends on #57 (merged, see PR #63)\nBlocked by #70; related to #71"), [57, 63, 70])
+        self.assertEqual(ao.dependencies("Depends on #4 blocking #9"), [4])
+        self.assertEqual(ao.dependencies("This ticket blocks #58.\nNo dependencies."), [])
+
+    def test_blocked_again_on_a_new_dependency_is_unblocked_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = make_cfg(Path(tmp))
+            st = ao.State(cfg)
+            L = lambda *n: [{"name": x} for x in n]
+            issue = {"number": 59, "labels": L("status:blocked", "agent:sde2", "phase:build"), "body": "Depends on #57"}
+            gh = FakeGH(issues=[issue], states={57: "closed"})
+            ao.Dispatcher(cfg, gh, st, NOW, apply=True).handle_issues(gh.issues, [], "build")
+            self.assertIn(("label", 59, ["status:ready"]), gh.calls)
+            # the agent blocks it again on #65 and records that in the body
+            issue2 = dict(issue, labels=L("status:blocked", "agent:sde2", "phase:build"), body="Depends on #57\nDepends on #65")
+            gh2 = FakeGH(issues=[issue2], states={57: "closed", 65: "open"})
+            ao.Dispatcher(cfg, gh2, st, NOW, apply=True).handle_issues(gh2.issues, [], "build")
+            self.assertEqual(gh2.calls, [])                       # #65 still open
+            gh3 = FakeGH(issues=[dict(issue2)], states={57: "closed", 65: "closed"})
+            ao.Dispatcher(cfg, gh3, st, NOW, apply=True).handle_issues(gh3.issues, [], "build")
+            self.assertIn(("label", 59, ["status:ready"]), gh3.calls)  # unblocked again once #65 closes
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,9 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
 ## ACTION=implement
 1. **Understand.** `gh issue view <ISSUE> --comments`. Re-read the acceptance criteria and any
    `Depends on #N` (if a dependency is still open, comment, set `status:blocked`, stop).
+   If you find the ticket really needs another open ticket that it doesn't list, add a line
+   `Depends on #<that ticket>` to the issue body (`gh issue edit <ISSUE> --body-file …`) before you set
+   `status:blocked`: the scheduler unblocks it by itself when that ticket closes.
 2. **Branch.** If a remote branch for this issue already exists (`git ls-remote --heads origin
    "*/<ISSUE>-*"`), check it out and continue it. Otherwise:
    `git switch -c <ROLE>/<ISSUE>-<short-slug> origin/main`.
