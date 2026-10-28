@@ -1,0 +1,43 @@
+---
+interface Props {
+  title: string;
+  body: string;
+  actions?: readonly { label: string; href: `/${string}` }[];
+  inline?: boolean;
+}
+const { title, body, actions = [], inline = false } = Astro.props;
+const Heading = inline ? 'h2' : 'h1';
+---
+
+<div class="result-panel">
+  <Heading tabindex={inline ? '-1' : undefined} data-result-heading
+    >{title}</Heading
+  >
+  <p>{body}</p><slot />
+  {
+    actions.length > 0 && (
+      <div class="actions">
+        {actions.map((action) => (
+          <a class="standalone" href={action.href}>
+            {action.label}
+          </a>
+        ))}
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .result-panel {
+    max-inline-size: var(--layout-result);
+    background: var(--color-light-background);
+    color: var(--color-light-text);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    margin-block-start: var(--space-6);
+    padding: var(--space-2);
+  }
+</style>

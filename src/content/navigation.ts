@@ -1,14 +1,9 @@
 /** Labels/order from copy-deck.md shared blocks; routes from sitemap.md. */
-export const services = [
-  {
-    href: '/services/process-automation/',
-    label: 'Business process automation',
-  },
-  { href: '/services/ai-automation/', label: 'AI automation' },
-  { href: '/services/cloud-devops/', label: 'Cloud and DevOps' },
-  { href: '/services/websites-and-apps/', label: 'Websites and apps' },
-  { href: '/services/custom-software/', label: 'Custom software' },
-] as const;
+import { services as serviceContent } from './services';
+export const services = serviceContent.map(({ href, label }) => ({
+  href,
+  label,
+}));
 export const company = [
   { href: '/how-we-work/', label: 'How we work' },
   { href: '/about/', label: 'About' },

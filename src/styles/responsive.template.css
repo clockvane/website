@@ -5,6 +5,9 @@
   }
 }
 @media (min-width: token(breakpoint.tablet)) {
+  .process-home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .contact-grid {
     max-inline-size: var(--layout-form);
   }
@@ -22,6 +25,24 @@
   }
 }
 @media (min-width: token(breakpoint.desktop)) {
+  .closing-grid {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  }
+  .services-overview .service-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .services-home .service-row {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  }
+  .process-home {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .process-timeline .step-grid:has(.step-output) {
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+  }
+  .card {
+    --card-padding: var(--space-8);
+  }
   .contact-grid {
     max-inline-size: none;
     grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
@@ -55,6 +76,15 @@
   }
   .footer-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* A wide viewport alone does not guarantee a wide diagram column. */
+@container workflow (min-width: token(breakpoint.tablet)) {
+  .workflow-vertical {
+    --workflow-vertical-display: none;
+  }
+  .workflow-horizontal {
+    --workflow-horizontal-display: block;
   }
 }
 /* Container units follow enlarged root text; wrapped headers remain static. */

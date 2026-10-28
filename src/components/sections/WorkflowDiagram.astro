@@ -1,0 +1,149 @@
+---
+interface Props {
+  /** Three short labels, each authored as one or two lines. */
+  labels: readonly [
+    readonly [string, string?],
+    readonly [string, string?],
+    readonly [string, string?],
+  ];
+  /** Equivalent ordered prose, including the human approval before the final step. */
+  description: string;
+}
+const { labels, description } = Astro.props;
+---
+
+<figure class="workflow">
+  <div class="workflow-canvas" aria-hidden="true">
+    <svg class="workflow-vertical" width="100%" focusable="false">
+      <line x1="50%" x2="50%" y1="5em" y2="8em"></line>
+      <line x1="50%" x2="50%" y1="13em" y2="16em"></line>
+      <circle cx="50%" cy="14.5em" r="0.6em"></circle>
+      <svg x="50%" y="14.5em" width="1" height="1"
+        ><path d="m-5 0 4 4 6-8"></path></svg
+      >
+      {
+        [8, 16].map((y) => (
+          <svg x="50%" y={`${y}em`} width="1" height="1">
+            <path d="m-6-8 6 8 6-8" />
+          </svg>
+        ))
+      }
+      {
+        labels.map((lines, index) => (
+          <g>
+            <>
+              <rect x="1%" y={`${index * 8 + 1}em`} width="98%" height="4em" />
+              <text
+                x="50%"
+                y={`${index * 8 + (lines.length === 1 ? 3.3 : 2.6)}em`}
+              >
+                {lines.map((line, lineIndex) => (
+                  <tspan x="50%" dy={lineIndex === 0 ? 0 : '1.5em'}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </>
+          </g>
+        ))
+      }
+    </svg>
+    <svg class="workflow-horizontal" width="100%" focusable="false">
+      <line x1="27%" x2="37%" y1="3em" y2="3em"></line>
+      <line x1="63%" x2="73%" y1="3em" y2="3em"></line>
+      <circle cx="68%" cy="3em" r="0.6em"></circle>
+      <svg x="68%" y="3em" width="1" height="1"
+        ><path d="m-5 0 4 4 6-8"></path></svg
+      >
+      {
+        [37, 73].map((x) => (
+          <svg x={`${x}%`} y="3em" width="1" height="1">
+            <path d="m-8-6 8 6-8 6" />
+          </svg>
+        ))
+      }
+      {
+        labels.map((lines, index) => (
+          <g>
+            <>
+              <rect x={`${index * 36 + 1}%`} y="1em" width="26%" height="4em" />
+              <text
+                x={`${index * 36 + 14}%`}
+                y={lines.length === 1 ? '3.3em' : '2.6em'}
+              >
+                {lines.map((line, lineIndex) => (
+                  <tspan
+                    x={`${index * 36 + 14}%`}
+                    dy={lineIndex === 0 ? 0 : '1.5em'}
+                  >
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </>
+          </g>
+        ))
+      }
+    </svg>
+  </div>
+  <figcaption>{description}</figcaption>
+</figure>
+
+<style>
+  .workflow {
+    margin: var(--space-0);
+    padding: var(--space-4);
+    border: var(--stroke-border) solid var(--color-light-border);
+    border-radius: var(--radius-small);
+    background: var(--color-light-surface);
+    color: var(--color-light-text);
+  }
+  .workflow-canvas {
+    container: workflow / inline-size;
+  }
+  svg {
+    display: block;
+    overflow: visible;
+    font-size: var(--font-size-small);
+  }
+  .workflow-vertical {
+    display: var(--workflow-vertical-display, block);
+    block-size: calc(var(--font-size-small) * 22);
+  }
+  .workflow-horizontal {
+    display: var(--workflow-horizontal-display, none);
+    block-size: calc(var(--font-size-small) * 6);
+  }
+  rect,
+  circle {
+    fill: var(--color-light-background);
+    stroke: var(--color-light-text);
+    stroke-width: var(--stroke-diagram);
+    rx: var(--radius-small);
+  }
+  line,
+  path {
+    fill: none;
+    stroke: var(--color-light-action);
+    stroke-width: var(--stroke-diagram);
+  }
+  text {
+    fill: var(--color-light-text);
+    text-anchor: middle;
+  }
+  figcaption {
+    margin-block-start: var(--space-4);
+    font-size: var(--font-size-small);
+  }
+  @media (forced-colors: active) {
+    line,
+    path,
+    rect,
+    circle {
+      stroke: CanvasText;
+    }
+    text {
+      fill: CanvasText;
+    }
+  }
+</style>

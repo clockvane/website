@@ -1,0 +1,63 @@
+---
+interface Props {
+  title?: string;
+  body?: string;
+  link?: { label: string; href: string };
+  headingLevel?: 'h2' | 'h3';
+}
+const { title, body, link, headingLevel: Heading = 'h3' } = Astro.props;
+const hasContent = title || body || link || Astro.slots.has('default');
+---
+
+{
+  hasContent && (
+    <div class="card">
+      <div class="card-stack">
+        {title && <Heading>{title}</Heading>}
+        {body && <p>{body}</p>}
+        <slot />
+        {link && (
+          <div>
+            <a class="standalone" href={link.href}>
+              {link.label}
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .card {
+    background: var(--color-light-surface);
+    color: var(--color-light-text);
+    border: var(--stroke-border) solid var(--color-light-border);
+    border-radius: var(--radius-small);
+    padding: var(--card-padding, var(--space-6));
+    min-inline-size: 0;
+  }
+  .card-stack {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .card-stack > * {
+    min-inline-size: 0;
+    margin-block: var(--space-0);
+  }
+  .card a {
+    color: var(--color-light-link);
+  }
+  .card a:hover,
+  .card a:active {
+    color: var(--color-light-link-hover);
+  }
+  .card a:focus-visible {
+    outline-color: var(--color-light-focus);
+  }
+  @media (forced-colors: active) {
+    .card a:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+</style>

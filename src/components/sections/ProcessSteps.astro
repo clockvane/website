@@ -1,0 +1,65 @@
+---
+interface Props {
+  steps: readonly { title: string; body: string; output?: string }[];
+  variant?: 'home' | 'timeline';
+}
+const { steps, variant = 'timeline' } = Astro.props;
+---
+
+{
+  steps.length > 0 && (
+    // eslint-disable-next-line astro/jsx-a11y/no-redundant-roles -- Safari needs this role when list-style is none.
+    <ol class:list={['process', `process-${variant}`]} role="list">
+      {steps.map((step, index) => (
+        <li>
+          <span class="number" aria-hidden="true">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <div class="step-grid">
+            <div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+            {step.output && <p class="step-output">{step.output}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+<style>
+  .process {
+    list-style: none;
+    padding: var(--space-0);
+    margin: var(--space-0);
+    display: grid;
+    gap: var(--space-6);
+  }
+  li {
+    border-inline-start: var(--stroke-border) solid var(--color-light-border);
+    padding-inline-start: var(--space-6);
+    min-inline-size: 0;
+  }
+  .number {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: var(--size-target);
+    min-block-size: var(--size-target);
+    border: var(--stroke-border) solid var(--color-light-border);
+    background: var(--color-light-background);
+    color: var(--color-light-muted);
+    margin-block-end: var(--space-4);
+    font-size: var(--font-size-small);
+  }
+  h3 + p {
+    margin-block-start: var(--space-4);
+  }
+  .step-grid {
+    display: grid;
+    gap: var(--space-6);
+  }
+  .step-grid > * {
+    min-inline-size: 0;
+  }
+</style>
