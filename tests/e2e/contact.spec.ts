@@ -98,6 +98,52 @@ test('success replaces form and moves focus under the strict CSP', async ({
   await axe(page);
 });
 
+test('character guidance helps visitors correct a message and send it', async ({
+  page,
+}) => {
+  await endpoint(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/contact/');
+  await fill(page);
+  const message = page.getByLabel(
+    'What would you like off your plate? (required)',
+  );
+  const send = page.getByRole('button', { name: 'Send message', exact: true });
+  const guidance =
+    'Replace < and > in your message with words such as “less than” or “over”. Retype any pasted text to remove hidden characters.';
+  await message.fill('Flag orders > 100 for review.');
+  await send.focus();
+  await expect(page.locator('#message-error')).toContainText(guidance);
+  await expect(send).toBeFocused();
+  await send.click();
+  await expect(page.locator('[data-errors]')).toBeFocused();
+  const correction = page.locator('[data-errors] a[href="#contact-message"]');
+  await expect(correction).toContainText(guidance);
+  await expect(message).toHaveAttribute(
+    'aria-describedby',
+    'message-hint message-error',
+  );
+  await axe(page);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: '.agentops-scratch/61-character-guidance-320.png',
+    fullPage: true,
+  });
+  await correction.click();
+  await expect(message).toBeFocused();
+  await message.fill('Flag orders over 100 for review.');
+  await send.focus();
+  await expect(page.locator('#message-error')).toBeHidden();
+  await send.click();
+  await expect(
+    page.getByRole('heading', { name: 'Message sent', exact: true }),
+  ).toBeFocused();
+});
+
 for (const status of [502, 429])
   test(`delivery ${status} keeps input and allows retry`, async ({ page }) => {
     await endpoint(page, status);

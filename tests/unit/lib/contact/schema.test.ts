@@ -45,4 +45,37 @@ describe('enquiry validation', () => {
   it('rejects non-objects', () => {
     expect(validateEnquiry(null).ok).toBe(false);
   });
+
+  it.each([
+    {
+      field: 'name',
+      input: 'Alex <Admin>',
+      corrected: 'Alex Admin',
+      guidance:
+        'Remove < and > from your name and keep it on one line. Retype any pasted text to remove hidden characters.',
+    },
+    {
+      field: 'reply',
+      input: 'alex>@example.test',
+      corrected: 'alex@example.test',
+      guidance:
+        'Remove < and > from your email or phone and keep it on one line. Retype any pasted text to remove hidden characters.',
+    },
+    {
+      field: 'message',
+      input: 'Flag orders > 100 for review.',
+      corrected: 'Flag orders over 100 for review.',
+      guidance:
+        'Replace < and > in your message with words such as “less than” or “over”. Retype any pasted text to remove hidden characters.',
+    },
+  ])(
+    'explains how to correct prohibited characters in $field',
+    ({ field, input, corrected, guidance }) => {
+      expect(validateEnquiry({ ...valid, [field]: input })).toEqual({
+        ok: false,
+        fields: { [field]: guidance },
+      });
+      expect(validateEnquiry({ ...valid, [field]: corrected }).ok).toBe(true);
+    },
+  );
 });

@@ -17,13 +17,13 @@ export const enquirySchema = z.object({
       z.trim(),
       z.minLength(1, errors.name),
       z.maxLength(limits.name, errors.nameLong),
-      z.regex(singleLine, contactCopy.spam),
+      z.regex(singleLine, errors.nameCharacters),
     ),
   reply: z.string().check(
     z.trim(),
     z.minLength(1, errors.reply),
     z.maxLength(limits.reply, errors.replyLong),
-    z.regex(singleLine, contactCopy.spam),
+    z.regex(singleLine, errors.replyCharacters),
     z.refine(
       (value) =>
         email.test(value) ||
@@ -47,7 +47,7 @@ export const enquirySchema = z.object({
       z.maxLength(limits.message, errors.messageLong),
       z.regex(
         /^[^\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f<>]*$/u,
-        contactCopy.spam,
+        errors.messageCharacters,
       ),
     ),
 });

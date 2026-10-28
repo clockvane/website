@@ -48,3 +48,28 @@ owner selects the delivery channel. Its endpoint and site origin remain reserved
 non-live config values. No deployment or real delivery was performed. Activation,
 the optional timing signal's limitations and edge rate-limit scope are documented
 in [the contact notes](../contact.md).
+
+## UX review correction — 2026-10-28
+
+PR #66 now gives field-specific correction guidance for prohibited characters in
+name, reply contact and message. The schema's accepted input and the generic
+honeypot/timing failure copy are unchanged. The microcopy reference matches the
+displayed guidance, including how to replace angle brackets and retype hidden
+characters.
+
+- Regression proof: three new schema cases failed with the previous generic
+  message, then passed with actionable guidance and corrected valid input.
+- `npm run lint`, `npm run check`, `npm test` and `npm run build` pass: zero type
+  diagnostics, 47 unit/infra tests, 100% measured line coverage, four static pages.
+- Playwright: 20 tests pass with one Chromium worker on port 4411, using the same
+  scratch browser launcher described above. The new 320 px journey checks blur
+  feedback, focused summary and field link, `aria-describedby`, no overflow, zero
+  axe violations and successful submission after replacing `>` with “over”.
+- [320 px validation screenshot](61-character-guidance-320.png) shows the actual
+  guidance in the summary and next to the retained message.
+- Three mobile Lighthouse runs on Contact at port 4411: performance **99 / 100 /
+  100**, accessibility / best practices / SEO **100 in every run**; LCP **1.548 /
+  1.521 / 1.523 s**, CLS **0.00144**, TBT **0 ms**. Contact JS is **7,413 gzip bytes**
+  (123 bytes more, within 15 kB); CSS remains **3,313 gzip bytes** (within 30 kB).
+
+Local preview servers and browsers were stopped after verification.
