@@ -25,14 +25,22 @@ Shown under the field and listed in the error summary.
 | Summary intro | Fix these to send your message: |
 | Name empty | Enter your name. |
 | Name too long | Shorten your name to {max} characters or fewer. |
+| Name has prohibited characters | Remove < and > from your name and keep it on one line. Retype any pasted text to remove hidden characters. |
 | Reply contact empty | Enter an email address or phone number so we can reply. |
 | Email invalid | Enter an email address like name@example.com. |
 | Phone invalid | Enter a phone number with the country code, like +91 98765 43210. |
 | Reply contact too long | Shorten this to {max} characters or fewer. |
+| Reply contact has prohibited characters | Remove < and > from your email or phone and keep it on one line. Retype any pasted text to remove hidden characters. |
 | Message empty | Tell us a little about the work you want off your plate. |
 | Message too short | Add a few more words so we can understand the task. [[PLACEHOLDER: engineering to set the minimum, suggest 10 characters]] |
 | Message too long | Shorten your message to {max} characters or fewer. You can send details later. |
+| Message has prohibited characters | Replace < and > in your message with words such as “less than” or “over”. Retype any pasted text to remove hidden characters. |
 | Company too long | Shorten the company name to {max} characters or fewer. |
+
+Prohibited characters are `<`, `>` and hidden control characters. Name and reply
+contact must stay on one line; messages may contain line breaks and tabs. These
+field errors explain how to correct the text; the generic spam message below is
+reserved for honeypot and timing checks.
 
 ### Status and results
 | State | Copy |

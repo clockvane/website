@@ -10,6 +10,14 @@ export type HeaderRule = { path: string; headers: Record<string, string> };
 
 const HTTPS_ORIGIN = /^https:\/\/[a-z0-9.-]+(:\d+)?$/i;
 
+export const workerSecurityHeaders = {
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'Cache-Control': 'no-store',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+};
+
 export function csp(enquiryOrigin?: string): string {
   if (enquiryOrigin !== undefined && !HTTPS_ORIGIN.test(enquiryOrigin)) {
     throw new Error(

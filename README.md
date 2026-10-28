@@ -61,8 +61,13 @@ For browser checks, run `npx playwright install chromium` once, then `npm run bu
 `npm run test:e2e`. Tests use one worker and manage a foreground preview on `$PORT` (default 4411).
 Screenshots go to ignored `.agentops-scratch/`; reviewed shell evidence is under
 `docs/engineering/evidence/`. The suite covers keyboard/no-JS disclosures, axe, 44 px targets,
-320 px reflow, 200% text, forced colors and reduced motion. Page content, closing CTA sections and
-the contact journey are separate feature work.
+320 px reflow, 200% text, forced colors and reduced motion. Page content and closing CTA
+sections are separate feature work.
+
+The contact journey is now implemented; its portable handler and Worker boundary,
+validation rules, tests and required delivery activation steps are documented in
+[`docs/engineering/contact.md`](docs/engineering/contact.md). Per ADR-002, delivery
+remains an explicit error-only stub until the owner chooses a notification channel.
 
 ## Repository layout
 
