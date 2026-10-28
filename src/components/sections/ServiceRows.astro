@@ -1,0 +1,67 @@
+---
+import { services } from '../../content/services';
+import { sectionLabels } from '../../content/sections';
+interface Props {
+  variant?: 'home' | 'overview';
+}
+const { variant = 'home' } = Astro.props;
+const Heading = variant === 'home' ? 'h3' : 'h2';
+---
+
+<div class:list={['service-list', `services-${variant}`]}>
+  {
+    services.map((service) => (
+      <section
+        id={variant === 'overview' ? service.slug : undefined}
+        class="service-row"
+      >
+        {variant === 'home' && <Heading>{service.label}</Heading>}
+        <div>
+          {variant === 'overview' && <Heading>{service.label}</Heading>}
+          <p>{variant === 'home' ? service.summary : service.problem}</p>
+          <a class="standalone" href={service.href}>
+            {service.linkLabel}
+          </a>
+        </div>
+        {variant === 'overview' && (
+          <div class="service-work">
+            <h3>{sectionLabels.typicalWork}</h3>
+            <ul>
+              {service.work.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .service-row {
+    display: grid;
+    gap: var(--space-6);
+    padding-block: var(--space-8);
+    border-block-start: var(--stroke-border) solid var(--color-light-border);
+  }
+  .service-row:last-child {
+    border-block-end: var(--stroke-border) solid var(--color-light-border);
+  }
+  .service-row > * {
+    min-inline-size: 0;
+  }
+  h3 + p {
+    margin-block-start: var(--space-4);
+  }
+  a {
+    margin-block-start: var(--space-4);
+  }
+  ul {
+    padding-inline-start: var(--space-6);
+    margin-block-start: var(--space-4);
+  }
+  li + li {
+    margin-block-start: var(--space-3);
+  }
+</style>

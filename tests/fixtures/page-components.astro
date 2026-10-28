@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../../src/layouts/BaseLayout.astro';
+import PageHeader from '../../src/components/sections/PageHeader.astro';
+import ServiceRows from '../../src/components/sections/ServiceRows.astro';
+import ProcessSteps from '../../src/components/sections/ProcessSteps.astro';
+import CtaBand from '../../src/components/sections/CtaBand.astro';
+import WorkflowDiagram from '../../src/components/sections/WorkflowDiagram.astro';
+import ResultPanel from '../../src/components/sections/ResultPanel.astro';
+import Card from '../../src/components/ui/Card.astro';
+import { helpChoose, homeProcess } from '../../src/content/sections';
+import { contactCopy } from '../../src/content/contact';
+const description =
+  'A pipeline: code is saved, tested automatically, then released to the live site with one approval.';
+---
+
+<BaseLayout
+  title="Shared component fixture"
+  description="Test-only shared components."
+  noindex
+>
+  <div class="container section">
+    <PageHeader
+      title="Services"
+      lede="We start with the work that wastes your team's time."
+      breadcrumbs={[{ label: 'Home', href: '/' }]}
+      action={{ label: 'Book a free audit call', href: '/contact/' }}
+    />
+    <section class="section"><h2>What we do</h2><ServiceRows /></section>
+    <section class="section">
+      <h2>How an engagement runs</h2><ProcessSteps
+        steps={homeProcess}
+        variant="home"
+      />
+    </section>
+    <section class="section">
+      <h2>From first call to delivery</h2><ProcessSteps
+        steps={[
+          {
+            ...homeProcess[0]!,
+            output: 'You get an honest view of what is worth automating.',
+          },
+          ...homeProcess.slice(1),
+        ]}
+      />
+    </section>
+    <Card
+      title={contactCopy.next}
+      body={contactCopy.steps[0]!}
+      link={{ label: contactCopy.how, href: '/how-we-work/' }}
+      headingLevel="h2"
+    />
+    <div class="section">
+      <WorkflowDiagram
+        labels={[['Code'], ['Test'], ['Release']]}
+        {description}
+      />
+    </div>
+    <div class="narrow-diagram">
+      <WorkflowDiagram
+        labels={[['Code'], ['Test'], ['Release']]}
+        {description}
+      />
+    </div>
+    <ResultPanel
+      title={contactCopy.thanks.heading}
+      body={contactCopy.thanks.body}
+      inline
+      actions={[{ label: contactCopy.home, href: '/' }]}
+    />
+  </div>
+  <div class="container section"><ServiceRows variant="overview" /></div>
+  <CtaBand content={helpChoose} />
+</BaseLayout>
+
+<style>
+  .narrow-diagram {
+    max-inline-size: var(--layout-form);
+    margin-block-end: var(--space-6);
+  }
+</style>

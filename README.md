@@ -61,8 +61,13 @@ For browser checks, run `npx playwright install chromium` once, then `npm run bu
 `npm run test:e2e`. Tests use one worker and manage a foreground preview on `$PORT` (default 4411).
 Screenshots go to ignored `.agentops-scratch/`; reviewed shell evidence is under
 `docs/engineering/evidence/`. The suite covers keyboard/no-JS disclosures, axe, 44 px targets,
-320 px reflow, 200% text, forced colors and reduced motion. Page content and closing CTA
-sections are separate feature work.
+320 px reflow, 200% text, forced colors and reduced motion. Page assembly is handled by
+the page feature tickets.
+
+Shared page components are ready for page assembly: CTA band, page header, service rows,
+process/timeline, card, workflow diagram and result panel. Their typed props, shared content
+and isolated browser checks (`npm run test:components`) are documented in
+[`docs/engineering/page-components.md`](docs/engineering/page-components.md).
 
 The contact journey is now implemented; its portable handler and Worker boundary,
 validation rules, tests and required delivery activation steps are documented in

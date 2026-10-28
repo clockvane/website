@@ -1,0 +1,46 @@
+---
+import { primaryCta } from '../../content/navigation';
+import { closingCta } from '../../content/sections';
+interface Props {
+  content?: { heading: string; body: string };
+}
+const { content = closingCta } = Astro.props;
+---
+
+<section class="inverse section">
+  <div class="container closing-grid">
+    <div><h2>{content.heading}</h2><p class="measure">{content.body}</p></div>
+    <div class="cta-action">
+      <a class="button standalone" href={primaryCta.href}>{primaryCta.label}</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .closing-grid {
+    display: grid;
+    gap: var(--space-6);
+    align-items: center;
+  }
+  .closing-grid > * {
+    min-inline-size: 0;
+  }
+  .cta-action {
+    padding: var(--space-2);
+  }
+  .button {
+    color: var(--color-inverse-on-action);
+    background: var(--color-inverse-action);
+    border-color: var(--color-inverse-action);
+  }
+  .button:hover {
+    color: var(--color-inverse-on-action);
+    background: var(--color-inverse-action-hover);
+    border-color: var(--color-inverse-action-hover);
+  }
+  .button:active {
+    color: var(--color-inverse-on-action);
+    background: var(--color-inverse-action-active);
+    border-color: var(--color-inverse-action-active);
+  }
+</style>
