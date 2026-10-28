@@ -1230,7 +1230,9 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
                 reasons.append(f"{name.replace('_', ' ')} usage ~{pct:.0f}% (+{margin}% margin) ≥ stop {stop}%")
         elif pct is not None and pct + margin + 10 >= stop:
             reasons.append(f"{name.replace('_', ' ')} usage ≥ ~{pct:.0f}% and rising (uncertain) ≥ stop {stop}%")
-    team = u.get("team_seven_day_pct")
+    # measured per-run usage (ledger) beats the transcript estimate, which overcounts with several agents
+    measured = any(r.get("kind") == "run" and r.get("usage_delta") for r in state.ledger(now - 7 * DAY))
+    team = team_share_live(state, now) if measured else u.get("team_seven_day_pct")
     info["team_seven_day_pct"] = team
     share = limits["team_share"]
     if team is not None and team >= share:
@@ -3356,7 +3358,70 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                                "(agentops/README.md: 'More agents at once'), or use fewer: agents workers --claude 1")
         return f"{total / 1024:.1f} GB for Ubuntu, {n} agent(s) at once" if total else "unknown"
     check("memory", memory_ok)
+
+    def scheduler_ok() -> str:
+        distro = os.environ.get("WSL_DISTRO_NAME")
+        if not distro:
+            return "not running in WSL — skipped"
+        try:
+            local = subprocess.run(["cmd.exe", "/c", "echo %LOCALAPPDATA%"], capture_output=True, text=True,
+                                   timeout=30, cwd="/mnt/c").stdout.strip()
+            folder = subprocess.run(["wslpath", "-u", local], capture_output=True, text=True, timeout=30).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            return "couldn't reach Windows to read the task — skipped"
+        vbs = Path(folder) / "AgentOps" / "tick-clockvane.vbs"
+        if not folder or not vbs.exists():
+            raise RuntimeError(f"the Windows task isn't installed. Install it from Ubuntu: {SCHEDULER_FIX}")
+        problem = scheduler_problem(vbs.read_text(errors="ignore"), distro, REPO_ROOT)
+        if problem:
+            raise RuntimeError(f"{problem}. Fix it from Ubuntu: {SCHEDULER_FIX}")
+        ago = last_check_minutes(xp("~/.claude/agentops/tick.log"), time.time())
+        every = cfg.get("schedule", "tick_minutes", default=10)
+        started = read_window(cfg, time.time()) is not None
+        if started and (ago is None or ago > 75):
+            raise RuntimeError(f"the agents are started, but no check has run for "
+                               f"{'a long time' if ago is None else f'{ago:.0f} min'} — is the laptop asleep? "
+                               f"Windows doesn't run tasks while it sleeps")
+        return f"runs {distro} every {every} min" + (f"; last check {ago:.0f} min ago" if ago is not None else "")
+    check("scheduler (Windows task)", scheduler_ok)
     return 1 if problems else 0
+
+
+SCHEDULER_FIX = ('powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ~/agents/clockvane-website/agentops/bin/'
+                 'install-scheduler.ps1)" -Distro "$WSL_DISTRO_NAME" -AgentsDir "$HOME/agents/clockvane-website" -EveryMinutes 10')
+
+
+def scheduler_problem(vbs_text: str, distro: str, agents_dir: Path) -> Optional[str]:
+    """What is wrong with the Windows task's launcher, if anything (it fails silently otherwise)."""
+    m = re.search(r"wsl\.exe\s+-d\s+([^\s\"]+)", vbs_text or "")
+    if not m:
+        return "the Windows task's launcher has no `wsl.exe -d <name>` command"
+    if m.group(1) != distro:
+        return (f"the Windows task starts a WSL named '{m.group(1)}', but this Ubuntu is '{distro}', so every "
+                f"scheduled check fails without a trace")
+    home = str(Path.home())
+    paths = {str(agents_dir), str(agents_dir).replace(home, "~", 1)}
+    if not any(f"{p}/agentops/bin/tick.sh" in vbs_text for p in paths):
+        return f"the Windows task doesn't run {agents_dir}/agentops/bin/tick.sh"
+    return None
+
+
+def last_check_minutes(log_path: Path, now: float) -> Optional[float]:
+    """Minutes since the scheduler last started (or tried to start) a check, from tick.log."""
+    try:
+        with open(log_path, "rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 200_000))
+            lines = fh.read().decode("utf-8", "ignore").splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        if "check started" in line or "a check is already running" in line or "check finished" in line:
+            m = re.match(r"\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)\]", line)
+            if m:
+                t = dt.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=LOG_TZ or dt.timezone.utc)
+                return round((now - t.timestamp()) / 60, 1)
+    return None
 
 
 def cmd_selftest(args: argparse.Namespace) -> int:
