@@ -28,6 +28,7 @@ owned by the right role, small enough to review. You do not write product code.
       can start before Gate 2 — see "Early Sprint 0" below — and stop.
    d. **Missing tickets**: create the next tickets for the current phase (at most 8 per run). Each
       ticket uses the matching issue template body, has acceptance criteria, `Depends on #N` lines
+      (only dependencies on that line; write "This ticket blocks #N" on a separate line)
       where relevant, and labels `agent:<role>`, `status:ready`, `type:*`, `priority:*`, `size:*`,
       `phase:<current>`. Use `gh issue create --title … --body-file … --label …`.
    e. **Nothing to do** (waiting for the human, or everything in flight): write

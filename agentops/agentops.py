@@ -1399,10 +1399,16 @@ DEP_RX = re.compile(r"(?im)^\s*[-*]?\s*(?:depends on|blocked by)\s*:?\s*(.+)$")
 CLOSES_RX = re.compile(r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)")
 
 
+DEP_END_RX = re.compile(r"\.(?:\s|$)|;|\b(?:blocks?|blocking|unblocks?|related|relates|see also|follow[- ]?ups?)\b", re.I)
+
+
 def dependencies(body: str) -> List[int]:
+    """Issues named on a "Depends on" / "Blocked by" line — up to the end of that sentence, so
+    "Depends on #57 (merged). Blocks #58, #59." depends on #57 only (not on the issues it blocks)."""
     deps: List[int] = []
     for m in DEP_RX.finditer(body or ""):
-        deps += [int(x) for x in re.findall(r"#(\d+)", m.group(1))]
+        text = DEP_END_RX.split(m.group(1), 1)[0]
+        deps += [int(x) for x in re.findall(r"#(\d+)", text) if int(x) not in deps]
     return deps
 
 
@@ -1624,7 +1630,10 @@ class Dispatcher:
             if "status:blocked" not in labels or "needs-human" in labels:
                 continue
             deps = dependencies(issue.get("body") or "")
-            if not deps or self.state.attempts(f"unblock:{n}") >= 1 or any(dep_open(d) for d in deps):
+            # once per set of dependencies: if the ticket is blocked again on something new (a new
+            # "Depends on" line), it is unblocked again when that closes
+            ukey = f"unblock:{n}:" + ",".join(str(d) for d in sorted(deps))
+            if not deps or self.state.attempts(ukey) >= 1 or any(dep_open(d) for d in deps):
                 continue
             done = ", ".join(f"#{d}" for d in deps)
             self._do(f"#{n}: unblocked ({done} done)", self.gh.add_labels, n, ["status:ready"])
@@ -1632,7 +1641,7 @@ class Dispatcher:
             self._do(f"#{n}: comment", self.gh.comment, n,
                      f"Unblocked: {done} {'is' if len(deps) == 1 else 'are'} done, so this is ready. — agentops")
             if self.apply:
-                self.state.bump(f"unblock:{n}")
+                self.state.bump(ukey)
             issue["labels"] = [lb for lb in issue.get("labels", []) if (lb.get("name") if isinstance(lb, dict) else lb)
                                != "status:blocked"] + [{"name": "status:ready"}]
 
