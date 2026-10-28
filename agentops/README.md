@@ -340,7 +340,7 @@ files in `.claude/agents/`, new rules in `review-matrix.json`.
 | Gate says "usage unknown" | Configure the status line (step 5) and send one message in Claude Code. |
 | A PR sits forever | `python3 agentops/agentops.py next` shows why: CI pending, `needs-human`, or a gate PR waiting for you. |
 | "Refusing to run: .agentops-clone not found" | You ran agentops outside the agents clone. That is the safety catch. |
-| Scheduler does nothing | `wsl -l -v` for the distro name; check `~/.claude/agentops/tick.log`. |
+| Scheduler does nothing (no `check started` lines in `~/.claude/agentops/tick.log`) | `agents doctor` checks the Windows task: it must start *this* Ubuntu (`$WSL_DISTRO_NAME`, e.g. `Ubuntu-24.04`, not `Ubuntu`). Re-register from Ubuntu with the command it prints. Windows also skips tasks while the laptop sleeps. |
 | "GPT agents are off: …" in `tick.log` / `status` | The reason is in the line. Usually: run `agents codex-check` once (after installing or updating Codex, or adding GPT workers). |
 | "waiting for memory" | Other agents are building. Give WSL more memory (see "More agents at once") or `agents workers --claude 1 --gpt 1`. |
 | Unknown flag `--permission-prompts` | `claude update` (needs 2.1.259+). |

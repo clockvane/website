@@ -18,6 +18,15 @@ param(
 
 $TaskName = "AgentOps-Clockvane"
 
+if (-not $Uninstall) {
+  # wsl -l -q prints UTF-16; drop the NULs. A wrong name makes every scheduled check fail silently.
+  $names = @(wsl.exe -l -q | ForEach-Object { ($_ -replace "`0", "").Trim() } | Where-Object { $_ })
+  if ($names -notcontains $Distro) {
+    Write-Error "No WSL distribution named '$Distro'. Yours: $($names -join ', '). Run this from Ubuntu with -Distro `"`$WSL_DISTRO_NAME`"."
+    exit 1
+  }
+}
+
 if ($Uninstall) {
   Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
   Write-Host "Removed $TaskName"

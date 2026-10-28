@@ -1532,5 +1532,37 @@ class DependencyLines(unittest.TestCase):
             self.assertIn(("label", 59, ["status:ready"]), gh3.calls)  # unblocked again once #65 closes
 
 
+class SchedulerCheck(unittest.TestCase):
+    """v9.5: the Windows task pointed at a WSL named 'Ubuntu' while the real one is 'Ubuntu-24.04':
+    every scheduled check failed silently for days."""
+
+    def test_launcher_problems(self):
+        root = Path("/home/farhan/agents/clockvane-website")
+        vbs = lambda d, p="~/agents/clockvane-website": (
+            'sh.Run "wsl.exe -d %s -- bash -lc ""bash %s/agentops/bin/tick.sh""", 0, True' % (d, p))
+        from unittest import mock
+        with mock.patch.object(ao.Path, "home", classmethod(lambda cls: Path("/home/farhan"))):
+            self.assertIn("'Ubuntu', but this Ubuntu is 'Ubuntu-24.04'",
+                          ao.scheduler_problem(vbs("Ubuntu"), "Ubuntu-24.04", root))
+            self.assertIsNone(ao.scheduler_problem(vbs("Ubuntu-24.04"), "Ubuntu-24.04", root))
+            self.assertIsNone(ao.scheduler_problem(vbs("Ubuntu-24.04", str(root)), "Ubuntu-24.04", root))
+            self.assertIn("doesn't run", ao.scheduler_problem(vbs("Ubuntu-24.04", "~/elsewhere"), "Ubuntu-24.04", root))
+
+    def test_last_check_from_the_log(self):
+        with tempfile.TemporaryDirectory() as t:
+            log = Path(t) / "tick.log"
+            log.write_text("[2026-10-29 03:36:20] check finished after 47 min\n"
+                           "[2026-10-29 04:56:44] [codex] nothing to do\n"
+                           "[2026-10-29 05:01:08] a check is already running — it keeps the agents busy\n")
+            old = ao.LOG_TZ
+            ao.LOG_TZ = dt.timezone(dt.timedelta(hours=5, minutes=30))
+            try:
+                now = dt.datetime(2026, 10, 29, 5, 31, 8, tzinfo=ao.LOG_TZ).timestamp()
+                self.assertEqual(ao.last_check_minutes(log, now), 30.0)
+                self.assertIsNone(ao.last_check_minutes(Path(t) / "missing.log", now))
+            finally:
+                ao.LOG_TZ = old
+
+
 if __name__ == "__main__":
     unittest.main()
