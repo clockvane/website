@@ -51,4 +51,3 @@ All pass: JS ≤35,000 B, controller ≤5,000 B (actual **828 B**), hero rendere
 Passed `npm run lint`, `npm run typecheck` (79 files; zero diagnostics), `npm test` (10 files / 64 tests; 100% line/function coverage), `npm run build` (8 pages), and `git diff --check`. Existing production output is unchanged.
 
 Build the artifacts with `node docs/design/redesign/render.mjs`. Serve with `node docs/design/redesign/serve.mjs` and open `http://127.0.0.1:4411/redesign/concept-a/` (B/C similarly). Stop the server with Ctrl+C. The session's scratch probes were `node .agentops-scratch/contrast.mjs`, `node .agentops-scratch/check-80.mjs`, and `node .agentops-scratch/measure-80.mjs`. Scratch probes are git-ignored; the final outputs are attached here. Reproduce Lighthouse using the installed Lighthouse CLI against each served URL with its default mobile preset, three fresh runs. No source/production routes were changed.
-
