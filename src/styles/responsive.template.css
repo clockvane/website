@@ -79,6 +79,11 @@
   }
 }
 /* A wide viewport alone does not guarantee a wide diagram column. */
+@container illustration (min-width: token(breakpoint.tablet)) {
+  .illustration-comparison {
+    --illustration-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @container workflow (min-width: token(breakpoint.tablet)) {
   .workflow-vertical {
     --workflow-vertical-display: none;

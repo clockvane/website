@@ -41,6 +41,35 @@ for (const width of [320, 768, 1024, 1440]) {
       path: `.agentops-scratch/65-components-${width}.png`,
       fullPage: true,
     });
+    const illustrations = page.locator('.workflow-illustration');
+    await expect(illustrations).toHaveCount(6);
+    for (const illustration of await illustrations.all()) {
+      await expect(illustration.locator('figcaption')).toBeVisible();
+    }
+    const comparison = page.locator(
+      '.illustration-examples .illustration-comparison',
+    );
+    expect(
+      await comparison.evaluate(
+        (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+      ),
+    ).toBe(width >= 1024 ? 2 : 1);
+    expect(
+      await page
+        .locator('.narrow-diagram .illustration-comparison')
+        .evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+        ),
+    ).toBe(1);
+    for (const variant of ['before-after', 'branching', 'connected-tools']) {
+      if (width === 320 || width === 1440) {
+        await page
+          .locator(`.illustration-examples [data-variant="${variant}"]`)
+          .screenshot({
+            path: `.agentops-scratch/75-${variant}-${width}.png`,
+          });
+      }
+    }
     for (const enlarged of [false, true]) {
       if (enlarged)
         await page.evaluate(() => {
@@ -51,6 +80,16 @@ for (const width of [320, 768, 1024, 1440]) {
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
+      for (const node of await illustrations.locator('.node').all()) {
+        expect(
+          await node.evaluate((el) => el.scrollWidth <= el.clientWidth),
+        ).toBe(true);
+        expect(
+          await node.evaluate((el) =>
+            Number.parseFloat(getComputedStyle(el).fontSize),
+          ),
+        ).toBeGreaterThanOrEqual(enlarged ? 32 : 16);
+      }
       for (const svg of await page
         .locator('.workflow-canvas > svg:visible')
         .all()) {
@@ -92,7 +131,10 @@ test('fixture remains readable without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto('/__components/');
   await expect(page.locator('main h1')).toHaveText('Services');
-  await expect(page.locator('figcaption')).toHaveCount(2);
+  await expect(page.locator('figcaption')).toHaveCount(8);
+  await expect(page.locator('.workflow-illustration figcaption')).toHaveCount(
+    6,
+  );
   await expect(page.locator('.closing-grid a')).toHaveAttribute(
     'href',
     '/contact/',

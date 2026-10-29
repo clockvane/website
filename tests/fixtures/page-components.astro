@@ -5,12 +5,18 @@ import ServiceRows from '../../src/components/sections/ServiceRows.astro';
 import ProcessSteps from '../../src/components/sections/ProcessSteps.astro';
 import CtaBand from '../../src/components/sections/CtaBand.astro';
 import WorkflowDiagram from '../../src/components/sections/WorkflowDiagram.astro';
+import WorkflowIllustration from '../../src/components/sections/WorkflowIllustration.astro';
 import ResultPanel from '../../src/components/sections/ResultPanel.astro';
 import Card from '../../src/components/ui/Card.astro';
 import { helpChoose, homeProcess } from '../../src/content/sections';
 import { contactCopy } from '../../src/content/contact';
 const description =
   'A pipeline: code is saved, tested automatically, then released to the live site with one approval.';
+const illustrationVariants = [
+  'before-after',
+  'branching',
+  'connected-tools',
+] as const;
 ---
 
 <BaseLayout
@@ -60,6 +66,21 @@ const description =
         labels={[['Code'], ['Test'], ['Release']]}
         {description}
       />
+    </div>
+    <section class="illustration-examples section">
+      <h2>Workflow illustrations</h2>
+      {
+        illustrationVariants.map((variant) => (
+          <WorkflowIllustration {variant} />
+        ))
+      }
+    </section>
+    <div class="narrow-diagram">
+      {
+        illustrationVariants.map((variant) => (
+          <WorkflowIllustration {variant} />
+        ))
+      }
     </div>
     <ResultPanel
       title={contactCopy.thanks.heading}

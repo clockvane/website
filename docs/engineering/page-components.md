@@ -12,6 +12,7 @@ metadata, sitemap inclusion and the decision to omit the closing band on utility
 | `sections/ProcessSteps.astro` | Required `steps: { title, body, output? }[]`; optional `variant="home"` or `"timeline"` (default). Place below an h2. Home becomes two/four columns at tablet/desktop; timeline keeps chronological order and puts optional outputs alongside steps on desktop. Empty steps render nothing. |
 | `ui/Card.astro` | Optional `title`, `body`, `link: { label, href }`, default slot and `headingLevel="h2"` or `"h3"` (default). Empty cards render nothing; cards without links have no tab stops. Light palette is retained inside inverse bands. |
 | `sections/WorkflowDiagram.astro` | Required `labels`: exactly three short labels, each an array of one or two authored lines; required `description`: equivalent ordered prose explaining the steps and human approval before the final step. Both SVG variants are decorative; the adjacent figcaption supplies the single alternative. No IDs can collide across instances. |
+| `sections/WorkflowIllustration.astro` | Required `variant="before-after"`, `"branching"` or `"connected-tools"`; optional equivalent `description` overrides the approved default. Content comes from `src/content/workflow-illustrations.ts`. The diagram is decorative with one adjacent figcaption, no IDs, scripts or tab stops. |
 | `sections/ResultPanel.astro` | Required `title`, `body`; optional slot and root-absolute `actions`. Default h1 for standalone results. `inline` supplies a focusable h2 with `data-result-heading`; the caller owns focus after submission. Existing contact pages retain their specialised result behavior. |
 
 Wrap normal page content in `.container.section`; headers and result panels deliberately add no
@@ -27,8 +28,24 @@ overrides to avoid specificity conflicts with Astro's scoped styles. The diagram
 when its own content width reaches the tablet token; a narrow desktop column stays vertical.
 SVG geometry uses percentages/em without a scaling viewBox, preserving the small text size at
 200% enlargement. Keep label lines short enough for a narrow column and include full meaning
-in the description. The current motif is a linear workflow with an approval checkpoint; use
-different page-specific artwork when the approved workflow branches.
+in the description. `WorkflowDiagram` retains its linear workflow and approval checkpoint.
+
+Use `WorkflowIllustration` for the additional motifs required by wireframes §§1 and 3:
+
+- `before-after`: the same shop, spreadsheet and invoice tool in each panel. Three person
+  glyphs distinguish manual copying from automatic movement. Home uses the default caption;
+  process automation passes `description={processAutomationDescription}` from the content module.
+- `branching`: document → AI step, then two separate paths: Clear → Spreadsheet and
+  Unclear → Person to check. The unclear path never implies automatic approval.
+- `connected-tools`: one custom service with three separate connections to Tool 1, Tool 2
+  and Tool 3. Tool numbers identify nodes; they are not a sequence or company claims.
+
+Labels are wrapping HTML at `font.size.small`; original inline SVG connectors and person glyphs
+use the existing diagram tokens. The tree stays vertical, including in narrow desktop columns;
+comparison panels become two columns only when their own container reaches the tablet token.
+At enlarged text that threshold grows with the root size. The visible caption repeats all meaning
+for assistive technology and no-JS reading. An override must describe the same illustrated tools
+and routes. No page routes, content claims, images or dependencies are added.
 
 ## Verification
 
@@ -44,3 +61,17 @@ Checks cover 320/768/1024/1440 px, axe, sequential keyboard navigation, focus ri
 both diagram layouts, a narrow diagram column, 200% text, forced colors, reduced motion and
 reading without JavaScript. Screenshots are written under `.agentops-scratch/65-components-*.png`.
 The regular `npm run test:e2e` continues to exercise the production artifact separately.
+
+Issue #75 extends the same fixture with every illustration in wide and narrow containers.
+Unit tests cover comparison content, clear/unclear routing, three service connections, escaped
+caption overrides and single text alternatives. Browser checks include wrapping labels at 200%
+text and comparison container switching. Illustration screenshots at 320 and 1440 px go to
+`.agentops-scratch/75-<variant>-<width>.png`.
+
+Committed visual evidence (320 / 1440 px):
+[before/after mobile](evidence/75-before-after-320.png) ·
+[desktop](evidence/75-before-after-1440.png),
+[branching mobile](evidence/75-branching-320.png) ·
+[desktop](evidence/75-branching-1440.png),
+[connected tools mobile](evidence/75-connected-tools-320.png) ·
+[desktop](evidence/75-connected-tools-1440.png).
