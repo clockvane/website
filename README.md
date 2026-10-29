@@ -74,6 +74,11 @@ validation rules, tests and required delivery activation steps are documented in
 [`docs/engineering/contact.md`](docs/engineering/contact.md). Per ADR-002, delivery
 remains an explicit error-only stub until the owner chooses a notification channel.
 
+The About page at `/about/` uses the approved copy deck and shared page components.
+Founder roles, bios, expertise confirmation, credentials, public proof URLs and the name story
+retain their owner-input placeholders; no portraits or unapproved proof links are shown.
+The shared audit CTA label and contact route are configured in `site.config.ts`.
+
 ## Repository layout
 
 ```

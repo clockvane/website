@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/sections/PageHeader.astro';
+import CtaBand from '../../components/sections/CtaBand.astro';
+import { aboutCopy as copy } from '../../content/about';
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <article itemscope itemtype="https://schema.org/AboutPage">
+    <div class="container section">
+      <PageHeader title={copy.heading} lede={copy.lede} />
+    </div>
+    <section class="container section" aria-labelledby="about-who">
+      <div class="measure">
+        <h2 id="about-who">{copy.who.heading}</h2>
+        <p>{copy.who.body}</p>
+      </div>
+    </section>
+    <section class="container section" aria-labelledby="about-expertise">
+      <div class="measure">
+        <h2 id="about-expertise">{copy.expertise.heading}</h2>
+        <ul>{copy.expertise.items.map((item) => <li>{item}</li>)}</ul>
+        <p>{copy.expertise.caveat}</p>
+        <p>{copy.expertise.note}</p>
+      </div>
+    </section>
+    <section class="container section" aria-labelledby="about-proof">
+      <div class="measure">
+        <h2 id="about-proof">{copy.proof.heading}</h2>
+        <p>{copy.proof.body}</p>
+      </div>
+    </section>
+    <section class="container section" aria-labelledby="about-name">
+      <div class="measure">
+        <h2 id="about-name">{copy.name.heading}</h2>
+        <p>{copy.name.body}</p>
+      </div>
+    </section>
+  </article>
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  ul {
+    margin-block: var(--space-4);
+    padding-inline-start: var(--space-6);
+  }
+  li + li {
+    margin-block-start: var(--space-3);
+  }
+</style>

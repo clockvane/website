@@ -14,6 +14,10 @@ export const siteConfigSchema = z.object({
     github: z.string().min(1),
   }),
   analyticsId: z.string().min(1),
+  primaryCta: z.object({
+    label: z.string().min(1),
+    href: z.literal('/contact/'),
+  }),
   contact: z.object({
     endpoint: z.url().refine((value) => value.startsWith('https://')),
   }),
@@ -31,6 +35,7 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
     github: '[[PLACEHOLDER: GitHub organisation URL]]',
   },
   analyticsId: '[[PLACEHOLDER: analytics ID, PRD Q10]]',
+  primaryCta: { label: 'Book a free audit call', href: '/contact/' },
   contact: { endpoint: 'https://example.invalid/enquiry' },
 });
 
