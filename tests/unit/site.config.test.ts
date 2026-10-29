@@ -21,6 +21,7 @@ describe('site config', () => {
 
   it('shares the configured CTA with navigation and rejects an empty label', () => {
     expect(primaryCta).toBe(siteConfig.primaryCta);
+    expect(primaryCta.label).toBe('Book a free audit call');
     expect(
       siteConfigSchema.safeParse({
         ...siteConfig,
