@@ -85,9 +85,12 @@ Services to cover (one visual language for all of them): business process automa
 ### The feel: clean · futuristic · not bloated
 1. **Clean first.** Generous space, a strict grid, one idea per section, few elements per screen.
    Remove anything that doesn't help a visitor decide.
-2. **Futuristic, not science fiction.** Precision, depth and light: a dark-first canvas with luminous
-   accents, fine grid lines, system-like details (monospace labels, live status chips, subtle glow).
-   No stock robots or glowing brains, no generic 3D blobs, no purple "AI" gradients, no neon overload.
+2. **Futuristic, with tasteful science-fiction flair.** Precision, depth and light: a dark-first canvas
+   with luminous accents, fine grid lines, system-like details (monospace labels, live status chips,
+   subtle glow). Sci-fi touches are welcome — holographic or interface-style details, light trails,
+   particle or field effects, a cinematic hero moment — when they mean something and fit the limits
+   below. Still no clichés: no stock robots or glowing brains, no generic 3D blobs, no purple "AI"
+   gradients, no matrix rain, no neon overload.
 3. **Motion with meaning.** Every animation explains something real: data flowing through an
    automation, a document turning into structured fields, a pipeline stage turning green, a cost curve
    bending down. Triggered by scroll or by the visitor — never a distracting loop.
@@ -129,7 +132,9 @@ Services to cover (one visual language for all of them): business process automa
    what we must avoid. Learn, never copy.
 2. **Three distinct concepts**, each with a live, working prototype of the home hero and one service
    section, measured against the limits above (Lighthouse report attached) and shown with reduce-motion
-   on. I choose one at **Gate 2b** (a `gate:2` pull request I merge).
+   on. Make them span the range — **one restrained and precise, one balanced, one bold and cinematic**
+   (the most sci-fi), all within the same limits — so I can see how far to go. I choose one at
+   **Gate 2b** (a `gate:2` pull request I merge).
 3. **Architecture first for motion**: the tech lead records which techniques are allowed within these
    limits (ADR-004) and updates the performance budgets in `docs/architecture/nfr.md`.
 4. Only after Gate 2b: the design system v2, then the shell, home, services and the other pages; the
