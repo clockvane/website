@@ -4,8 +4,8 @@
 |-------|-------|
 | Owner | tech-lead |
 | Status | Proposed (Gate 2 input) |
-| Last updated | 2026-10-22 |
-| Traces to | PRD §7, §8.3–8.7 · [ADR-001](../adr/ADR-001-stack.md) |
+| Last updated | 2026-10-29 (P-4, P-5, P-6, P-8, P-10, P-11 per ADR-004) |
+| Traces to | PRD §7, §8.3–8.7 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) |
 
 Every NFR has an ID, a measurable target and how it is checked. "CI" means the check fails the PR.
 Key pages = Home, Services, one Service detail, Contact.
@@ -19,13 +19,14 @@ median of 3 runs.
 | P-1 | Largest Contentful Paint | ≤ 2.0 s lab (≤ 2.5 s p75 field) | CI (LHCI assertion) |
 | P-2 | Cumulative Layout Shift | ≤ 0.05 lab (≤ 0.1 p75 field) | CI |
 | P-3 | Total Blocking Time (lab proxy for INP) | ≤ 150 ms; INP ≤ 200 ms p75 field | CI (TBT), field once analytics exist |
-| P-4 | JavaScript per page (compressed) | ≤ 15 kB on Contact; ≤ 5 kB elsewhere; 0 third-party JS without an ADR | CI (LHCI resource budget) |
-| P-5 | CSS per page (compressed) | ≤ 30 kB | CI |
-| P-6 | Fonts | ≤ 2 families, ≤ 4 files, ≤ 100 kB total WOFF2, self-hosted | CI |
+| P-4 | JavaScript per page (compressed), all effects included | ≤ 35 kB total on any page; hero visual code ≤ 15 kB; motion controller ≤ 5 kB; contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-004](../adr/ADR-004-motion-and-effects.md) §2) | CI (LHCI resource budget + `dist/` bundle-size check) |
+| P-5 | CSS per page (compressed) | ≤ 40 kB | CI |
+| P-6 | Fonts | ≤ 3 files, ≤ 120 kB total WOFF2, self-hosted | CI |
 | P-7 | Images | ≤ 200 kB above the fold; AVIF/WebP; explicit width/height | CI + review |
-| P-8 | Total page weight (compressed) | ≤ 500 kB on key pages | CI |
+| P-8 | Total page weight (compressed) | ≤ 600 kB on key pages | CI |
 | P-9 | Requests on first load | ≤ 20 | CI |
-| P-10 | No-JS reading | All content readable and nav usable with JS disabled; form posts natively | Playwright run with JS disabled |
+| P-10 | No-JS reading | All content readable and nav usable with JS disabled; form posts natively; no element stuck in a pre-animation hidden state | Playwright run with JS disabled |
+| P-11 | Motion | Only `transform`/`opacity` animated; effects pause off-screen and in hidden tabs; reduced motion and Save-Data load no hero renderer and run no animations; static fallback without WebGL ([ADR-004](../adr/ADR-004-motion-and-effects.md) §3–§4) | Playwright `reducedMotion: 'reduce'` and no-WebGL runs + review |
 
 ## 2. Lighthouse targets
 | ID | Category | Target on key pages | Check |

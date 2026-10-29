@@ -93,8 +93,11 @@ full rule and why infrastructure for this site lives in this repository.
 
 ## 4. Rendering strategy
 - Every v1 page is **pre-rendered at build time** (`output: 'static'`). No client-side routing.
-- JavaScript is opt-in per component. v1 expects exactly one script: the contact-form enhancement
-  (inline validation, async submit, success/error states). Everything else is HTML + CSS.
+- JavaScript is opt-in per component and only progressive enhancement. Allowed first-party scripts
+  ([ADR-004](../adr/ADR-004-motion-and-effects.md)): the contact-form enhancement (inline validation,
+  async submit, success/error states), one shared motion controller (`src/scripts/motion.ts`), and one
+  lazily loaded hero renderer (`src/scripts/hero/`). Total ≤ 35 kB compressed per page (nfr.md P-4);
+  any other script needs a PR reason. Motion is CSS-first; everything works as HTML + CSS.
 - Mobile navigation uses a no-JS pattern (`<details>`/disclosure or CSS), enhanced only if needed.
 - Proof, FAQ and other optional sections are **empty-safe**: if their collection is empty, they do
   not render and their pages are excluded from the build and sitemap (FR-5).
