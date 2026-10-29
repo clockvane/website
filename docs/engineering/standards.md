@@ -58,7 +58,9 @@ Local runs: one `astro dev` or `astro preview` at a time; stop it before finishi
   `var(--font-size-…)`). Stylelint rejects raw hex/rgb, px font sizes and unlisted spacing values.
   Global CSS limited to `tokens.css`, `base.css` (reset, typography), `utilities.css` (e.g. `.visually-hidden`).
 - No client JS by default. A `client:*` directive or `<script>` needs a reason in the PR and must fit
-  the JS budget. No UI framework (React/Vue/Svelte) without an ADR.
+  the JS budget (nfr.md P-4). No UI framework (React/Vue/Svelte) without an ADR. Motion follows
+  [ADR-004](../adr/ADR-004-motion-and-effects.md): CSS first, all motion JS through `src/scripts/motion.ts`,
+  animate only `transform`/`opacity`, no `is:inline` scripts (JSON-LD excepted), no animation libraries.
 - Images via Astro `<Image>`/`<Picture>` with width, height and `alt` (empty only if decorative).
 - Proof components accept a list and render nothing when it is empty (FR-5). Never seed fake data.
 - Every interactive element has hover, focus-visible, active, disabled, loading and error states as
