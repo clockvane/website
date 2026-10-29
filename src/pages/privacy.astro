@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/sections/PageHeader.astro';
+import { privacyCopy as copy } from '../content/privacy';
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <article class="container section">
+    <PageHeader title={copy.heading} />
+    <div class="measure">
+      <p>{copy.updated}</p>
+      <p>{copy.status}</p>
+      {
+        copy.sections.map(({ heading, body }) => (
+          <section class="privacy-section">
+            <h2>{heading}</h2>
+            <p>{body}</p>
+          </section>
+        ))
+      }
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .measure {
+    margin-block-start: var(--space-6);
+  }
+  .privacy-section {
+    margin-block-start: var(--space-10);
+  }
+</style>
