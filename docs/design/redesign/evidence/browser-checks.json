@@ -1,0 +1,86 @@
+[
+  {
+    "concept": "b",
+    "widths": [
+      320,
+      390,
+      480,
+      768,
+      1024,
+      1440
+    ],
+    "axeViolations": 0,
+    "thirdPartyRequests": 0,
+    "consoleErrors": 0,
+    "checks": [
+      "reduced motion",
+      "keyboard replay",
+      "Escape",
+      "offscreen pause/resume",
+      "six service animations stop",
+      "no-JS",
+      "Save-Data",
+      "reduced-data policy",
+      "no WebGL",
+      "200% text",
+      "44px targets",
+      "contact annotation"
+    ]
+  },
+  {
+    "concept": "c",
+    "widths": [
+      320,
+      390,
+      480,
+      768,
+      1024,
+      1440
+    ],
+    "axeViolations": 0,
+    "thirdPartyRequests": 0,
+    "consoleErrors": 0,
+    "checks": [
+      "reduced motion",
+      "keyboard replay",
+      "Escape",
+      "offscreen pause/resume",
+      "six service animations stop",
+      "no-JS",
+      "Save-Data",
+      "reduced-data policy",
+      "no WebGL",
+      "200% text",
+      "44px targets",
+      "contact annotation"
+    ]
+  },
+  {
+    "concept": "a",
+    "widths": [
+      320,
+      390,
+      480,
+      768,
+      1024,
+      1440
+    ],
+    "axeViolations": 0,
+    "thirdPartyRequests": 0,
+    "consoleErrors": 0,
+    "checks": [
+      "reduced motion",
+      "keyboard replay",
+      "Escape",
+      "offscreen pause/resume",
+      "six service animations stop",
+      "no-JS",
+      "Save-Data",
+      "reduced-data policy",
+      "no WebGL",
+      "200% text",
+      "44px targets",
+      "contact annotation"
+    ]
+  }
+]

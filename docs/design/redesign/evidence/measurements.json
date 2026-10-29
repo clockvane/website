@@ -1,0 +1,217 @@
+{
+  "date": "2026-10-29",
+  "method": "Lighthouse mobile default simulated slow 4G, cold browser per run, gzip local HTTP; median of three performance scores selects attached full report.",
+  "runs": [
+    {
+      "concept": "b",
+      "run": 1,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1507.014,
+      "cls": 0,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "b",
+      "run": 2,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1508.5965,
+      "cls": 0.00150382240280845,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "b",
+      "run": 3,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1512.7244999999998,
+      "cls": 0.00150382240280845,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "c",
+      "run": 1,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1208.998,
+      "cls": 0,
+      "tbtMs": 0,
+      "failed": [
+        "max-potential-fid",
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "c",
+      "run": 2,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1211.026,
+      "cls": 0,
+      "tbtMs": 75.48699999999985,
+      "failed": [
+        "max-potential-fid",
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "c",
+      "run": 3,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1208.29,
+      "cls": 0,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "a",
+      "run": 1,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1225.298,
+      "cls": 0,
+      "tbtMs": 1.350999999999999,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "a",
+      "run": 2,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1207,
+      "cls": 0,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    },
+    {
+      "concept": "a",
+      "run": 3,
+      "scores": {
+        "performance": 100,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 60
+      },
+      "lcpMs": 1215.814,
+      "cls": 0,
+      "tbtMs": 0,
+      "failed": [
+        "is-crawlable",
+        "cache-insight",
+        "network-dependency-tree-insight",
+        "render-blocking-insight"
+      ]
+    }
+  ],
+  "sizes": [
+    {
+      "concept": "a",
+      "htmlGzipBytes": 3202,
+      "cssGzipBytes": 3003,
+      "controllerGzipBytes": 828,
+      "heroRendererBytes": 0,
+      "jsGzipBytes": 828,
+      "fontFiles": 1,
+      "fontBytes": 26832,
+      "pageBytes": 33865,
+      "requests": 5
+    },
+    {
+      "concept": "b",
+      "htmlGzipBytes": 3234,
+      "cssGzipBytes": 3247,
+      "controllerGzipBytes": 828,
+      "heroRendererBytes": 0,
+      "jsGzipBytes": 828,
+      "fontFiles": 2,
+      "fontBytes": 84916,
+      "pageBytes": 92225,
+      "requests": 6
+    },
+    {
+      "concept": "c",
+      "htmlGzipBytes": 3254,
+      "cssGzipBytes": 3327,
+      "controllerGzipBytes": 828,
+      "heroRendererBytes": 0,
+      "jsGzipBytes": 828,
+      "fontFiles": 1,
+      "fontBytes": 26832,
+      "pageBytes": 34241,
+      "requests": 5
+    }
+  ]
+}
