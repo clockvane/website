@@ -252,8 +252,8 @@ and the run fits under your usage limits (§6). Prefer a fixed timetable instead
 
 | When | What you do |
 |------|-------------|
-| A `gate:N` PR is labeled `needs-human` | Read it (for Gate 2 open `docs/design/prototype/index.html`). Approve = **merge it**. Want changes = comment, then add the `owner-feedback` label; the author agent revises it. |
-| An issue/PR is labeled `needs-human` | Answer in a comment, then remove the label. |
+| A `gate:N` PR is labeled `needs-human` | Read it (for Gate 2 open `docs/design/prototype/index.html`). Approve = **merge it**: that also accepts every recommendation in it (for example "Recommend concept B"), so you don't need to comment. Want a different choice or changes = comment, then add the `owner-feedback` label; the author agent revises it. |
+| An issue/PR is labeled `needs-human` | Answer in a comment, then remove the label. Agents use it only for what you alone can decide (spend, accounts, secrets, rule changes, 3 failed review rounds); a ticket waiting for other work gets `Depends on #N` and is released by itself. |
 | An issue asks for an account or secret | Create it yourself; add the secret in GitHub Settings → Secrets (or the `production` environment). Agents never touch credentials. |
 | A production deploy is waiting | Actions → the run → **Review deployments** → approve. |
 | You want to change the rules | Edit `CLAUDE.md`, `.claude/`, or `agentops/` in your own clone and open a PR. Agents cannot edit these. |

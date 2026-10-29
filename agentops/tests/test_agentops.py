@@ -350,6 +350,9 @@ class Dispatch(unittest.TestCase):
         self.assertIsNone(self.disp(gh).handle_prs(gh.prs))
         self.assertNotIn("merge", [c[0] for c in gh.calls])
         self.assertIn(("label", 7, ["needs-human"]), gh.calls)
+        # merging alone must be enough: the comment says it accepts the PR's recommendations
+        note = next(c[2] for c in gh.calls if c[0] == "comment")
+        self.assertIn("accepts every recommendation", note)
 
     def test_owner_feedback_routes_fix(self):
         gh = FakeGH(prs=[pr(7, "bbb", ["agent:product-owner", "gate:1", "needs-human", "owner-feedback"])])
