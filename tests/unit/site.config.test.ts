@@ -19,14 +19,32 @@ describe('site config', () => {
     expect(isPlaceholder(siteConfig.brand)).toBe(false);
   });
 
-  it('supplies the shared audit CTA and rejects an unsafe destination', () => {
+  it('shares the configured CTA with navigation and rejects an empty label', () => {
     expect(primaryCta).toBe(siteConfig.primaryCta);
     expect(primaryCta.label).toBe('Book a free audit call');
     expect(
       siteConfigSchema.safeParse({
         ...siteConfig,
-        primaryCta: { label: 'Audit', href: 'javascript:alert(1)' },
+        primaryCta: { ...primaryCta, label: '' },
+      }).success,
+    ).toBe(false);
+    expect(
+      siteConfigSchema.safeParse({
+        ...siteConfig,
+        primaryCta: { ...primaryCta, href: 'javascript:alert(1)' },
       }).success,
     ).toBe(false);
   });
+
+  it.each(['//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
+    'rejects a CTA destination outside the site: %s',
+    (href) => {
+      expect(
+        siteConfigSchema.safeParse({
+          ...siteConfig,
+          primaryCta: { ...primaryCta, href },
+        }).success,
+      ).toBe(false);
+    },
+  );
 });

@@ -15,7 +15,14 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
     .locator('meta[name="description"]')
     .getAttribute('content');
   await page.goto('/about/');
-  await expect(page).toHaveTitle(aboutCopy.title);
+  await expect(page).toHaveTitle('About us | Clockvane');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'About Clockvane',
+  );
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    'Meet the founders behind Clockvane, an India-based team that automates boring work for small businesses worldwide.',
+  );
   expect(await page.title()).not.toBe(homeTitle);
   expect(aboutCopy.description).not.toBe(homeDescription);
   const main = page.getByRole('main');
@@ -55,14 +62,14 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
 for (const width of [320, 1280]) {
   test(`About accessibility and visual evidence at ${width}px`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/about/');
     await page.evaluate(() => document.fonts.ready);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
     await page.screenshot({
-      path: `.agentops-scratch/71-about-${width}.png`,
+      path: testInfo.outputPath(`71-about-${width}.png`),
       fullPage: true,
     });
   });
