@@ -243,6 +243,17 @@ and claims its work under a shared lock, so two agents never take the same ticke
   merge them.
 - **Auto-unblock:** when every `Depends on #N` of a blocked ticket is closed, agentops marks it ready
   itself (no manager run).
+- **Switching between Claude and GPT.** When one plan is at your limit (or a run would not fit under it),
+  that engine's roles run on the other engine instead of waiting: the designer and engineers move to
+  Claude, the reviewers, manager and writers move to GPT. They switch back by themselves as soon as their
+  own plan has room again. When both plans are at your limits, the agents wait and start again by
+  themselves when the first one resets. Off: `"run": {"failover": false}` in your local config.
+- **Codex updates.** When Codex updates itself, the scheduler runs its safety test again by itself (at
+  most once an hour); the GPT agents switch back on only when it passes.
+- **Heartbeat on GitHub.** The scheduler keeps a closed, locked issue titled *[agentops] Team
+  heartbeat* up to date (every 5 minutes when something changes): whether the team is started, both
+  plans' usage, switching, what each agent is doing and the last runs. Check it from your phone. It
+  contains no local paths; editing a description notifies nobody. Off: `"run": {"heartbeat_minutes": 0}`.
 
 Even when started, a run only begins if you're not using Claude Code yourself (unless `--now`)
 and the run fits under your usage limits (§6). Prefer a fixed timetable instead? Set

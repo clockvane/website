@@ -1567,5 +1567,136 @@ class SchedulerCheck(unittest.TestCase):
                 ao.LOG_TZ = old
 
 
+class Failover(unittest.TestCase):
+    """A plan at its limit: its roles run on the other engine, and switch back when it has room."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        self.cfg = make_cfg(self.tmp, **{"paths.codex_snapshot_file": str(self.tmp / "codex-snap.json"),
+                                         "engines.codex.sessions_dir": str(self.tmp / "codex-sessions")})
+        self.st = ao.State(self.cfg)
+        self.L = lambda *n: [{"name": x} for x in n]
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    ROOM = {"blocked": None, "left": 50.0, "expected": {"implement": 15, "fix": 8, "review": 5, "plan": 3}}
+    FULL = {"blocked": "ChatGPT plan: session usage 85% has reached your limit 85%", "left": None, "expected": {},
+            "resets": None}
+
+    def d(self, gh, lane, headroom, busy=()):
+        return ao.Dispatcher(self.cfg, gh, self.st, NOW, lane=lane, lanes=["claude", "codex"], busy=set(busy),
+                             worker=lane, headroom=headroom)
+
+    def snap(self, path, five, seven, resets=NOW + 3600):
+        path.write_text(json.dumps({"captured_at": NOW, "five_hour": {"used_percentage": five, "resets_at": resets},
+                                    "seven_day": {"used_percentage": seven, "resets_at": NOW + 5 * 86400}}))
+
+    def test_engine_for_switches_only_when_the_other_engine_has_room(self):
+        self.assertEqual(ao.engine_for(self.cfg, "ux-designer", ["claude", "codex"]), "codex")
+        self.assertEqual(ao.engine_for(self.cfg, "ux-designer", ["claude", "codex"], {"codex"}), "claude")
+        self.assertEqual(ao.engine_for(self.cfg, "tech-lead", ["claude", "codex"], {"claude"}), "codex")
+        self.assertEqual(ao.engine_for(self.cfg, "tech-lead", ["claude", "codex"], {"claude", "codex"}), "claude")
+        self.assertEqual(ao.engine_for(self.cfg, "tech-lead", ["claude"], {"claude"}), "claude")
+
+    def test_lane_fits(self):
+        self.assertTrue(ao.lane_fits(self.ROOM, "implement"))
+        self.assertFalse(ao.lane_fits(self.FULL, "review"))
+        self.assertTrue(ao.lane_fits({"blocked": None, "left": None}, "implement"))
+        tight = dict(self.ROOM, left=10.0)
+        self.assertFalse(ao.lane_fits(tight, "implement"))
+        self.assertTrue(ao.lane_fits(tight, "review"))
+
+    def test_gpt_ticket_goes_to_claude_while_chatgpt_is_full_and_back_after(self):
+        gh = FakeGH(issues=[{"number": 86, "labels": self.L("status:ready", "agent:ux-designer"), "body": ""}])
+        full = {"claude": self.ROOM, "codex": self.FULL}
+        self.assertEqual(self.d(gh, "claude", full).choose("build", "m").issue, 86)
+        self.assertIsNone(self.d(gh, "codex", full).choose("build", "m"))
+        room = {"claude": self.ROOM, "codex": self.ROOM}
+        self.assertEqual(self.d(gh, "codex", room).choose("build", "m").issue, 86)
+        self.assertNotEqual(getattr(self.d(gh, "claude", room).choose("build", "m"), "issue", None), 86)
+
+    def test_claude_full_gpt_reviews_and_plans(self):
+        gh = FakeGH(prs=[pr(40, "s40", ["agent:sde2"], branch="sde2/31-x")], files={40: ["src/a.ts"]})
+        hr = {"claude": dict(self.FULL, blocked="Claude plan: session usage 100% has reached your limit 100%"),
+              "codex": self.ROOM}
+        w = self.d(gh, "codex", hr).handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action), ("code-reviewer", "review"))
+        self.assertIsNone(self.d(gh, "claude", hr).handle_prs(gh.prs))
+        self.assertEqual(self.d(FakeGH(), "codex", hr).choose("build", "m").action, "plan")
+        # both full: every role stays on its own engine and waits there
+        both = {"claude": hr["claude"], "codex": self.FULL}
+        self.assertEqual(self.d(gh, "claude", both).handle_prs(gh.prs).role, "code-reviewer")
+
+    def test_switch_depends_on_run_size(self):
+        gh = FakeGH(issues=[{"number": 86, "labels": self.L("status:ready", "agent:ux-designer"), "body": ""}],
+                    prs=[pr(41, "s41", ["agent:sde3", "ui-review"], branch="sde3/88-x")], files={41: ["src/a.astro"]})
+        tight = {"claude": self.ROOM, "codex": dict(self.ROOM, left=10.0)}
+        # a designer review (5%) still fits on GPT; the designer's next ticket (15%) goes to Claude
+        self.assertEqual(self.d(gh, "codex", tight, busy={("pr", 41, "review", "code-reviewer")}).handle_prs(gh.prs).role,
+                         "ux-designer")
+        self.assertEqual(self.d(FakeGH(issues=gh.issues), "claude", tight).choose("build", "m").issue, 86)
+
+    def test_lane_headroom_from_readings_and_cooldown(self):
+        self.snap(self.tmp / "snap.json", 40, 50)
+        h = ao.lane_headroom(self.cfg, self.st, NOW, "claude")
+        self.assertIsNone(h["blocked"])
+        self.assertEqual(h["left"], 35.0)  # 75% session limit - 40%
+        self.snap(self.tmp / "codex-snap.json", 90, 20)
+        self.assertIn("reached your limit 85%", ao.lane_headroom(self.cfg, self.st, NOW, "codex")["blocked"])
+        self.st.put("cooldown", {"until": NOW + 600, "reason": "usage limit"})
+        self.assertIn("usage limit", ao.lane_headroom(self.cfg, self.st, NOW, "claude")["blocked"])
+        self.assertEqual(ao.routing_headroom(self.cfg, self.st, NOW, ["claude"]), {})
+        hr = ao.routing_headroom(self.cfg, self.st, NOW, ["claude", "codex"])
+        self.assertIn("both plans are at your limits", ao.switch_note(self.cfg, hr, NOW))
+        self.st.put("cooldown", {})
+        note = ao.switch_note(self.cfg, ao.routing_headroom(self.cfg, self.st, NOW, ["claude", "codex"]), NOW)
+        self.assertIn("GPT roles run on Claude meanwhile", note)
+        off = make_cfg(self.tmp, **{"run.failover": False})
+        self.assertEqual(ao.routing_headroom(off, self.st, NOW, ["claude", "codex"]), {})
+
+    def test_heartbeat_published_on_change_without_local_paths(self):
+        from unittest import mock
+        calls = []
+
+        class GH:
+            def __init__(self, *_a): pass
+
+            def api(self, method, path, body=None):
+                calls.append((method, path, body))
+                if method == "GET":
+                    return {"items": []}
+                if method == "POST":
+                    return {"number": 99}
+                return {}
+        self.st.put("last_note-claude-2", {"msg": f"claude-2 not started: git fetch failed in {Path.home()}/agents/x",
+                                           "at": NOW})
+        info = {"claude": {"state": "idle"}, "claude-2": {"state": "error"}}
+        with mock.patch.object(ao, "GH", GH):
+            ao.publish_heartbeat(self.cfg, self.st, NOW, ["claude", "claude-2"], info, True, {})
+            self.assertEqual([c[0] for c in calls], ["GET", "POST", "PATCH", "PUT"])
+            body = calls[1][2]["body"]
+            self.assertIn("Team heartbeat", body)
+            self.assertNotIn(str(Path.home()), body)
+            calls.clear()
+            ao.publish_heartbeat(self.cfg, self.st, NOW + 60, ["claude"], info, True, {})  # too soon
+            ao.publish_heartbeat(self.cfg, self.st, NOW + 400, ["claude", "claude-2"], info, True, {})  # same state
+            self.assertEqual(calls, [])
+            info["claude"] = {"state": "worked"}
+            ao.publish_heartbeat(self.cfg, self.st, NOW + 800, ["claude", "claude-2"], info, True, {})
+            self.assertEqual([(c[0], c[1]) for c in calls], [("PATCH", "repos/clockvane/website/issues/99")])
+
+    def test_auto_codex_check_once_an_hour_per_version(self):
+        from unittest import mock
+        ran = []
+        with mock.patch.object(ao, "codex_version", lambda cfg: "codex-cli 9.9"), \
+                mock.patch.object(ao, "cmd_codex_check", lambda args: ran.append(1) or 0):
+            self.assertTrue(ao.auto_codex_check(self.cfg, self.st, NOW))
+            self.assertFalse(ao.auto_codex_check(self.cfg, self.st, NOW + 600))
+            self.assertTrue(ao.auto_codex_check(self.cfg, self.st, NOW + 3700))
+        self.assertEqual(len(ran), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

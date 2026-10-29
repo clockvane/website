@@ -722,9 +722,19 @@ def active_lanes(cfg: "Config", state: "State") -> List[str]:
     return ["claude"] + (["codex"] if codex_ready(cfg, state) else [])
 
 
-def engine_for(cfg: "Config", role: str, lanes: Iterable[str]) -> str:
+def engine_for(cfg: "Config", role: str, lanes: Iterable[str], avoid: Iterable[str] = ()) -> str:
+    """The engine a role runs on now: its own (config `roles`), or Claude while that engine is off.
+    `avoid` = engines whose plan can't take the run now (at your limit): the role then switches to the
+    other engine instead of waiting, and comes back to its own as soon as that has room again."""
+    lanes = list(lanes)
     eng = role_settings(cfg, role).get("engine", "claude")
-    return eng if eng in lanes else "claude"
+    pref = eng if eng in lanes else "claude"
+    avoid = set(avoid)
+    if pref in avoid:
+        alt = next((ln for ln in lanes if ln != pref and ln not in avoid), None)
+        if alt:
+            return alt
+    return pref
 
 
 # claims: which worker holds which work item, so no two workers take the same one
@@ -1245,6 +1255,92 @@ def gate(cfg: Config, state: State, now: float, usage: Optional[Dict[str, Any]] 
     return (not reasons), reasons, info
 
 
+# --------------------------------------------------------------------------- engine switching
+# When one plan (Claude or ChatGPT) is at your limit, its roles run on the other engine instead of
+# waiting; they switch back by themselves when their own plan has room again. Only usage limits switch
+# an engine: stopped/paused/quiet rules hold every engine alike. Off with `run.failover: false`.
+FAILOVER_ACTIONS = ("implement", "fix", "review", "plan")
+
+
+def lane_headroom(cfg: "Config", state: "State", now: float, lane: str,
+                  worker: Optional[str] = None) -> Dict[str, Any]:
+    """Can this engine's plan take more runs now? {'blocked': why not, or None; 'left': % of a session
+    still under your limits after the runs in progress (None = unknown); 'expected': {action: % per run};
+    'resets': when it has room again}."""
+    plan = "ChatGPT" if lane == "codex" else "Claude"
+    out: Dict[str, Any] = {"blocked": None, "left": None, "expected": {}, "resets": None}
+    cd = state.doc(lane_doc("cooldown", lane))
+    if cd.get("until", 0) > now:
+        out.update(blocked=f"{plan} plan: {cd.get('reason', 'usage limit')}", resets=float(cd["until"]))
+        return out
+    limits = effective_limits(cfg, read_window(cfg, now), lane)
+    live = live_usage(cfg, now, lane)
+    if live is None:
+        if lane == "codex":
+            cap = int(cfg.get("engines", "codex", "max_runs_per_5h_without_reading", default=3))
+            done = [r for r in state.ledger(now - 5 * HOUR) if r.get("kind") == "run" and r.get("lane") == "codex"]
+            if len(done) >= cap:
+                out["blocked"] = f"{plan} plan: usage unknown and {cap} runs done in 5 hours"
+        return out
+    for name, key in (("five_hour", "session"), ("seven_day", "weekly")):
+        if live[name] >= limits[key]:
+            out.update(blocked=f"{plan} plan: {key} usage {live[name]:.0f}% has reached your limit {limits[key]:.0f}%",
+                       resets=live.get(name + "_resets"))
+            return out
+    if lane == "claude" and team_share_live(state, now) >= limits["team_share"]:
+        out["blocked"] = f"{plan} plan: the team used its share of the week ({limits['team_share']:.0f}%)"
+        return out
+    ratio = max(0.01, float(state.doc(lane_doc("run_costs", lane)).get("seven_per_five") or 0.25))
+    busy = sum(0.5 * expected_run_pct(cfg, state, c.get("action") or "implement", lane)[0]
+               for c in running_claims(state, worker, lane).values())
+    left5 = limits["session"] - live["five_hour"] - busy
+    left7 = (limits["weekly"] - live["seven_day"]) / ratio - busy  # in session-% units, as runs are measured
+    out["left"] = round(min(left5, left7), 1)
+    out["resets"] = live.get("five_hour_resets") if left5 <= left7 else live.get("seven_day_resets")
+    out["expected"] = {a: expected_run_pct(cfg, state, a, lane)[0] for a in FAILOVER_ACTIONS}
+    return out
+
+
+def lane_fits(h: Dict[str, Any], action: Optional[str] = None) -> bool:
+    """Would a run of this kind fit under this engine's limits now (same rule as the gate)?"""
+    if h.get("blocked"):
+        return False
+    if not action or h.get("left") is None:
+        return True
+    return float((h.get("expected") or {}).get(action, DEFAULT_EXPECTED_PCT.get(action, 10.0))) <= h["left"]
+
+
+def routing_headroom(cfg: "Config", state: "State", now: float, lanes: Iterable[str],
+                     worker: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """lane_headroom of every engine, when switching is possible (two engines ready, failover on)."""
+    lanes = list(lanes)
+    if len(lanes) < 2 or not cfg.get("run", "failover", default=True):
+        return {}
+    out = {}
+    for ln in lanes:
+        try:
+            out[ln] = lane_headroom(cfg, state, now, ln, worker)
+        except Exception as exc:  # a broken reading must never stop the team: treat as "room"
+            out[ln] = {"blocked": None, "left": None, "expected": {}, "resets": None, "error": str(exc)[:120]}
+    return out
+
+
+def switch_note(cfg: "Config", headroom: Dict[str, Dict[str, Any]], now: float) -> Optional[str]:
+    """One plain line about switching, or None when every engine has room."""
+    blocked = {ln: h for ln, h in headroom.items() if h.get("blocked")}
+    if not blocked:
+        return None
+    name = {"claude": "Claude", "codex": "GPT"}
+    when = lambda h: f" (room again about {clock(h['resets'], cfg.tz, now)})" if h.get("resets") else ""
+    if len(blocked) == len(headroom):
+        soon = min((h for h in blocked.values() if h.get("resets")), key=lambda h: h["resets"], default={})
+        return ("both plans are at your limits — the agents wait and start again by themselves when one has "
+                "room" + when(soon))
+    ln, h = next(iter(blocked.items()))
+    other = next(o for o in headroom if o != ln)
+    return f"{h['blocked']} — {name[ln]} roles run on {name[other]} meanwhile{when(h)}"
+
+
 # --------------------------------------------------------------------------- GitHub access
 class GH:
     def __init__(self, bin_: str, repo: str):
@@ -1438,9 +1534,11 @@ class Dispatcher:
 
     def __init__(self, cfg: Config, gh: GH, state: State, now: float, apply: bool = True,
                  lane: str = "claude", lanes: Optional[List[str]] = None, busy: Optional[set] = None,
-                 worker: Optional[str] = None):
+                 worker: Optional[str] = None, headroom: Optional[Dict[str, Dict[str, Any]]] = None):
         self.cfg, self.gh, self.state, self.now, self.apply = cfg, gh, state, now, apply
         self.lane, self.lanes = lane, list(lanes or ["claude"])
+        # per engine: can its plan take more runs now? (routing_headroom) — empty = no switching
+        self.headroom = dict(headroom or {})
         # (kind, number, action, role) held by other workers; 3-tuples from older callers have no role
         self.busy = {tuple(b) + (None,) * (4 - len(b)) for b in (busy or ())}
         self.worker = worker or lane
@@ -1448,8 +1546,12 @@ class Dispatcher:
         self.first = worker_number(self.worker) == 1
         self.actions: List[str] = []
 
-    def mine(self, role: Optional[str]) -> bool:
-        return bool(role) and engine_for(self.cfg, role, self.lanes) == self.lane
+    def avoid(self, action: Optional[str] = None) -> set:
+        """Engines that can't take a run of this kind now (plan at your limit)."""
+        return {ln for ln, h in self.headroom.items() if not lane_fits(h, action)}
+
+    def mine(self, role: Optional[str], action: Optional[str] = None) -> bool:
+        return bool(role) and engine_for(self.cfg, role, self.lanes, self.avoid(action)) == self.lane
 
     def escalates(self, role: Optional[str]) -> bool:
         return self.first and self.mine(role)
@@ -1612,7 +1714,7 @@ class Dispatcher:
             if self.cfg.get("merge", "auto_merge", default=True):
                 self._do(f"PR #{n}: squash-merge", self.gh.merge, n, sha,
                          self.cfg.get("merge", "method", default="squash"))
-        return next((w for w in candidates if self.mine(w.role) and self.free(w)), None)
+        return next((w for w in candidates if self.mine(w.role, w.action) and self.free(w)), None)
 
     # ------------------------------------------------------------------ issues
     def handle_issues(self, issues: List[Dict[str, Any]], prs: List[Dict[str, Any]], phase: str) -> Optional[Work]:
@@ -1655,7 +1757,7 @@ class Dispatcher:
             if "status:in-progress" not in labels or n in linked or "needs-human" in labels:
                 continue
             role = role_from(labels)
-            if not role or not self.mine(role) or self.busy_issue(n):
+            if not role or not self.mine(role, "implement") or self.busy_issue(n):
                 continue
             if "status:blocked" in labels:
                 if self.first:
@@ -1679,7 +1781,7 @@ class Dispatcher:
             if not self.phase_ok(labels, phase):
                 continue
             role = role_from(labels)
-            if not role or issue["number"] in linked or not self.mine(role) or self.busy_issue(issue["number"]):
+            if not role or issue["number"] in linked or not self.mine(role, "implement") or self.busy_issue(issue["number"]):
                 continue
             if any(dep_open(d) for d in dependencies(issue.get("body", ""))):
                 continue
@@ -1706,7 +1808,7 @@ class Dispatcher:
         work = self.handle_issues(issues, prs, phase)
         if work:
             return work
-        if not self.mine("eng-manager"):
+        if not self.mine("eng-manager", "plan"):
             return None  # planning belongs to the EM, on its engine (any of that engine's workers)
         if any(kind == "plan" for kind, _n, _a, _r in self.busy):
             return None  # another worker is planning right now
@@ -2350,6 +2452,126 @@ def cmd_tick(args: argparse.Namespace) -> int:
     return orchestrate(args)
 
 
+def auto_codex_check(cfg: Config, state: State, now: float) -> bool:
+    """Codex updated itself: run its safety test again by itself (at most once an hour per version).
+    The GPT agents switch back on only if the test passes. True when it passed."""
+    version = codex_version(cfg)
+    last = state.doc("auto_codex_check")
+    if not version or (last.get("version") == version and now - float(last.get("at", 0)) < HOUR):
+        return False
+    state.put("auto_codex_check", {"version": version, "at": now})
+    log(f"Codex updated itself to {version} — running its safety test again by itself")
+    try:
+        rc = cmd_codex_check(argparse.Namespace(again=False))
+    except Exception as exc:  # noqa: BLE001
+        log(f"Codex safety test could not run: {str(exc)[:200]}")
+        return False
+    log("Codex safety test passed — the GPT agents are back on" if rc == 0 else
+        "Codex safety test did not pass — GPT roles keep running on Claude; it is tried again in an hour")
+    return rc == 0
+
+
+# heartbeat: a closed, locked issue whose description the scheduler rewrites, so the team's state can be
+# checked from anywhere (GitHub, phone) without the laptop. No local paths are written there.
+HEARTBEAT_TITLE = "[agentops] Team heartbeat (automatic, not a ticket)"
+
+
+def _public(text: Optional[str]) -> str:
+    return (text or "").replace(str(Path.home()), "~").replace("|", "/").replace("\n", " ").strip()[:220]
+
+
+def heartbeat_text(cfg: Config, state: State, now: float, workers: List[str], info: Dict[str, Dict[str, Any]],
+                   started: bool, notes: Dict[str, str]) -> Tuple[str, str]:
+    """(full description, the part that tells whether anything changed)."""
+    tz = cfg.tz
+    win = read_window(cfg, now)
+    if xp(cfg.get("paths", "pause_file", default="~/.claude/agentops/PAUSE")).exists():
+        team = "paused (PAUSE file)"
+    elif win:
+        team = "working " + ("until stopped" if win.get("until") is None else "until " + clock(win["until"], tz, now))
+    elif started:
+        team = "working (always-on mode)"
+    else:
+        team = "**not started** — `agents start` needed"
+    rows = [("Team", team)]
+    lanes = active_lanes(cfg, state)
+    for lane in LANES:
+        plan = "ChatGPT plan" if lane == "codex" else "Claude plan"
+        if lane not in lanes:
+            if notes.get("codex"):
+                rows.append(("GPT agents", _public(notes["codex"])))
+            continue
+        live, lim = live_usage(cfg, now, lane), effective_limits(cfg, win, lane)
+        mine = f"your limits {lim['session']:.0f}% / {lim['weekly']:.0f}%"
+        rows.append((plan, f"session {live['five_hour']:.0f}% (resets {clock(live.get('five_hour_resets'), tz, now)}) · "
+                           f"weekly {live['seven_day']:.0f}% — {mine}" if live else f"no fresh reading — {mine}"))
+    rows.append(("Switching", _public(notes.get("switch") or "none — every role on its own engine")))
+    claims = state.doc("claims") or {}
+    lines = []
+    for w in workers:
+        st = (info.get(w) or {}).get("state", "starting")
+        c = claims.get(w) if isinstance(claims.get(w), dict) else {}
+        num = c.get("pr") or c.get("issue")
+        if st == "running" and c:
+            what = f"running {c.get('role')} {c.get('action')}" + (f" #{num}" if num else "")
+        else:
+            what = st
+            msg = state.doc(lane_doc("last_note", w)).get("msg")
+            if msg and st in ("idle", "waiting", "error"):
+                what += f" — {_public(msg)}"
+        lines.append(f"- `{w}`: {what}")
+    runs = [r for r in state.ledger(now - 2 * DAY) if r.get("kind") == "run"][-6:]
+    table = [f"| {clock(r.get('started'), tz, now)} | {r.get('worker', r.get('lane', 'claude'))} | {r.get('role')} | "
+             f"{r.get('action')} | {'#' + str(r.get('pr') or r.get('issue')) if (r.get('pr') or r.get('issue')) else '-'} | "
+             f"{r.get('outcome')} |" for r in reversed(runs)]
+    core = "\n".join(["| | |", "|---|---|"] + [f"| {k} | {v} |" for k, v in rows] + ["", "**Workers**", ""] + lines
+                     + ["", "**Last runs**", "", "| started | worker | role | action | item | result |",
+                        "|---|---|---|---|---|---|"] + (table or ["| - | - | - | - | - | - |"]))
+    version = "?"
+    with contextlib.suppress(OSError):
+        version = (HERE / "VERSION").read_text(encoding="utf-8").strip()
+    stamp = dt.datetime.fromtimestamp(now, tz).strftime("%a %d %b %H:%M %Z")
+    head = (f"**Team heartbeat** — {stamp} · kit {version}\n\n"
+            "_Not a ticket: the scheduler on the owner's laptop rewrites this every few minutes. "
+            "Agents: ignore this issue._\n\n")
+    return head + core, core
+
+
+def publish_heartbeat(cfg: Config, state: State, now: float, workers: List[str], info: Dict[str, Dict[str, Any]],
+                      started: bool, notes: Dict[str, str]) -> None:
+    """Rewrite the heartbeat issue when something changed (at most every `run.heartbeat_minutes`) and at
+    least every 30 minutes. Editing a description sends nobody a notification."""
+    every = float(cfg.get("run", "heartbeat_minutes", default=5)) * 60
+    hb = state.doc("heartbeat")
+    if every <= 0 or now - float(hb.get("at", 0)) < every:
+        return
+    text, core = heartbeat_text(cfg, state, now, workers, info, started, notes)
+    if hb.get("core") == core and now - float(hb.get("at", 0)) < 30 * 60:
+        return
+    repo = cfg["repo"]
+    gh = GH(cfg.get("gh_bin", default="gh"), repo)
+    n = hb.get("issue")
+    if n:
+        try:
+            gh.api("PATCH", f"repos/{repo}/issues/{n}", {"body": text})
+        except RuntimeError:
+            state.put("heartbeat", {"issue": None, "at": now})  # gone? found or created again next time
+            raise
+    else:
+        import urllib.parse
+        q = urllib.parse.quote(f'repo:{repo} is:issue in:title "Team heartbeat"')
+        found = gh.api("GET", f"search/issues?q={q}") or {}
+        n = next((i["number"] for i in found.get("items", []) if i.get("title") == HEARTBEAT_TITLE), None)
+        if n:
+            gh.api("PATCH", f"repos/{repo}/issues/{n}", {"body": text})
+        else:
+            n = gh.api("POST", f"repos/{repo}/issues", {"title": HEARTBEAT_TITLE, "body": text})["number"]
+            gh.api("PATCH", f"repos/{repo}/issues/{n}", {"state": "closed", "state_reason": "not_planned"})
+            with contextlib.suppress(RuntimeError):
+                gh.api("PUT", f"repos/{repo}/issues/{n}/lock", {"lock_reason": "resolved"})
+    state.put("heartbeat", {"issue": n, "at": now, "core": core})
+
+
 def orchestrate(args: argparse.Namespace) -> int:
     global LOG_LANE
     LOG_LANE = ""
@@ -2409,10 +2631,20 @@ def _orchestrate(args: argparse.Namespace, cfg: Config, state: State) -> int:
                     f": {', '.join(fresh)} — working until {clock(deadline, cfg.tz)}")
                 workers = fresh
             off = codex_off_reason(cfg, state)
+            if off and "was updated" in off and team_started(cfg, now) \
+                    and not any(worker_engine(w) == "codex" for w in procs):
+                # Codex updated itself: run its safety test again (it must still pass), no owner needed
+                if auto_codex_check(cfg, state, now):
+                    off = codex_off_reason(cfg, state)
+                    fresh = active_workers(cfg, state)
+                    if fresh != workers:
+                        log(f"workers now: {', '.join(fresh)} — working until {clock(deadline, cfg.tz)}")
+                        workers = fresh
             note("codex", f"GPT agents are off: {off}. Their roles run on Claude meanwhile." if off else None)
             waiting = unverified_workers(cfg, state)
             note("verify", f"{', '.join(waiting)} wait for `agents codex-check` (a quick safety test of their copy)"
                  if waiting else None)
+            note("switch", switch_note(cfg, routing_headroom(cfg, state, now, active_lanes(cfg, state)), now))
         started = team_started(cfg, now)
         if not spawned and any(worker_busy(state, w) for w in set(workers) | set(ENGINES)):
             # agents of an earlier check (possibly an older kit that doesn't know about claims) are still
@@ -2468,7 +2700,12 @@ def _orchestrate(args: argparse.Namespace, cfg: Config, state: State) -> int:
                                        "updated": time.time(), "team_started": started, "continuous": continuous,
                                        "poll_minutes": poll / 60, "workers": {w: info.get(w, {"state": "starting"})
                                                                              for w in workers},
-                                       "codex_off": notes.get("codex") or None, "unverified": notes.get("verify") or None})
+                                       "codex_off": notes.get("codex") or None, "unverified": notes.get("verify") or None,
+                                       "switching": notes.get("switch") or None})
+        try:  # what the team is doing, on GitHub, so it can be checked from anywhere — never stops the check
+            publish_heartbeat(cfg, state, time.time(), workers, info, started, notes)
+        except Exception as exc:  # noqa: BLE001
+            note("heartbeat", f"heartbeat not published: {str(exc)[:160]}")
         if not procs:
             if time.time() > deadline - min_start:
                 break
@@ -2552,12 +2789,18 @@ def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool
     branch = cfg.get("default_branch", default="main")
     main_sha = sync_clone(branch) if not args.dry_run else git("rev-parse", "HEAD", check=False)
     gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
+    lanes = active_lanes(cfg, state)
+    headroom = routing_headroom(cfg, state, now, lanes, worker)
     with state.locked("dispatch"):  # choose + claim in one step, so two workers never take the same item
-        disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run, lane=engine, lanes=active_lanes(cfg, state),
-                          busy=busy_work(state, worker), worker=worker)
+        disp = Dispatcher(cfg, gh, state, now, apply=not args.dry_run, lane=engine, lanes=lanes,
+                          busy=busy_work(state, worker), worker=worker, headroom=headroom)
         work = disp.choose(read_phase(), main_sha)
         if work and not args.dry_run:
             claim(state, worker, work)
+    if work and engine_for(cfg, work.role, lanes) != engine:
+        own = engine_for(cfg, work.role, lanes)
+        log(f"switching: {work.role} runs on {'GPT' if engine == 'codex' else 'Claude'} this time — "
+            f"{(headroom.get(own) or {}).get('blocked') or 'its own plan has no room for this run now'}")
     for a in disp.actions:
         log(f"housekeeping: {a}")
     if disp.actions and not args.dry_run:
@@ -3031,6 +3274,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     waiting = unverified_workers(cfg, state)
     if waiting:
         print(f"  {', '.join(waiting)}: waiting for `agents codex-check` (safety test of their copy)")
+    switching = switch_note(cfg, routing_headroom(cfg, state, now, lanes), now)
+    print(f"  switching: {switching or 'none — every role runs on its own engine'}"
+          + ("" if len(lanes) > 1 else "  (needs the GPT agents on)"))
+    hb = state.doc("heartbeat")
+    if hb.get("issue"):
+        print(f"  heartbeat on GitHub: issue #{hb['issue']} (updated {clock(hb.get('at'), tz, now)})")
     orch = state.doc("orchestrator")
     if orch and pid_alive(orch.get("pid")):
         print(f"  check running since {clock(orch.get('started'), tz, now)}, until {clock(orch.get('deadline'), tz, now)}"
@@ -3235,8 +3484,9 @@ def cmd_next(args: argparse.Namespace) -> int:
     cfg = Config.load()
     state = State(cfg)
     gh = GH(cfg.get("gh_bin", default="gh"), cfg["repo"])
-    disp = Dispatcher(cfg, gh, state, time.time(), apply=False, lanes=active_lanes(cfg, state),
-                      busy=busy_work(state, "next"))
+    lanes = active_lanes(cfg, state)
+    disp = Dispatcher(cfg, gh, state, time.time(), apply=False, lanes=lanes, busy=busy_work(state, "next"),
+                      headroom=routing_headroom(cfg, state, time.time(), lanes))
     work = disp.choose(read_phase(), git("rev-parse", "HEAD", check=False))
     for a in disp.actions:
         print(f"would: {a}")
