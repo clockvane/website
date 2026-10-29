@@ -1,0 +1,86 @@
+:root {
+  --bg: #090e19;
+  --panel: #131f32;
+  --text: #f4f7ff;
+  --muted: #bacbe0;
+  --accent: #b5edff;
+  --hover: #e1f7ff;
+  --line-color: #7d92ae;
+  --radius: 0.25rem;
+  --title: clamp(2.75rem, 6.5vw, 6.5rem);
+}
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
+}
+.hero-copy {
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+  max-width: 65rem;
+  margin-inline: auto;
+}
+.hero .lede {
+  margin-inline: auto;
+  max-width: 42rem;
+}
+.hero .actions {
+  justify-content: center;
+}
+.hero-visual {
+  width: 100%;
+  background: var(--bg);
+  border: 0;
+}
+.hero-visual .diagram {
+  padding: 0;
+}
+.hero-visual .visual-head {
+  border-top: 1px solid var(--line-color);
+}
+.hero-visual .visual-foot {
+  padding-inline: 0;
+}
+.service-list {
+  grid-template-columns: 1fr;
+}
+.service {
+  border-width: 1px 0 0;
+  border-radius: 0;
+  background: var(--bg);
+}
+.service .system {
+  background: var(--panel);
+  border: 1px solid var(--line-color);
+  padding: var(--space-3);
+}
+.horizon {
+  stroke: var(--line-color);
+  fill: none;
+}
+.light {
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+@media (min-width: 768px) {
+  .service {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+    align-items: center;
+  }
+  .service .system {
+    margin: 0;
+  }
+  .service:nth-child(even) .service-copy {
+    order: 2;
+  }
+  .hero-visual .diagram {
+    max-width: 58rem;
+    margin-inline: auto;
+  }
+  .hero {
+    padding-bottom: var(--space-4);
+  }
+}

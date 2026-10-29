@@ -1,0 +1,14 @@
+# C — Dispatch field
+
+**Bold and cinematic, the most sci-fi.** A full-width perspective field carries one visible route between business tools beneath an oversized, centred promise. The field is a diagram of work moving toward a destination, not a fictional command centre. A narrow light trail moves once along the route and settles. Large alternating service rows let each small system become its own scene without competing with the hero.
+
+- [Live static prototype](index.html) · [390 px reduced-motion view](../evidence/c-390-reduced.png) · [1440 px reduced-motion view](../evidence/c-1440-reduced.png)
+- **Palette:** canvas `#090e19`, panel `#131f32`, text `#f4f7ff`, secondary `#bacbe0`, ice/action/focus `#b5edff`, action hover `#e1f7ff`, borders `#7d92ae`. [Complete computed contrast table C](../evidence/contrast.md#concept-c). Light is confined to a decorative path/trail with an opaque core; text never sits on the glow. No translucent panel or estimated contrast.
+- **Type:** self-hosted Public Sans variable 400 body / 650 hero, system monospace labels. One WOFF2, 26,832 bytes and its existing OFL licence. H1 44–104 px; body 16 px; lede 18 px. Large type rather than downloaded media supplies the drama.
+- **Rhythm:** centred opening followed by a wide field. Services are single rows at all sizes, alternating copy/diagram sides from 768 px. Full-width rules and 4 px corners keep the scene architectural. Native scrolling, no pinned sections or scroll-jacking.
+- **Hero:** shop → spreadsheet → invoice tool appear on a perspective grid. A directional task marker follows the descending path toward the invoice tool. It stops within 2.4 seconds; the static illuminated route remains. Original SVG/CSS supplies depth; no Canvas, WebGL or renderer download is necessary.
+- **Motion language:** one bounded dispatch sweep, then the same six purposeful service sequences. Static glow is never animated. Only transform/opacity change. Replay, Escape, hidden-tab and off-screen pause, reduced motion/data and no-JS states follow the shared [contract](../README.md#motion-and-interaction-contract).
+- **Responsive:** at 320/390 px the CTA precedes the compact diagram and service copy precedes each illustration. At 480 px gutters become 32 px. At 768 px service rows split into two columns and alternate visual sides; the hero diagram is capped at 928 px. At 1024 px the headline scales toward 104 px without changing the DOM reading order. No mobile parallax or pointer tracking.
+- **Tradeoff:** strongest visual differentiation, but more scrolling and a larger first impression. The diagrams must stay obviously illustrative so operations buyers do not infer a monitoring product. Choose if the owner values a pronounced cinematic identity over B's compact service comparison.
+
+The illuminated field is an example, not a live client system. AI cost optimization copy and scope remain DRAFT; the spend bars have no invented numerical savings.

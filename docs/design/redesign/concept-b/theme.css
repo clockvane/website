@@ -1,0 +1,54 @@
+@font-face {
+  font-family: Newsreader;
+  src: url(../../prototype/fonts/newsreader-latin-wght-normal.woff2)
+    format('woff2');
+  font-weight: 200 800;
+  font-display: swap;
+}
+:root {
+  --bg: #101723;
+  --panel: #1b2838;
+  --text: #f5f7fb;
+  --muted: #becbdd;
+  --accent: #99d9ff;
+  --hover: #d4edff;
+  --line-color: #8093a9;
+  --radius: 1rem;
+}
+.hero h1 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 450;
+  letter-spacing: -0.045em;
+  font-size: clamp(2.75rem, 5.8vw, 5.5rem);
+}
+.hero-visual {
+  border: 0;
+  background: var(--bg);
+}
+.visual-head,
+.visual-foot {
+  padding-inline: 0;
+}
+.dial-ring {
+  stroke: var(--line-color);
+  fill: none;
+}
+.service:first-child {
+  border-color: var(--accent);
+}
+@media (min-width: 1024px) {
+  .service-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .service {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .service .system {
+    margin-top: 0;
+  }
+  .hero {
+    grid-template-columns: 1fr 1fr;
+  }
+}

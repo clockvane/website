@@ -1,0 +1,32 @@
+:root {
+  --bg: #0c1418;
+  --panel: #142127;
+  --text: #f3f7f7;
+  --muted: #b8c7cb;
+  --accent: #a7e8cc;
+  --hover: #d5f8e8;
+  --line-color: #6e898c;
+  --radius: 0.25rem;
+}
+.hero-visual {
+  border-radius: 0;
+}
+.hero h1 {
+  max-width: 11ch;
+}
+.service {
+  background: var(--bg);
+  border-width: 1px 0 0;
+  border-radius: 0;
+}
+.tag {
+  color: var(--muted);
+}
+@media (min-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr 1.1fr;
+  }
+  .hero-visual {
+    margin-top: var(--space-5);
+  }
+}
