@@ -1,0 +1,51 @@
+# Dispatch field motion — v2
+
+Issue #86 · [ADR-004](../adr/ADR-004-motion-and-effects.md) governs implementation. Original SVG + CSS explain examples, not a live monitoring product. No Canvas/WebGL renderer is needed; the allowed renderer budget is left unused. No animation library, framework, video, particle loop, pointer tracking or scroll-jacking. Copy and accessible descriptions: deck `home.field`, `home.services`, and §3.7 service animations.
+
+## Shared lifecycle (applies to every sequence below)
+
+Base HTML/CSS displays complete, opaque labels, caption and finished route. Only decorative moving marks may start hidden, and only under `.js-motion` plus that scene's playing state. Register scenes with ADR-004's single controller; components add no observers/loops. Start once when ≥35% of the illustration is in view and the document is visible, after initial content paint; replay requires an explicit real button. Unobserve completed one-shots unless replay needs observation; an active replay must still pause offscreen.
+
+IntersectionObserver pauses at <35% visibility; visibilitychange pauses in hidden tabs. Resume the same progress when visible, do not restart on scroll. At completion remove playing/will-change and retain the designed final state. No sequence, including its stagger, exceeds 2.4s; no automatic replay. Scope Escape to a playing scene with focus inside it; Escape restores the static final state and leaves focus on its control. Never cancel navigation/form Escape handling with a global listener. Replay is disabled only while its scene runs, uses the secondary primitive, and never moves focus; paused replay remains focusable if aria-disabled is used and activation is guarded.
+
+With reduced motion, Save-Data, supported reduced-data preference, or ADR low-power hints: no sequence runs, replay controls are hidden, all scenes show their final frame and caption. React immediately to preference changes and restore the static state. Reduced motion also disables page transitions and transform feedback; this design uses instant feedback in these modes. With no JS/controller error/observer unavailable: same complete static illustration, no replay controls exposed; navigation and form still work. No WebGL dependency exists, so disabled/lost WebGL cannot affect the illustration. CSS still has a prefers-reduced-motion guard if controller policy fails. Never hide actual headings, descriptions, link targets or form fields.
+
+Animate **only transform and opacity**, even where ADR-004 permits more. No stroke-dashoffset, animated gradient, blur, shadow or layout. Glow is static and clipped to a label-free lane; opaque route core remains visible. Moving marks and opacity effects are decorative duplicates of always-readable content. No transient color-only meaning, flashing, invented live metrics or client results. SVG text never moves or fades. No aria-live updates for decorative demonstrations; the persistent HTML description contains the full explanation.
+
+## Sequence scorecards
+
+All rows use the shared trigger, pause, replay and reduced-motion/data/no-JS contract above. Durations include all delays. `motion.diagram` = 1800ms, `motion.dispatch` = 2400ms, `motion.stagger` = 180ms included within the total (shorten delayed animations accordingly). Distances below are SVG illustration geometry, not page layout or typography tokens. At narrow widths use a compact/vertical route with full-size labels, never translate across label boxes.
+
+| Scene / pages | What it explains and moving layers | Timing / easing | Final frame in every fallback | Additional gzip budget (JS / CSS) |
+|---|---|---|---|---|
+| Hero dispatch / Home only | Shop → Spreadsheet → Invoice tool. One narrow task marker follows the perspective route through a lane below the labels; opaque route remains throughout. Small vane rotates toward the destination, no field/camera movement | 2400ms total, easeInOut; marker translate + opacity, vane rotate; no stagger beyond total | Three connected tools, static illuminated route and marker at destination; `home.field` caption and example label | 0 / 1200 B |
+| Business process automation / Home, overview, its detail | A single order token crosses connected tools; shows removal of retyping, not throughput | 1800ms total, easeOut; translate along route, optional opacity on decorative token only | Connected shop/sheet/invoice, completed route; labels and caption always readable | 0 / 500 B |
+| AI automation / Home, overview, its detail | Decorative document lines resolve into structured-field marks, with an explicit human-check branch; unclear input is not silently accepted | 1800ms total, easeOut; translateY and opacity on marks, stationary labels | Document → fields plus visible human checkpoint and caption; no implied autonomous accuracy | 0 / 500 B |
+| AI cost optimization / Home, overview, its detail | Compare current spend with a test route, illustrating investigation only. No numerical axis, currency, percentage, savings claim or success badge; comparison and caveat stay visible | 1800ms total, easeOut; scaleY on illustrative test bar, origin bottom, no animated height | Unnumbered comparison bars with `services.*.animation` caption and text alternative saying example method, not a saving. Q13 unresolved; production copy must keep that qualification | 0 / 500 B |
+| Cloud and DevOps / Home, overview, its detail | Code → tests → human approval before release; stationary approval checkpoint prevents an automatic-deployment inference | 1800ms total, easeOut; opacity/scale on decorative stage marks with stagger inside total | Complete pipeline and approval stop; no real deployment timestamp/status | 0 / 500 B |
+| Websites and apps / Home, overview, its detail | Content blocks assemble into an enquiry path; illustrates information hierarchy | 1800ms total, easeOut; translateY (≤24 SVG units) and opacity on unlabeled shapes only | Finished miniature page, enquiry destination and caption; not an interactive browser mockup | 0 / 500 B |
+| Custom software / Home, overview, its detail | One connector joins incompatible tools; explains integration rather than an unspecified dashboard | 1800ms total, easeOut; connector translateX (≤35 SVG units), stationary tool names | Two tools joined by custom connector, complete caption | 0 / 500 B |
+
+The cost comparison inherits Concept C's illustrative bars; it is **not evidence of lower cost**. Q13/Q14 remain in the PRD and copy deck. If content approval changes the method, replace that illustration and alternative together; do not add claims locally. Scene geometry is original SVG, simple enough to read without motion.
+
+## Supporting motion and total allocations
+
+Timeline: each decorative step marker emphasizes arrival once at the same observer threshold, `motion.diagram` maximum; text/output stay visible. Use opacity/transform on marker only; CSS budget 600 B. No pinned timeline or scroll position indicator; static numbers carry chronology. Buttons/links: instant color/underline/focus changes; an optional icon translate of ≤2px over `motion.interaction` (120ms, easeOut) clarifies direction and resets on pointer exit/focus loss; disabled under fallback policies. Micro CSS budget 400 B. Form feedback is text plus focus, with no spinner. Cross-document View Transition: optional 180ms opacity, no shared-element flight, no client router; disabled under fallback policies and static without API support; CSS budget 300 B.
+
+Budgets are **allocations for #88/#58/#59, not measurements of unbuilt v2 components**. Decimal gzip bytes, sum per requested resource without double-counting shared CSS/JS. Single controller ≤5000 B covers all registration, policy and replay; each scene contributes **0 additional JS**. Generic motion/lifecycle CSS ≤1000 B; base shell/type/components ≤20,000 B. Timeline/micro/transitions total ≤1300 B.
+
+| Page | JS allocation | CSS allocation (base + lifecycle + scenes + supporting) | Hard limits |
+|---|---:|---:|---|
+| Home (hero + all six + timeline) | ≤5000 B controller; renderer 0 | ≤26,500 B (20000+1000+1200+3000+1300) | JS 35000, controller 5000, hero 15000, CSS 40000 |
+| Services overview (all six) | ≤5000 B | ≤25,300 B (20000+1000+3000+1300) | Same page limits; no renderer |
+| Any service detail (one sequence) | ≤5000 B | ≤22,800 B (20000+1000+500+1300) | Same page limits; no renderer |
+| How we work / other content | ≤5000 B if controller needed, otherwise 0 | ≤22,300 B (20000+1000+1300) | Same page limits |
+| Contact | ≤15000 B form; ≤5000 B controller only if used; total ≤20000 B | ≤22,300 B | Total JS ≤35000 B, CSS ≤40000 B |
+
+Every page also has fonts 26,832 B / 1 file (limits 120,000 B / 3), total ≤600,000 B, requests ≤20; reserve HTML/SVG/image bytes accordingly. Load only the scenes used on a page. Verify Lighthouse mobile ≥95 all categories, median 3 runs, LCP ≤2s, CLS ≤.05, TBT ≤150ms; INP ≤200ms requires field evidence, not an invented lab claim.
+
+## Evidence and implementation checks
+
+Unchanged selected prototype: [C Lighthouse JSON](redesign/evidence/c-lighthouse-mobile.json), [mobile metrics and sizes](redesign/evidence/measurements.json), [390px](redesign/evidence/c-390-reduced.png) / [1440px](redesign/evidence/c-1440-reduced.png) static screenshots. PR #85 measured C at performance/accessibility/best-practices **100/100/100**, SEO **60** due to intentional noindex; median LCP 1.209s, CLS 0, TBT 0. JS **828 B**, CSS **3327 B**, renderer **0 B**, page **34,241 B**. These are feasibility evidence for the selected design, not a new v2 production measurement. #86 adds no prototype animation or shipped JS.
+
+Implementation must check: base CSS never hides flow/read/cost/release/assemble/join/trail outside the JS playing gate; reduced-motion, Save-Data and no-JS request/run no hero code; offscreen/hidden tab pause and resume; completion/replay/Escape focus; one shared observer per threshold; no moving text or label collisions at five target widths; full static workflow explanation; first-party requests only and CSP intact. Measure production bytes and mobile Lighthouse again after implementation. Historical prototype evidence remains a snapshot; do not regenerate it silently from later copy/config.
