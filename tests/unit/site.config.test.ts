@@ -34,4 +34,16 @@ describe('site config', () => {
       }).success,
     ).toBe(false);
   });
+
+  it.each(['//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
+    'rejects a CTA destination outside the site: %s',
+    (href) => {
+      expect(
+        siteConfigSchema.safeParse({
+          ...siteConfig,
+          primaryCta: { ...primaryCta, href },
+        }).success,
+      ).toBe(false);
+    },
+  );
 });

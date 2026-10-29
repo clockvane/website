@@ -40,3 +40,20 @@ All median category and timing budgets pass. No dependency, font or client JavaS
 was added. The approved copy retains four unresolved placeholders: handover commitments,
 retainer scope/hours, package prices, and ownership/access terms. They need owner input
 before release.
+
+## PR #73 merge verification
+
+Merged `origin/main` on 2026-10-29, retaining its privacy/404 pages and the How we work
+page. The shared browser route list includes both `/privacy/` and `/how-we-work/`.
+Lint, Astro/TypeScript checks, 57 unit tests (100% configured line coverage), the
+seven-page static build and all 43 browser tests pass on port 4412. Regression tests
+reject protocol-relative and slash/backslash CTA destinations; browser checks assert
+the rendered CTA label and destination against config without writing screenshots.
+
+Lighthouse CI now runs locally: all configured assertions pass for `/` and
+`/how-we-work/`, three runs per route, with no assertion failures. The default Chrome
+launcher attempts to create its profile in a read-only Windows directory under WSL.
+A scratch runner launched one Playwright-managed Chromium browser and passed its
+debugging port to the unchanged LHCI configuration. It closed the browser after LHCI
+completed; LHCI managed and stopped the preview on port 4412. No runtime or layout
+change was needed.

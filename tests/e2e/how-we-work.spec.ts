@@ -64,14 +64,12 @@ for (const width of [320, 1280]) {
     await expect(page.locator('script')).toHaveCount(0);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
-    await page.screenshot({
-      path: `.agentops-scratch/70-how-we-work-${width}.png`,
-      fullPage: true,
-    });
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
     const cta = page.locator('main .inverse a');
+    await expect(cta).toHaveText(siteConfig.primaryCta.label);
+    await expect(cta).toHaveAttribute('href', siteConfig.primaryCta.href);
     await cta.focus();
     await expect(cta).toBeFocused();
     expect(

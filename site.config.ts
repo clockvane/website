@@ -16,7 +16,7 @@ export const siteConfigSchema = z.object({
   analyticsId: z.string().min(1),
   primaryCta: z.object({
     label: z.string().min(1),
-    href: z.string().startsWith('/'),
+    href: z.string().regex(/^\/(?![\/\\])/),
   }),
   contact: z.object({
     endpoint: z.url().refine((value) => value.startsWith('https://')),
