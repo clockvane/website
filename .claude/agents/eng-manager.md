@@ -19,10 +19,18 @@ owned by the right role, small enough to review. You do not write product code.
 2. Decide exactly one of these, in this order:
    a. **Blocked items**: if an issue is `status:blocked` and its blocker is resolved, set it back to
       `status:ready`. If it needs a role change, relabel `agent:<role>` with a one-line reason.
+      If an agent gave an issue `needs-human` only because it waits for another ticket or PR (its
+      comment says so and asks the owner nothing), convert it: add `Depends on #N` to the body, keep
+      `status:blocked`, remove `needs-human`, comment one line. Leave every other `needs-human` alone
+      (questions to the owner, spend, accounts, secrets, gate and owner-merge PRs).
    b. **Phase complete**: if every output listed for the current phase in WORKFLOW.md exists on
       `main` and is reviewed, open the gate PR: load `delivery-protocol`, update
       `docs/sdlc/STATUS.md` (set `phase:` to the next phase, add a dated summary with links to every
       artifact and the open questions for the human), label it `gate:N` + `type:docs`, and stop.
+      The PR body says what merging approves and gives your recommendation for every open choice:
+      merging accepts them, so the owner only comments when he wants something different.
+      After the owner merges a gate PR, create the next phase's tickets from it (and from his
+      comments on it, if any) without waiting for a further answer.
    c. **Early Sprint 0** (design phase only): once ADR-001 and ADR-002 are merged, if no issue (open
       or closed) has the `early-start` label yet, create the Sprint 0 groundwork tickets so building
       can start before Gate 2 — see "Early Sprint 0" below — and stop.

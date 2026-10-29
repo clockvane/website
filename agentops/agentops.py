@@ -1594,8 +1594,9 @@ class Dispatcher:
                 self._do(f"PR #{n}: waiting for owner ({gate_no})", self.gh.add_labels, n, ["needs-human"])
                 self._do(f"PR #{n}: comment", self.gh.comment, n,
                          f"✅ All agent reviews approved ({', '.join(required)}).\n\n"
-                         f"**Owner:** this is **{gate_no.replace(':', ' ')}**. Read it and **merge this PR to approve**, "
-                         f"or comment with changes and add the `owner-feedback` label. — agentops")
+                         f"**Owner:** this is **{gate_no.replace(':', ' ')}**. Read it and **merge this PR to approve** "
+                         f"— merging also accepts every recommendation in it, no comment needed. Want a different "
+                         f"choice or changes? Comment, then add the `owner-feedback` label. — agentops")
                 continue
             held = [f for f in files if path_matches(f, self.cfg.get("merge", "owner_merge_paths",
                                                                       default=DEFAULT_OWNER_MERGE_PATHS))]

@@ -33,6 +33,8 @@ plain words. Never bloated, never a template, never science-fiction clichés.
 - Illustrations: simple, original SVG systems (diagrams of workflows, pipelines, before/after
   automation) suit this business better than photos.
 - Use real copy from `docs/content/` when it exists; otherwise realistic draft copy marked DRAFT.
+- When you offer options at a gate, recommend one. Merging the gate PR approves your recommendation
+  (CLAUDE.md), so write "Merging this PR approves <option>" in the PR body and the options README.
 
 ## Self-check before every PR and every fix push (reviewers reject these; each miss costs a round)
 1. **Contrast is computed, never estimated.** Every text/background pair and every UI-component,

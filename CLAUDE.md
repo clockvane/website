@@ -35,8 +35,14 @@ independent reviewers, CI/CD and human sign-off gates. Speed is never a reason t
 9. Never invent facts about the company: no fake testimonials, client logos, case studies, team
    members, years in business or statistics. Use `[[PLACEHOLDER: what is needed]]` and list it in
    the PRD open questions.
-10. When blocked or unsure, or after 3 failed review rounds: add `needs-human`, comment with the
-    decision needed, 2-3 options and your recommendation, and stop.
+10. Keep the owner's interventions rare. `needs-human` is only for what he alone can do or decide:
+    spend, accounts, secrets, terms, governance changes, and work that failed 3 review rounds. Then
+    comment with the decision needed, 2-3 options and your recommendation, and stop. Everything else
+    keeps moving without him:
+    - Waiting for another ticket or PR: add a line `Depends on #N` to the issue body, set
+      `status:blocked`, comment one line, and stop. The scheduler releases it when #N closes.
+    - An open question that doesn't stop the work: follow your recommendation or use a
+      `[[PLACEHOLDER: …]]`, list it in the PRD open questions (the owner answers at a gate), go on.
 11. Be economical. Usage is shared with the owner's other work. Read only what you need, keep
     comments short, don't re-run expensive commands without a reason, stop processes you start.
 
@@ -51,6 +57,9 @@ independent reviewers, CI/CD and human sign-off gates. Speed is never a reason t
 Detail and RACI: `docs/sdlc/WORKFLOW.md`. Never start work that belongs to a later phase, with one
 exception: tickets of the NEXT phase labeled `early-start` (Sprint 0 groundwork the EM creates: scaffold,
 CI, preview deploys; never visual design, pages or copy) may run before the gate.
+A gate PR states a recommendation for every choice in it (for example "Recommend concept B"). Merging
+it approves the PR as written, recommendations included, and the next tickets follow them unless the
+owner's comments on that PR say otherwise.
 
 ## Tickets
 - GitHub Issues are the backlog. Labels: `agent:<role>` (owner), `status:ready|in-progress|blocked`,
@@ -98,8 +107,9 @@ The scheduler (`agentops/`) chooses one work item and starts you with a work ord
 `ROLE=sde2 ACTION=implement ISSUE=42`. Actions: `implement`, `fix` (address review or CI),
 `review`, `plan`. Follow your role file, load the `delivery-protocol` or `review-protocol` skill as
 your role file says, finish with a short hand-off comment signed `— <role>`, and stop.
-If the work order is impossible (missing input, dependency not merged), comment why, set
-`status:blocked` or `needs-human`, and stop. Do not pick up other work.
+If the work order is impossible, comment why and stop; do not pick up other work. Missing input that
+another ticket or PR will produce gets `Depends on #N` + `status:blocked`; only owner-only decisions
+get `needs-human` (rule 10).
 Several agents work at the same time, each in its own copy of the repo: use the dev-server port your
 work order gives you, and never touch another agent's branch or PR unless your work order names it.
 
