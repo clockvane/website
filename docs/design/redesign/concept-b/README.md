@@ -1,0 +1,14 @@
+# B — The routing dial
+
+**Balanced.** A precise instrument with a human voice: an editorial headline sits beside a diagram whose vane settles toward the next step. The combination explains both parts of the brand story without forcing the visitor to read an origin story. Blue light indicates the route; a spacious, slightly rounded layout makes technical work feel approachable. The service diagrams show what moves, where a person checks, and where a release waits for approval.
+
+- [Live static prototype](index.html) · [390 px reduced-motion view](../evidence/b-390-reduced.png) · [1440 px reduced-motion view](../evidence/b-1440-reduced.png)
+- **Palette:** canvas `#101723`, panel `#1b2838`, text `#f5f7fb`, secondary `#becbdd`, blue/action/focus `#99d9ff`, action hover `#d4edff`, borders `#8093a9`. [Complete computed contrast table B](../evidence/contrast.md#concept-b), including panel, inverse action and focus pairs. Dark first; no light-theme claims.
+- **Type:** self-hosted Newsreader variable 450 for the hero (44–88 px) with Public Sans 400/600/650 for body and interface, plus system monospace annotations. Two WOFF2 files, 84,916 bytes total (26,832 + 58,084); under 120 kB and three files. Both OFL licences are in `../../prototype/fonts/`. Only Public Sans is preloaded. Serif limited to the hero to retain an engineering identity elsewhere.
+- **Rhythm:** balanced two-column hero; round instrument and 16 px card corners. Services are two columns at desktop, each containing copy next to its diagram. The first automation card has an accent border; automation leads the hierarchy. No fake status badges or decorative metrics.
+- **Hero:** three labelled tools surround a routing dial; the vane turns once to show a chosen direction. The output remains an ordinary invoice tool, grounding the metaphor. The explanatory caption supplies the full story without requiring spatial interpretation.
+- **Motion language:** the vane settles over 2.4 seconds. Small service systems complete in 1.8–1.98 seconds. No perpetual orbit. Shared observer, replay, pause and fallback rules apply; see [contract](../README.md#motion-and-interaction-contract).
+- **Responsive:** at 320/390 px everything stacks and the dial follows the CTA. At 480 px gutters increase to 32 px. At 768 px service cards become a two-column grid. At 1024 px the hero splits and each service card gains an internal copy/visual split. Order stays logical with JS disabled.
+- **Tradeoff:** one extra font file, and the serif could recall the old editorial direction. The dark instrument, structured service diagrams and blue interface counterbalance that. Recommended for the broadest audience, subject to owner preference.
+
+Copy provenance and DRAFT boundaries are the same as A; no claims of savings, availability or live system state are made.
