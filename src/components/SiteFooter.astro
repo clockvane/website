@@ -11,7 +11,7 @@ const { currentPath } = Astro.props;
 const details = publicDetails(siteConfig);
 ---
 
-<footer class="site-footer inverse">
+<footer class="site-footer">
   <div class="container">
     <div class="footer-grid">
       <div>
@@ -70,7 +70,7 @@ const details = publicDetails(siteConfig);
   .site-footer {
     padding-block: var(--space-12);
     font-size: var(--font-size-small);
-    border-block-start: var(--stroke-border) solid var(--color-inverse-border);
+    border-block-start: var(--stroke-border) solid var(--color-dark-border);
   }
   .footer-grid {
     display: grid;
@@ -92,6 +92,6 @@ const details = publicDetails(siteConfig);
   .footer-bottom {
     margin-block-start: var(--space-8);
     padding-block-start: var(--space-6);
-    border-block-start: var(--stroke-border) solid var(--color-inverse-border);
+    border-block-start: var(--stroke-border) solid var(--color-dark-border);
   }
 </style>

@@ -116,10 +116,10 @@ import ContactResult from './ContactResult.astro';
     min-inline-size: 0;
     min-block-size: var(--size-control);
     padding: var(--space-3);
-    border: var(--stroke-border) solid var(--color-light-border);
+    border: var(--stroke-border) solid var(--color-dark-border);
     border-radius: var(--radius-small);
-    background: var(--color-light-background);
-    color: var(--color-light-text);
+    background: var(--color-dark-background);
+    color: var(--color-dark-text);
     font: inherit;
   }
   textarea {
@@ -130,25 +130,25 @@ import ContactResult from './ContactResult.astro';
   textarea:hover,
   input:active,
   textarea:active {
-    border-color: var(--color-light-text);
+    border-color: var(--color-dark-text);
   }
   input:read-only,
   textarea:read-only {
-    background: var(--color-light-disabled-fill);
-    color: var(--color-light-disabled-text);
+    background: var(--color-dark-disabled-fill);
+    color: var(--color-dark-disabled-text);
   }
   input[aria-invalid='true'],
   textarea[aria-invalid='true'] {
-    border-color: var(--color-light-error);
+    border-color: var(--color-dark-error);
   }
   .field-error,
   .feedback {
-    color: var(--color-light-error);
+    color: var(--color-dark-error);
   }
   .feedback {
     margin-block: var(--space-6);
     padding: var(--space-6);
-    border: var(--stroke-border) solid var(--color-light-error);
+    border: var(--stroke-border) solid var(--color-dark-error);
     border-radius: var(--radius-small);
   }
   .feedback ul {

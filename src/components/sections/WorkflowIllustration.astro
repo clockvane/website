@@ -90,10 +90,10 @@ const content = workflowIllustrations[variant];
   .workflow-illustration {
     margin: var(--space-0);
     padding: var(--space-4);
-    border: var(--stroke-border) solid var(--color-light-border);
+    border: var(--stroke-border) solid var(--color-dark-border);
     border-radius: var(--radius-small);
-    background: var(--color-light-surface);
-    color: var(--color-light-text);
+    background: var(--color-dark-surface);
+    color: var(--color-dark-text);
     font-size: var(--font-size-small);
   }
   .illustration-canvas {
@@ -123,15 +123,15 @@ const content = workflowIllustrations[variant];
     min-inline-size: 0;
     min-block-size: var(--size-control);
     padding: var(--space-2);
-    border: var(--stroke-diagram) solid var(--color-light-text);
+    border: var(--stroke-diagram) solid var(--color-dark-border);
     border-radius: var(--radius-small);
-    background: var(--color-light-background);
+    background: var(--color-dark-background);
     text-align: center;
   }
   svg {
     display: block;
     fill: none;
-    stroke: var(--color-light-action);
+    stroke: var(--color-dark-action);
     stroke-width: var(--stroke-diagram);
   }
   .connector {
@@ -143,11 +143,11 @@ const content = workflowIllustrations[variant];
     flex: none;
     inline-size: var(--size-icon);
     block-size: var(--size-icon);
-    stroke: var(--color-light-text);
+    stroke: var(--color-dark-text);
   }
   .outcomes {
     margin-inline-start: var(--space-4);
-    border-inline-start: var(--stroke-diagram) solid var(--color-light-action);
+    border-inline-start: var(--stroke-diagram) solid var(--color-dark-action);
   }
   .outcomes > li {
     display: flex;

@@ -2,6 +2,7 @@
 import { siteConfig, siteOrigin } from '../../site.config';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import MotionScript from '../components/MotionScript.astro';
 import '../styles/base.css';
 import '../styles/utilities.css';
 // Generated media rules come last so responsive classes override component defaults.
@@ -10,8 +11,10 @@ interface Props {
   title: string;
   description: string;
   noindex?: boolean;
+  /** True on pages with animated scenes; loads the motion controller. */
+  motion?: boolean;
 }
-const { title, description, noindex = false } = Astro.props;
+const { title, description, noindex = false, motion = false } = Astro.props;
 const currentPath = Astro.url.pathname;
 const canonical = new URL(currentPath, siteOrigin).href;
 ---
@@ -54,6 +57,7 @@ const canonical = new URL(currentPath, siteOrigin).href;
     <SiteHeader {currentPath} />
     <main id="main" tabindex="-1"><slot /></main>
     <SiteFooter {currentPath} />
+    {motion && <MotionScript />}
   </body>
 </html>
 
@@ -65,7 +69,8 @@ const canonical = new URL(currentPath, siteOrigin).href;
     transform: translateY(-200%);
     z-index: var(--elevation-skip-link);
     padding: var(--space-4);
-    background: var(--color-light-background);
+    background: var(--color-dark-action);
+    color: var(--color-dark-on-action);
   }
   .skip:focus {
     transform: none;

@@ -93,10 +93,10 @@ const { labels, description } = Astro.props;
   .workflow {
     margin: var(--space-0);
     padding: var(--space-4);
-    border: var(--stroke-border) solid var(--color-light-border);
+    border: var(--stroke-border) solid var(--color-dark-border);
     border-radius: var(--radius-small);
-    background: var(--color-light-surface);
-    color: var(--color-light-text);
+    background: var(--color-dark-surface);
+    color: var(--color-dark-text);
   }
   .workflow-canvas {
     container: workflow / inline-size;
@@ -116,19 +116,19 @@ const { labels, description } = Astro.props;
   }
   rect,
   circle {
-    fill: var(--color-light-background);
-    stroke: var(--color-light-text);
+    fill: var(--color-dark-background);
+    stroke: var(--color-dark-border);
     stroke-width: var(--stroke-diagram);
     rx: var(--radius-small);
   }
   line,
   path {
     fill: none;
-    stroke: var(--color-light-action);
+    stroke: var(--color-dark-action);
     stroke-width: var(--stroke-diagram);
   }
   text {
-    fill: var(--color-light-text);
+    fill: var(--color-dark-text);
     text-anchor: middle;
   }
   figcaption {
