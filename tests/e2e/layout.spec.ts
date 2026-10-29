@@ -88,11 +88,22 @@ for (const width of [320, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
     await page.evaluate(() => document.fonts.ready);
+    // V2 uses one font; an unused legacy @font-face need not be downloaded.
     expect(
       await page.evaluate(() =>
-        [...document.fonts].every((face) => face.status === 'loaded'),
+        [...document.fonts]
+          .filter((face) => face.status === 'loaded')
+          .map((face) => face.family),
       ),
-    ).toBe(true);
+    ).toEqual([expect.stringContaining('Public Sans')]);
+    expect(
+      await page.evaluate(() =>
+        performance
+          .getEntriesByType('resource')
+          .filter((entry) => entry.name.endsWith('.woff2'))
+          .map((entry) => new URL(entry.name).pathname),
+      ),
+    ).toEqual(['/fonts/public-sans-latin-wght-normal.woff2']);
     await expect(page.locator('script')).toHaveCount(0);
     await page.screenshot({
       path: `.agentops-scratch/layout-${width}.png`,

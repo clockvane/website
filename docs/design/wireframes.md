@@ -1,369 +1,113 @@
-# Wireframes (MVP pages)
+# Dispatch field wireframes — v2
 
-Status: draft for Gate 2 · Owner: UX/UI Designer · Ticket: #22
-Inputs: `sitemap.md`, `user-flows.md`, `docs/product/PRD.md`, `docs/content/voice-and-tone.md`.
-Low fidelity only: structure, order, content slots and CTAs. No colour, type or token decisions (see `direction.md`, `tokens.json`, later tickets). The copy deck does not exist yet, so slots name the copy-deck block that will fill them (`copy: home.hero`) and any wording shown is a label, not final copy.
-`[[PLACEHOLDER: ...]]` marks content the owner must supply (PRD section 12).
+Issue #86 · Concept C selected on PR #85. Replaces the Gate 2 Workshop ledger layouts. Normative companions: [components](components.md), [tokens](tokens.json), [motion](motion.md). Copy keys below refer to the current [copy deck](../content/copy-deck.md); exact text is maintained there, never invented in diagrams.
 
-## Conventions
+## Shared frame and breakpoint behavior
 
-**Breakpoints (mobile first):** M = below 768 px (single column), T = 768 to 1023 px, D = 1024 px and up (max content width 1200 px, 12 columns). Only differences from M are described per page.
+Every page: skip link → header → main (one h1) → optional closing CTA → footer. Main and tab order follow that sequence. Header is static/in-flow. Menu and Services disclosures work without JS; desktop nav starts at 1024px to fit six-service navigation. The brand and destinations come from site config.
 
-**Legend:** `[ Button ]` primary action · `< link >` text link · `[ ___ ]` input · `(h1)`..`(h3)` heading level · `#n` tab order within the page main landmark.
+| Viewport at 16px root | Container / gutters | Header and actions | Main layout |
+|---|---|---|---|
+| 320px | 272px / 24px each | Menu; audit CTA inside menu. Hero primary full width then secondary link; labels wrap | One column; 48px section padding; never crop the dispatch story |
+| 390px | 342px / 24px each | Same; no extra device breakpoint | Same, additional width goes to readable copy/diagram |
+| 768px | 704px / 32px each | Menu + compact visible audit CTA (from 480px); action rows wrap, intrinsic buttons | 8-column grid; 80px sections; service copy/illustration equal columns |
+| 1024px | 960px / 32px each | Full nav + Services disclosure + audit CTA; no sticky overlay | 12-column grid; 80px sections; inner headers left aligned |
+| 1440px | 1280px maximum / centered (80px effective each) | Same; no new navigation behavior | 12 columns; hero diagram capped at 928px; body still ≤65ch |
 
-**Page skeleton (all pages):**
-1. Skip link "Skip to main content" (first focusable element, visible on focus).
-2. `header` landmark: logo, nav, CTA button.
-3. `main` (one `h1` per page).
-4. Closing CTA band (content pages only, see sitemap).
-5. `footer` landmark.
+Breakpoints use rem: 480/768/1024/1440px equivalent. At enlarged text, allow components to stack earlier rather than clip. Root size unchanged; 200% text and 400% zoom reflow to the narrow arrangement. All links/buttons ≥44×44px, no horizontal page scroll. Caption and diagram labels are ≥16px rendered: small screens get compact geometry/vertical lanes, not a uniformly shrunk wide SVG. Service row art may change visual side only if noninteractive; replay remains with copy so focus order never zigzags independently of reading order.
 
-**Global rules**
-- Heading order never skips a level. Section headings are `h2`, items inside are `h3`.
-- Focus order follows DOM order, which follows visual order. No positive `tabindex`. Wide layouts reorder only with CSS grid placement that keeps reading order identical to DOM order.
-- Every interactive target is at least 44 x 44 px on M.
-- Primary CTA label is always "Book a free audit call" (Contact submit: "Send message").
-- Diagrams (workflow illustrations) are inline SVG with `role="img"` and a text alternative, or marked decorative with `aria-hidden="true"` when the text beside them says the same thing. Inline SVGs count towards the P-8 page weight: keep them simple, with no embedded raster and no fonts inside the SVG.
+## Home `/`
 
-## 0. Shared components
+Goal: immediately understand the repetitive work we remove, see an illustrative workflow, reach the free audit call. Centre the promise above the field at **every width**, not the old split hero.
 
-### Header
-```
-M (closed)                     M (menu open)                 D
-+----------------------------+ +---------------------------+ +-----------------------------------------------------+
-| Clockvane          [ Menu ]| | Clockvane        [ Close ]| | Clockvane  Services  How we work  About  [Start a   |
-+----------------------------+ | Services                  | |                                       conversation] |
-                               |   All services            | +-----------------------------------------------------+
-                               |   (five links)            |
-                               | How we work               |
-                               | About                     |
-                               | [ Book a free audit call ]  |
-                               +---------------------------+
-```
-- M and T: logo, then a Menu built as `<details>`/`<summary>` (base pattern, no script). The CTA button sits inside the open menu **and** a compact copy of "Book a free audit call" remains visible beside Menu from 480 px up. `[[DECISION for Gate 2: below 480 px, CTA only inside menu (default) or icon-only CTA]]`. Whichever option wins, update `user-flows.md` (mobile paragraph, which currently says the CTA stays visible outside the panel below 768 px) to match.
-- D: full nav inline, sticky. Services is a link to `/services/` with a separate `<details>`/`<summary>` toggle next to it opening the five service links (base pattern, no script). Optional JS enhancement, not in v1: close on Escape and when focus leaves.
-- Tab order: skip link, logo, Services link, Services disclosure, How we work, About, CTA.
-- Current page: `aria-current="page"` plus underline.
-- No script is required for navigation: the menu and Services disclosure are native `<details>`. v1 ships exactly one script (contact-form enhancement), per architecture.md.
-
-### Footer
-```
-M                                D
-+---------------------------+    +----------------------------------------------------------+
-| (closing CTA band)        |    | (closing CTA band)                                       |
-| Clockvane + one line      |    | Clockvane + line | Services (5) | Company (3)            |
-| [fallback contact]*       |    | [fallback contact]*                                      |
-| Services (5 links)        |    | ---------------------------------------------------------|
-| Company (3 links)         |    | Privacy · (c) Clockvane · [[Q9 legal entity]] · socials* |
-| Privacy · (c) · legal ... |    +----------------------------------------------------------+
-+---------------------------+
-```
-`*` hidden when not configured in `site.config.ts` (Q8). Footer link groups use `nav` with `aria-label` ("Services", "Company"); the footer headings are `h2` visually styled small.
-
-### Closing CTA band
-`(h2)` one line + one supporting sentence + `[ Book a free audit call ]`. Copy: `closing-cta`. Same block on every content page, so it stays one component. Omitted on Contact, Thanks, Error, Privacy, 404.
-
-### Page header (inner pages)
-Breadcrumb (service pages only) · `(h1)` · one-paragraph lede. Copy: `<page>.intro`.
-
-## 1. Home `/`
-
-Goal: what we do, for whom and the next step within 10 seconds (PRD G1). Personas P1, P2, P3.
-
-```
-D
-+--------------------------------------------------------------------------+
-| HEADER                                                                   |
-+--------------------------------------------------------------------------+
-| (h1) Hero statement (8 cols)              |  Workflow diagram (4 cols)   |
-| lede                                      |  before / after, SVG         |
-| [ Book a free audit call ]  < See services >|                              |
-+--------------------------------------------------------------------------+
-| (h2) Chores we take off your hands                                       |
-| 3 to 5 named examples as a plain list (not cards)                        |
-+--------------------------------------------------------------------------+
-| (h2) What we do                                                          |
-| Five service rows: (h3) name . one line . < link >                       |
-+--------------------------------------------------------------------------+
-| (h2) How an engagement runs                                              |
-| 4 steps in a horizontal sequence, numbered                               |
-| < Read how we work >                                                     |
-+--------------------------------------------------------------------------+
-| (h2) Who is behind Clockvane   (only when about facts exist, Q6)         |
-| short paragraph + < About >                                              |
-+--------------------------------------------------------------------------+
-| Proof strip (renders nothing until real proof exists, FR-5)              |
-+--------------------------------------------------------------------------+
-| CLOSING CTA BAND                                                         |
-| FOOTER                                                                   |
-+--------------------------------------------------------------------------+
+```text
+Header
+                    h1: home.hero
+                    lede + supporting line
+                    [primary audit CTA] [secondary services link]
+             Order to invoice | Example workflow
+                  Shop → Spreadsheet → Invoice tool
+                 caption + complete text alternative
+                        [Replay workflow]
+h2: home.services + intro
+01 copy + explicit detail link + replay    | workflow illustration
+02 workflow illustration                  | copy + detail link + replay
+03–06 repeat (mobile: copy then illustration every time)
+h2: home.process → Talk / Scope / Build / Hand over → how-we-work link
+closing-cta → Footer
 ```
 
-| # | Section | Copy-deck block | Content slots | CTA |
-|---|---------|-----------------|---------------|-----|
-| 1 | Hero | `home.hero` | h1, lede, diagram with text alternative | Primary button, secondary link to Services |
-| 2 | Chores | `home.chores` | 3 to 5 named chores `[[PLACEHOLDER: Q1 real examples of chores]]` | none |
-| 3 | Services list | `home.services` | five names (from the Q1 set), one line each, link to detail | link per row |
-| 4 | Way of working | `home.process` | four steps: title and one sentence | link to How we work |
-| 5 | About teaser | `home.about` | `[[PLACEHOLDER: Q6 bio facts]]`; section omitted until supplied | link to About |
-| 6 | Proof | `home.proof` | `[[PLACEHOLDER: Q5 real proof]]`; empty means no section and no heading | none |
-| 7 | Closing band | `closing-cta` | | Primary button |
+| Order / hierarchy | Copy block and section content | Actions / conditions |
+|---|---|---|
+| 1 / h1 | `home.hero`: “We automate the boring work in your business”, lede, supporting line; no exploration eyebrow | Primary “Book a free audit call” to config destination; secondary “See what we do” to Services. Both before illustration |
+| 2 / figure | `home.field`: example tag, Shop/Spreadsheet/Invoice tool, caption and accessible description; full-width perspective field with bounded luminous lane | Replay button after caption, exposed only with allowed enhancement; no invented dashboard metrics |
+| 3 / h2, six h3 | `home.services`: intro, number/group, service name, summary and `for` line from §0, example caption/alternative from §3.7 | Explicit detail link + service-specific replay in copy column. Six services in deck order below |
+| 4 / h2, four h3 | `home.process`: Talk / Scope / Build / Hand over, each with sentence | **Include** this optional band: gives operations buyers the working method after capability examples. Link to How we work |
+| 5 / conditional h2 | `home.about`, only once Q6 roles/consent supplied | Omit whole section until supplied; no empty founder panel. `home.proof` remains omitted at launch per Q5 |
+| 6 / h2 | `closing-cta`, sentence and primary | One repeat audit CTA after the service/process content; then footer |
 
-Breakpoints:
-- M: hero text first, diagram below the lede (reduced, simple version), services rows full width and stacked, process steps vertical with a connecting rule, primary button full width.
-- T: hero still stacked, diagram at 60% width; process steps in a 2 x 2 grid.
-- D: hero two columns as drawn, process steps in one row.
+| Width | Hero and field | Six service rows | Process and closing band |
+|---|---|---|---|
+| 320 | h1 44px, centred, natural wrapping; CTA before compact vertical/stepped field; no perspective detail required to decode route | Copy → actions → illustration/caption; one ruled row at a time, 24px padding. Nodes simplified, labels full-size | Vertical numbered ol; CTA full width |
+| 390 | Same h1 and order, roomier node lane; no fixed hero height | Same single-column rows; every caption fully visible | Same |
+| 768 | Fluid h1 ≈50px; centred lede ≤42rem; wide field when labels fit, otherwise compact | Equal copy/illustration columns, gap up to 80px; even rows art left. One row per service, never 2×3 cards | Process 2×2 in chronological row order; closing text/action stacked |
+| 1024 | Fluid h1 ≈66.6px; copy ≤65rem, field ≤58rem | Equal columns with 32px row padding, alternating art; all controls stay beside copy | Four process columns; closing text 8/action 4 columns |
+| 1440 | Fluid h1 ≈93.6px (104px cap beyond this); diagram remains 928px, not full 1280px | Same; extra width is whitespace, not more services per row | Same; no sticky/pinned chapter |
 
-Order and focus: skip link, header, hero CTA, hero secondary link, services links in order, process link, about link, closing CTA, footer. Headings: h1 hero; h2 for sections 2 to 6; h3 per service row and per process step.
+Focus order within main: hero primary → secondary → hero replay if available → each service detail link and replay → process link → conditional about link → closing CTA. Illustrations do not enter tab order. At 320px the full headline may occupy several lines; do not shrink it below 44px to force the illustration above the fold.
 
-## 2. Services overview `/services/`
+## Services overview `/services/`
 
-```
-+---------------------------------------------+
-| (h1) Services + lede                        |
-+---------------------------------------------+
-| Jump list (anchor links to 5 rows)  [D only]|
-+---------------------------------------------+
-| For each service (x5), same structure:      |
-|  (h2) name                                  |
-|  problem sentence                           |
-|  "Typical work" list (3 to 5 items)         |
-|  < Read about {service} >                   |
-+---------------------------------------------+
-| Not sure which one? (h2) + short text       |
-| [ Book a free audit call ]                    |
-+---------------------------------------------+
-| CLOSING CTA BAND (merged with the above:    |
-|  one band only, not two)                    |
-+---------------------------------------------+
-```
-Copy: `services.intro`, `services.<slug>.summary` (x5), `services.help-choose`. Rows are alternating in D only through column placement (text left, "Typical work" right); on M and T they stack. No cards with icons. A service dropped in Q1 disappears here, in the nav, the footer and the home list together (single source in config/content).
-Heading order: h1, five h2s. Focus order: jump list (D), then each row's link.
+One h1/lede from `services.intro`, then labelled “Services” anchor nav listing all six at every width; wrap to a vertical list on mobile. No duplicate home dispatch hero. Six ruled sections use h2 service names; within each: summary → `for` → “how the work runs” → typical-work list → detail link/replay → illustration/caption (side-by-side at tablet). Copy = `services.<slug>.summary`, diagrams/alternatives = §3.7. Do not turn the list into icon cards or label the illustrations as live systems.
 
-## 3. Service detail (x5) `/services/<slug>/`
+| Width | Header / jump nav | Row layout | Closing |
+|---|---|---|---|
+| 320 | 44px left-aligned h1; lede; six stacked anchor targets | Single column, 24px row padding; h2, problem, audience, workflow sentence, list, link/replay, compact figure | `services.help-choose` supplies one CTA band; full-width button |
+| 390 | Same, wrapping labels never truncate | Same | Same |
+| 768 | 50px inner h1; jump links wrap in flow | Equal copy/figure columns, alternating decorative art; text column contains the complete typical-work list | One stacked band |
+| 1024 | 56px inner h1; jump nav remains in flow | Same, 32px row padding; no sticky index obscuring targets | Text 8/action 4 columns |
+| 1440 | 56px h1; 1280px container | Same; cap prose at 65ch | Same |
 
-One template (FR-6) used for process-automation, websites-and-apps, custom-software, cloud-devops, ai-automation.
+Heading outline: h1 → six h2 service headings → h2 help-choose. No duplicate closing band. Focus: jump links → each detail link/replay → primary closing CTA. Anchor sections use scroll margin; headings are programmatic targets if needed, not extra tab stops.
 
-```
-+---------------------------------------------+
-| Breadcrumb: Home > Services > {name}        |
-| (h1) {name}   lede (the problem, in plain words)
-| [ Book a free audit call ]                    |
-+---------------------------------------------+
-| (h2) What we do        paragraph + SVG      |
-+---------------------------------------------+
-| (h2) Typical deliverables  list             |
-+---------------------------------------------+
-| (h2) How an engagement runs  steps (3 to 5) |
-+---------------------------------------------+
-| (h2) What we need from you  list            |
-+---------------------------------------------+
-| (h2) Related  < other services (2) >        |
-+---------------------------------------------+
-| CLOSING CTA BAND                            |
-+---------------------------------------------+
-```
-| Section | Copy-deck block | Notes |
-|---------|-----------------|-------|
-| Intro | `services.<slug>.intro` | CR-3: names concrete chores or deliverables |
-| What we do | `services.<slug>.what` | One simple SVG diagram of the workflow (before/after or pipeline); text alternative required |
-| Deliverables | `services.<slug>.deliverables` | `[[PLACEHOLDER: Q1 deliverables and timelines per service]]` |
-| Engagement | `services.<slug>.process` | Follows How we work; no invented durations |
-| Needs from client | `services.<slug>.needs` | `[[PLACEHOLDER: Q1]]` |
-| Related | `services.related` | Two sibling links, generated from config |
+## Service detail template `/services/<slug>/`
 
-Breakpoints: M single column, sticky CTA not used (header button stays reachable via the menu; the closing band is the repeat). D: h2 left (3 cols), body right (9 cols), so the page scans as a labelled spec sheet. Structured data: `Service`, `BreadcrumbList`.
-Focus order: breadcrumb links, hero CTA, related links, closing CTA. `aria-current="page"` on the last breadcrumb item.
+All six share one template (FR-6). Slugs/order: **process-automation → ai-automation → ai-cost-optimization → cloud-devops → websites-and-apps → custom-software**. Related links come from shared content/config, never from a locally duplicated menu.
 
-## 4. How we work `/how-we-work/`
+| Order / hierarchy | Copy block | Placement and action |
+|---|---|---|
+| 1 / breadcrumb, h1 | `services.<slug>.intro` + service name | Home → Services → current plain-text item; lede + primary audit CTA |
+| 2 / figure | `services.<slug>.animation`, caption/alternative from §3.7 | One service sequence, after CTA, never competing with headline; replay after caption |
+| 3 / h2 | `services.<slug>.what` (“What we do”) | Prose; do not repeat the same illustration here |
+| 4 / h2 | `services.<slug>.for` (“Who it is for”) | Audience situation, not an invented client proof panel |
+| 5 / h2 | `services.<slug>.deliverables` (“Typical deliverables”) | Plain list, no unconfirmed schedule badges |
+| 6 / h2 | `services.<slug>.process` (“How an engagement runs”) | Ordered steps; no fabricated durations |
+| 7 / h2 | `services.<slug>.needs` (“What we need from you”) | Plain list |
+| 8 / h2 | `services.related` | Two explicit sibling links; card variant allowed, no whole-card invisible link |
+| 9 / h2 | `closing-cta` | Primary audit CTA, then footer |
 
-```
-+---------------------------------------------+
-| (h1) How we work + lede                     |
-+---------------------------------------------+
-| (h2) From first call to delivery            |
-|  Ordered list (ol), 4 to 6 steps:           |
-|   number . (h3) step . sentence . "you get" |
-+---------------------------------------------+
-| (h2) How we engage                          |
-|  Engagement models: 2 to 3 rows             |
-|  [[PLACEHOLDER: Q1/Q2 models]]              |
-+---------------------------------------------+
-| (h2) Pricing                                |
-|  Stance per CR-4 [[PLACEHOLDER: Q2]]        |
-+---------------------------------------------+
-| (h2) Security and handover                  |
-|  You own code and accounts; documentation   |
-|  [[PLACEHOLDER: Q1 confirm ownership terms]]|
-+---------------------------------------------+
-| Short FAQ-style list inside page (optional) |
-+---------------------------------------------+
-| CLOSING CTA BAND                            |
-+---------------------------------------------+
-```
-Copy: `how.intro`, `how.steps`, `how.models`, `how.pricing`, `how.handover`. M: steps vertical with numbers in a left gutter. D: steps as a vertical timeline in 8 cols with the "you get" output in a 4 col right column. Steps are an `ol`, so screen readers announce the count. Headings: h1, h2 per section, h3 per step.
+| Width | Intro / diagram | Information sections / related |
+|---|---|---|
+| 320 | Left-aligned 44px h1; full-width CTA then compact vertical illustration with full-size labels | One column, h2 then text/list, 24px gutters; related stacked |
+| 390 | Same order and type, no fixed-height figure | Same |
+| 768 | 50px h1; intrinsic CTA; full-width figure capped by available 704px | Still stacked headings/content; related two columns if labels fit |
+| 1024 | 56px h1, lede ≤65ch; figure ≤928px below intro | Heading 3 / content 9 columns; process stays chronological; related two columns |
+| 1440 | Same, illustration centred at max width | Same 3/9 ratio, prose ≤65ch; related two columns |
 
-## 5. About `/about/`
+Focus: breadcrumb links → hero CTA → replay if available → related links → closing CTA. Page is complete without animation. Structured data: Service + BreadcrumbList. Q13 AI cost scope/deliverables remain unconfirmed; preserve deck placeholders and example-method qualification (including the static comparison) without publishing numerical or implied guaranteed savings. Q14 final six-service list also remains open; one shared service source must update home/overview/detail/nav/footer together when resolved. No new product decision is introduced here.
 
-```
-+---------------------------------------------+
-| (h1) About + lede                           |
-+---------------------------------------------+
-| (h2) Who is behind Clockvane                |
-|  text (7 cols) | portrait or none (5 cols)  |
-|  [[PLACEHOLDER: Q6 bio, photo only if       |
-|   owner supplies one]]                      |
-+---------------------------------------------+
-| (h2) What we are good at   (list)           |
-| (h2) The name   (short, optional)           |
-+---------------------------------------------+
-| CLOSING CTA BAND                            |
-+---------------------------------------------+
-```
-Copy: `about.intro`, `about.who`, `about.expertise`, `about.name`. Owner-supplied facts only (rule 9): no years in business, team counts or client names unless provided. Without a photo the column collapses and text is single column (empty state). M: photo (if any) after the first paragraph, with alt text describing the person. Headings h1, h2.
+## Existing pages: migration table for #88
 
-## 6. Contact `/contact/` (primary conversion)
+These are restyles of existing journeys, not new copy or routes. All use the shared five-width frame above; below 768 single-column, 768–1023 still content-first, 1024/1440 use the arrangements listed. Static panels use components.md states.
 
-```
-M                                     D
-+-----------------------------+       +-------------------------------------------+
-| HEADER                      |       | HEADER                                    |
-| (h1) Tell us what you want off your plate   |       | (h1) Tell us what you want off your plate               |
-| lede + response time        |       | lede                    | Side panel (4c) |
-|                             |       |                         | (h2) What happens|
-| [error summary region]      |       | [error summary region]  |  next: 3 steps   |
-| Name *            [ ___ ]   |       | Name *   [ ___ ]        | Response time    |
-| Reply contact *   [ ___ ]   |       | Reply contact * [ ___ ] | [[Q4 promise]]   |
-|  hint: email or phone       |       |  hint                   | Fallback contact*|
-| What do you want sorted? *  |       | Message *               | Privacy note     |
-|   [ textarea ]              |       |   [ textarea ]          |                  |
-|  (optional) Company [ ___ ] |       | (optional) Company      |                  |
-| (honeypot, hidden from all  |       | [ Send message ]      |                  |
-|  users and AT)              |       +-------------------------------------------+
-| [ Send message ]          |
-| Privacy note . fallback*    |
-| FOOTER (no CTA band)        |
-+-----------------------------+
-```
-Fields (PRD section 6: name, reply contact, short description; nothing more is required): 
+| Page | Changes from Workshop ledger | Retained structure / copy / behavior |
+|---|---|---|
+| How we work | Dark canvas; opaque output panels; Public Sans headings; 320/390/768 vertical timeline, 1024/1440 step 8/output 4 columns. Optional one-shot decorative marker emphasis, never pinned content | `how.intro/steps/models/pricing/handover`; semantic ol, engagement/pricing/handover sections, closing CTA. Every output visible without JS |
+| About | Dark canvas and ruled sections; all widths single measure without a supplied portrait; 1024/1440 text 7/portrait 5 only when image exists | `about.intro/who/expertise/name/proof`; owner-supplied facts only, absent proof/photo omitted, closing CTA |
+| Contact | Dark fields/messages and next-steps panel; 320/390 full width, 768 form ≤560px, 1024/1440 form 7/one gap/panel 4 columns. Panel static, never sticky | `contact.intro/form/next-steps/privacy-note/fallback`; existing native POST/enhancement, field order and validation/focus; no closing CTA. Thanks/error use dark result panel ≤640px at all widths |
+| Privacy | Dark readable prose ≤65ch, 320/390/768 contents in flow; 1024/1440 contents may sit beside prose but remain static | `legal.privacy`; h1/date/contents/h2 sections, visible links, no motion or CTA band; legal placeholders unchanged |
+| 404 | Dark result panel ≤640px, left-aligned inner h1, full shell and visible recovery links at every width | `errors.404`/microcopy; root-absolute links/assets, noindex, Home/Services/Contact, no CTA band, no auto-focus |
 
-| Field | Required | Type | Notes |
-|-------|----------|------|-------|
-| Name | yes | text, `autocomplete="name"` | |
-| Reply contact | yes | text accepting email or phone `[[PLACEHOLDER: Q4 email only, or email or phone]]` | label says what is accepted; `autocomplete="email"` if email only |
-| Message | yes | textarea, native `maxlength` is the limit (no-JS); a character counter near the limit is JS-only | prompt: "What would you like off your plate?" is a label, final in `contact.form` |
-| Company | no | text, `autocomplete="organization"` | marked "(optional)" in the label, not with colour |
-| Honeypot | n/a | hidden | `aria-hidden`, `tabindex="-1"`, removed from layout, not display-only dependent |
+## Build acceptance
 
-`[[PLACEHOLDER: Q4 form vs book-a-call link. If a link, this page shows the link in place of the form and keeps the side panel.]]`
-
-Copy: `contact.intro`, `contact.form` (labels, hints, errors), `contact.next-steps`, `contact.privacy-note`, `contact.fallback`.
-
-**Form states (end to end)**
-
-| State | What the user sees | Focus / announcement |
-|-------|--------------------|----------------------|
-| Initial | Empty fields, labels above inputs (never placeholder-only) | Focus stays on page start |
-| Filling (JS) | Hints on blur for already-touched fields (script only; the no-JS path shows native messages on submit) | |
-| Validation error (JS) | Error summary container (`tabindex="-1"`, labelled by its heading, no `role="alert"`) at the top of the form listing each problem as a link to its field; inline message under each invalid field (`aria-describedby`, `aria-invalid="true"`), icon plus text, not colour only | Focus moves to the summary; links move focus to the field |
-| Validation error (no JS) | Browser's native messages from `required`, `type`, `maxlength` | Browser-managed |
-| Sending (JS) | Button reads "Sending…", disabled, `aria-busy="true"`; fields stay filled and read-only | Status text in a polite live region |
-| Delivery failure (JS) | Inline banner (focus container, `tabindex="-1"`, no `role="alert"`) above the form: "We could not send this. Your text is still here. Try again or use [fallback contact]" | Focus moves to the banner; button re-enabled |
-| Success (JS) | Form is replaced by the confirmation content (same as Enquiry sent), `h1` stays | Focus moves to the confirmation heading |
-| Success (no JS) | `303` to `/contact/thanks/` | New page load |
-| Failure (no JS) | `303` to `/contact/error/` | New page load |
-
-Breakpoints: M single column, button full width, side panel content moves below the button as "What happens next". T: single column at 560 px max width. D: form 7 cols, side panel 4 cols sticky; DOM order is form first, panel second. Structured data: `ContactPage`.
-Tab order: skip link, header, Name, Reply contact, Message, Company, Submit, fallback link, footer links. The honeypot is skipped (`tabindex="-1"`, hidden). Headings: h1; h2 "What happens next".
-
-## 7. Enquiry sent `/contact/thanks/`
-
-```
-+---------------------------------------------+
-| (h1) Enquiry sent                           |
-| Confirmation sentence                       |
-| Expected response time [[PLACEHOLDER: Q4]]  |
-| (h2) What happens next  (ol, 3 steps)       |
-| < How we work >   < Home >                  |
-+---------------------------------------------+
-```
-Copy: `contact.thanks`. No CTA band, no form, `noindex`. On the JS path this exact content replaces the form and receives focus. Direct visit with no submission still shows the same neutral page (no personal data is shown, so there is nothing to leak). M and D: single column, max 640 px.
-
-## 8. Enquiry failed `/contact/error/`
-
-```
-+---------------------------------------------+
-| (h1) We could not send your enquiry         |
-| Your text was not kept.                     |
-| Use [fallback contact]* or try the form     |
-| [ Back to the form ]    (button-link)       |
-+---------------------------------------------+
-```
-Copy: `contact.error`. If no fallback contact is configured, the sentence about it is omitted and only the back-to-form action remains. `noindex`, no CTA band. Heading h1 only. The message is plain, says what happened, what was and was not saved, and what to do.
-
-## 9. Privacy `/privacy/`
-
-```
-+---------------------------------------------+
-| (h1) Privacy notice   Last updated: date    |
-| In-page contents (anchor list, D: sticky)   |
-| (h2) What we collect                        |
-| (h2) Why and on what basis                  |
-| (h2) Who receives it                        |
-| (h2) How long we keep it                    |
-| (h2) Your rights and how to use them        |
-| (h2) Cookies and analytics                  |
-| (h2) Who we are  [[PLACEHOLDER: Q9]]        |
-+---------------------------------------------+
-```
-Copy: `legal.privacy`; content depends on the real data flow `[[PLACEHOLDER: Q9 legal entity, jurisdiction; Q10 analytics tool]]`. Not legal advice: flagged for owner review. Reading width max 70 characters; contents list is a plain `nav` of anchors. Headings h1, h2 only. No CTA band.
-
-## 10. 404 `404.html`
-
-```
-+---------------------------------------------+
-| HEADER (full, so the user can navigate)     |
-| (h1) We could not find that page            |
-| One sentence: it may have moved.            |
-| < Home >  < Services >  < Contact >         |
-| FOOTER                                      |
-+---------------------------------------------+
-```
-Copy: `errors.404`. Must work at any URL depth, so all asset and link paths are root-absolute. `noindex`. Title "Page not found". No search. Focus starts at the top; no auto-focus script.
-
-## 11. Cross-page states
-
-| Element | Loading | Empty | Error |
-|---------|---------|-------|-------|
-| Static pages | No spinner; server-rendered; fonts swap with a size-matched fallback so there is no layout shift | n/a | n/a |
-| Contact form | See form states (section 6) | n/a | See form states |
-| Proof strip / `/work/` | n/a | Component renders nothing, heading included; page not built | n/a |
-| About photo | Reserved aspect ratio (no shift) | Column collapses | Image failure: alt text shows, layout holds |
-| Service menu | n/a | n/a | Without JS, link goes to the overview |
-| Footer contact, socials | n/a | Hidden when config empty | n/a |
-| Diagrams (SVG) | Inline, no network | n/a | n/a |
-| 404 / error pages | n/a | n/a | Defined in sections 8 and 10 |
-
-## 12. Accessibility notes (all pages)
-
-- Landmarks: `header`, `nav` (labelled), `main`, `footer`; one `h1` per page; heading outlines are given per page above.
-- Keyboard: every control reachable and operable by keyboard; the skip link target is `main` with `tabindex="-1"`. Native `<details>` disclosures and the mobile menu respond to Enter and Space. Escape-to-close and close-on-focus-leave are an optional JS enhancement, not in v1 (matches sitemap.md).
-- Focus: visible focus indicator on every interactive element, not obscured by the sticky header (WCAG 2.2 SC 2.4.11 Focus Not Obscured); use `scroll-margin-top` equal to the header height on anchor targets and focus targets.
-- Target size: at least 24 x 24 px (SC 2.5.8) and 44 x 44 px on M by our own rule.
-- Forms: visible labels, hint text and errors tied with `aria-describedby`; SC 3.3.7 Redundant Entry (nothing asked twice); SC 3.3.8 Accessible Authentication does not apply (no login). No CAPTCHA.
-- Motion: none is required to understand content; honour `prefers-reduced-motion`.
-- Reflow at 320 px wide with no horizontal scroll; text resizes to 200% without loss.
-- Colour is never the only carrier of state (errors, current page, links get icon, underline or text).
-
-## 13. Open items
-
-| Item | Needed from | Affects |
-|------|-------------|---------|
-| Q1 services offered, deliverables, timelines | Owner | Home, Services, all service pages, nav |
-| Q2 pricing stance and Q4 response time | Owner | How we work, Contact, Thanks |
-| Q4 form vs book-a-call link, notification channel | Owner | Contact, Thanks, Error |
-| Q5 proof | Owner | Home proof strip, `/work/` |
-| Q6 bio and photo | Owner | About, Home teaser |
-| Q8 contact details and socials | Owner | Footer, fallback contact |
-| Q9 legal entity, Q10 analytics | Owner | Privacy, footer |
-| Copy deck blocks named above | Content writer | All pages |
+Check all five widths plus 200% text/400% zoom, keyboard skip/menu/replay/form/result flows, AA contrast and forced colors. Reduced-motion, Save-Data, no-JS and no-WebGL must show finished illustrations and usable content. Compare the selected [390px](redesign/evidence/c-390-reduced.png) / [1440px](redesign/evidence/c-1440-reduced.png) snapshots for direction, but use this document for production content order and readable label sizes. Footer, contact states, error messages and focus behavior are fully specified in components.md. No screenshots in #86 claim that the still-unbuilt production layouts are complete.
