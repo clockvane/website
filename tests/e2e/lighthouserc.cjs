@@ -2,7 +2,7 @@
    Run with `npm run test:lighthouse`; the port comes from PORT. */
 const port = Number(process.env.PORT) || 4411;
 // Page PRs add their path here.
-const paths = ['/'];
+const paths = ['/', '/how-we-work/'];
 
 module.exports = {
   ci: {

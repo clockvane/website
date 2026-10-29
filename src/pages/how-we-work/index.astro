@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/sections/PageHeader.astro';
+import ProcessSteps from '../../components/sections/ProcessSteps.astro';
+import Card from '../../components/ui/Card.astro';
+import CtaBand from '../../components/sections/CtaBand.astro';
+import { howWeWork as copy } from '../../content/how-we-work';
+import { siteConfig } from '../../../site.config';
+---
+
+<BaseLayout
+  title={`${copy.title} | ${siteConfig.brand}`}
+  description={copy.description}
+>
+  <div class="container section">
+    <PageHeader title={copy.heading} lede={copy.lede} />
+  </div>
+  <section class="container section" aria-labelledby="process-title">
+    <h2 id="process-title">{copy.processHeading}</h2>
+    <div class="section-content"><ProcessSteps steps={copy.steps} /></div>
+  </section>
+  <section class="container section" aria-labelledby="models-title">
+    <h2 id="models-title">{copy.modelsHeading}</h2>
+    <div class="section-content models">
+      {copy.models.map((model) => <Card {...model} />)}
+    </div>
+  </section>
+  <section class="container section" aria-labelledby="pricing-title">
+    <h2 id="pricing-title">{copy.pricingHeading}</h2>
+    <p class="measure">{copy.pricing}</p>
+  </section>
+  <section class="container section" aria-labelledby="handover-title">
+    <h2 id="handover-title">{copy.handoverHeading}</h2>
+    <p class="measure">{copy.handover}</p>
+  </section>
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  .section-content {
+    margin-block-start: var(--space-8);
+  }
+  .models {
+    display: grid;
+    gap: var(--space-6);
+  }
+</style>

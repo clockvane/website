@@ -69,6 +69,11 @@ process/timeline, card, workflow diagram and result panel. Their typed props, sh
 and isolated browser checks (`npm run test:components`) are documented in
 [`docs/engineering/page-components.md`](docs/engineering/page-components.md).
 
+The How we work page at `/how-we-work/` composes the shared timeline, engagement cards
+and closing CTA using `src/content/how-we-work.ts`. Unconfirmed handover and pricing
+facts retain the copy deck's placeholders. The primary CTA label and destination live in
+`site.config.ts` and are shared with navigation and CTA bands.
+
 The contact journey is now implemented; its portable handler and Worker boundary,
 validation rules, tests and required delivery activation steps are documented in
 [`docs/engineering/contact.md`](docs/engineering/contact.md). Per ADR-002, delivery
