@@ -19,7 +19,6 @@ interface Scene {
   playback: Playback;
   timer: number;
   visible: boolean;
-  played: boolean;
 }
 
 const root = document.documentElement;
@@ -48,7 +47,6 @@ function setState(s: Scene, state: State): void {
 function finish(s: Scene): void {
   clearTimeout(s.timer);
   s.playback.pause(performance.now());
-  s.played = true;
   setState(s, 'done');
 }
 
@@ -75,7 +73,6 @@ function sync(s: Scene): void {
 
 function restart(s: Scene): void {
   s.playback = new Playback(sceneDuration(s.el.dataset.duration));
-  s.played = false;
   sync(s);
 }
 
@@ -111,7 +108,6 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-scene]')) {
     playback: new Playback(sceneDuration(el.dataset.duration)),
     timer: 0,
     visible: false,
-    played: false,
   };
   scenes.set(el, s);
   observer.observe(el);
