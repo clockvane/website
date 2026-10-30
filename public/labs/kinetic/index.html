@@ -19,13 +19,7 @@
       crossorigin
     />
     <link rel="stylesheet" href="/labs/kinetic/kinetic.css" />
-    <script>
-      if (
-        /[?&]static\b/.test(location.search) ||
-        matchMedia('(prefers-reduced-motion: reduce)').matches
-      )
-        document.documentElement.classList.add('still');
-    </script>
+    <script src="/labs/kinetic/still.js"></script>
     <script type="module" src="/labs/kinetic/kinetic.js"></script>
   </head>
   <body>
