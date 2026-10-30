@@ -249,7 +249,12 @@ and claims its work under a shared lock, so two agents never take the same ticke
   own plan has room again. When both plans are at your limits, the agents wait and start again by
   themselves when the first one resets. Off: `"run": {"failover": false}` in your local config.
 - **Codex updates.** When Codex updates itself, the scheduler runs its safety test again by itself (at
-  most once an hour); the GPT agents switch back on only when it passes.
+  most once an hour); the GPT agents switch back on only when it passes. When GPT work moved to Claude
+  only because ChatGPT usage is unknown, it asks Codex for a reading (at most every 20 minutes) so the
+  GPT roles can go back.
+- **Answers without a commit.** When an author answers a review with evidence or a reasoned reply but no
+  new commit, the reviewers who asked for changes look again at the same commit once, before anything
+  is escalated to you.
 - **Heartbeat on GitHub.** The scheduler keeps a closed, locked issue titled *[agentops] Team
   heartbeat* up to date (every 5 minutes when something changes): whether the team is started, both
   plans' usage, switching, what each agent is doing and the last runs. Check it from your phone. It

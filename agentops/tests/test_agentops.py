@@ -1687,6 +1687,40 @@ class Failover(unittest.TestCase):
             ao.publish_heartbeat(self.cfg, self.st, NOW + 800, ["claude", "claude-2"], info, True, {})
             self.assertEqual([(c[0], c[1]) for c in calls], [("PATCH", "repos/clockvane/website/issues/99")])
 
+    def test_answer_without_commit_gets_one_re_review_before_escalation(self):
+        gh = FakeGH(prs=[pr(93, "s93", ["agent:sde3"], branch="sde3/88-x")], files={93: ["src/a.ts"]},
+                    statuses={"s93": [ok("code-reviewer"), bad("qa-engineer")]})
+        d = lambda: ao.Dispatcher(self.cfg, gh, self.st, NOW, lane="claude", lanes=["claude"], worker="claude")
+        w = d().handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action), ("sde3", "fix"))
+        self.assertIn("docs/engineering/evidence/", w.note)
+        self.st.bump("fix:93:s93")  # the fix ran, but no new commit (evidence in a comment)
+        w = d().handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action, w.attempt_key), ("qa-engineer", "review", "rereview:93:s93:qa-engineer"))
+        self.assertIn("same commit", w.note)
+        self.st.bump("rereview:93:s93:qa-engineer")  # QA looked again and still wants changes
+        self.assertEqual(d().handle_prs(gh.prs).action, "fix")
+        self.st.bump("fix:93:s93")
+        self.assertIsNone(d().handle_prs(gh.prs))
+        self.assertIn(("label", 93, ["needs-human"]), gh.calls)
+
+    def test_unknown_chatgpt_usage_is_checked_so_gpt_roles_can_go_back(self):
+        from unittest import mock
+        hr = {"claude": self.ROOM, "codex": {"blocked": "ChatGPT plan: usage unknown and 3 runs done in 5 hours"}}
+
+        def probe(cfg, state):
+            self.snap(self.tmp / "codex-snap.json", 30, 40)
+            return None
+        with mock.patch.object(ao, "probe_codex", probe), mock.patch.object(ao.time, "time", lambda: NOW):
+            out = ao.refresh_unknown_codex_usage(self.cfg, self.st, NOW, hr)
+            self.assertIsNone(out["codex"]["blocked"])
+            # at most every 20 minutes
+            self.assertIs(ao.refresh_unknown_codex_usage(self.cfg, self.st, NOW + 60, hr), hr)
+        # ChatGPT usage known (or simply full): no extra check
+        fine = {"claude": self.ROOM, "codex": self.ROOM}
+        with mock.patch.object(ao, "probe_codex", lambda *a: self.fail("no probe expected")):
+            self.assertIs(ao.refresh_unknown_codex_usage(self.cfg, self.st, NOW + 9999, fine), fine)
+
     def test_auto_codex_check_once_an_hour_per_version(self):
         from unittest import mock
         ran = []
