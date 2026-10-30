@@ -2916,6 +2916,12 @@ def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool
         finally:
             with contextlib.suppress(FileNotFoundError):
                 (state.dir / f"{lane_doc('current_run', worker)}.json").unlink()
+            try:
+                left_over = stop_strays(worker)
+                if left_over:
+                    log(f"stopped {len(left_over)} process(es) the run left running (dev server, browser)")
+            except Exception as exc:  # noqa: BLE001 — cleanup must never fail a run
+                log(f"could not check for processes the run left running: {str(exc)[:120]}")
         rec["chained"], rec["worker"] = chained, worker
         share = overlap_share(state, rec, worker)
         if share < 1.0 and rec.get("usage_delta"):
@@ -2971,6 +2977,41 @@ def plan_result(rec: Dict[str, Any]) -> str:
     if "NOTHING_TO_DO" in final:
         return "nothing"
     return "planned" if "PLANNED:" in final else "failed"
+
+
+def stray_processes(worker: str) -> List[int]:
+    """Processes an agent run of this worker left behind (a dev or preview server, a headless browser).
+    They still carry that run's AGENTOPS_RUN=1 and AGENTOPS_WORKER=<worker> after the agent has exited.
+    Agents can't stop them themselves: the Bash guard refuses `kill`."""
+    me = {os.getpid(), os.getppid()}
+    want = f"AGENTOPS_WORKER={worker}".encode()
+    found = []
+    for pid in os.listdir("/proc") if os.path.isdir("/proc") else []:
+        if not pid.isdigit() or int(pid) in me:
+            continue
+        try:
+            env = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"AGENTOPS_RUN=1" in env and want in env:
+            found.append(int(pid))
+    return found
+
+
+def stop_strays(worker: str, grace_s: float = 3.0) -> List[int]:
+    """Stop what a finished run left running, so dev servers don't pile up on an 8 GB laptop."""
+    pids = stray_processes(worker)
+    for pid in pids:
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.kill(pid, signal.SIGTERM)
+    deadline = time.time() + grace_s
+    while time.time() < deadline and any(pid_alive(p) for p in pids):
+        time.sleep(0.1)
+    for pid in pids:
+        if pid_alive(pid):
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.kill(pid, signal.SIGKILL)
+    return pids
 
 
 def agent_run_pids() -> List[int]:

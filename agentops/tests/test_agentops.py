@@ -1741,6 +1741,24 @@ class Failover(unittest.TestCase):
         with mock.patch.object(ao, "probe_codex", lambda *a: self.fail("no probe expected")):
             self.assertIs(ao.refresh_unknown_codex_usage(self.cfg, self.st, NOW + 9999, fine), fine)
 
+    def test_processes_a_run_left_behind_are_stopped(self):
+        import subprocess
+        mk = lambda w: subprocess.Popen(["sleep", "60"], env=dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_WORKER=w))
+        mine, other, plain = mk("codex-2"), mk("codex"), subprocess.Popen(["sleep", "60"])
+        try:
+            self.assertIn(mine.pid, ao.stray_processes("codex-2"))
+            self.assertNotIn(other.pid, ao.stray_processes("codex-2"))  # exact worker, not a prefix
+            stopped = ao.stop_strays("codex-2", grace_s=2)
+            self.assertIn(mine.pid, stopped)
+            mine.wait(timeout=5)
+            self.assertIsNone(other.poll())
+            self.assertIsNone(plain.poll())  # never touches processes outside agent runs
+        finally:
+            for p in (mine, other, plain):
+                if p.poll() is None:
+                    p.kill()
+                p.wait()
+
     def test_auto_codex_check_once_an_hour_per_version(self):
         from unittest import mock
         ran = []
