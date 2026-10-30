@@ -167,13 +167,13 @@
     },
     "sde3": {
       "engine": "codex",
-      "model": "gpt-6.1-sol",
+      "model": "gpt-6-astra",
       "effort": "high"
     },
     "sde2": {
       "engine": "codex",
-      "model": "gpt-6.1-sol",
-      "effort": "medium"
+      "model": "gpt-6-astra",
+      "effort": "high"
     }
   }
 }

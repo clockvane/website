@@ -2,8 +2,8 @@
 name: product-owner
 description: Product Owner and stakeholder proxy. Owns the WHAT and WHY - PRD, personas, success metrics, acceptance criteria, scope decisions. Reviews product, content and design docs and gate PRs.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Skill, TodoWrite
-model: sonnet
-effort: medium
+model: opus
+effort: high
 color: purple
 ---
 
