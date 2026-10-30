@@ -1324,6 +1324,26 @@ class ReviewRoundsAndCommits(unittest.TestCase):
         self.assertEqual(ao.review_rounds(bodies), 2)  # PR #31: was counted as 3 and escalated too early
         self.assertEqual(ao.review_rounds(bodies + [mark("tech-lead", "9a9a9a9a")]), 3)
 
+    def test_rounds_per_reviewer_new_findings_dont_escalate(self):
+        mark = lambda role, sha, v="changes": f"<!-- agentops:review role={role} verdict={v} sha={sha} -->\n1. x"
+        # PR #93: QA rejected twice, then the tech-lead twice — 4 rounds, but no reviewer rejected 3 times
+        bodies = [mark("qa-engineer", "1359068"), mark("qa-engineer", "410b0d6"),
+                  mark("qa-engineer", "3e932dc", "approve"), mark("tech-lead", "3e932dc"), mark("tech-lead", "aead54a")]
+        self.assertEqual(ao.review_rounds(bodies), 4)
+        self.assertEqual(ao.review_rounds(bodies, ["tech-lead"]), 2)
+        self.assertEqual(ao.review_rounds(bodies + [mark("tech-lead", "b0b0b0b")], ["tech-lead"]), 3)
+        self.assertEqual(ao.review_rounds(bodies, []), 0)
+        cfg = make_cfg(Path(tempfile.mkdtemp()))
+        st = ao.State(cfg)
+        gh = FakeGH(prs=[pr(93, "aead54a", ["agent:sde3", "arch-impact"], branch="sde3/88-x")],
+                    files={93: ["src/a.ts"]},
+                    statuses={"aead54a": [ok("code-reviewer"), ok("qa-engineer"), ok("security-reviewer"),
+                                          bad("tech-lead")]}, reviews={93: bodies})
+        gh.pr_review_bodies = lambda n: bodies
+        w = ao.Dispatcher(cfg, gh, st, NOW, lane="claude", lanes=["claude"], worker="claude").handle_prs(gh.prs)
+        self.assertEqual((w.role, w.action), ("sde3", "fix"))
+        self.assertNotIn(("label", 93, ["needs-human"]), gh.calls)
+
     def git(self, repo, *args):
         import subprocess
         subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", *args],

@@ -255,6 +255,9 @@ and claims its work under a shared lock, so two agents never take the same ticke
 - **Answers without a commit.** When an author answers a review with evidence or a reasoned reply but no
   new commit, the reviewers who asked for changes look again at the same commit once, before anything
   is escalated to you.
+- **Review rounds count per reviewer.** A PR goes to you after `run.max_review_rounds` (3) only when the
+  same reviewer has asked for changes that many times. A new finding from a different reviewer starts
+  that reviewer's count instead.
 - **Heartbeat on GitHub.** The scheduler keeps a closed, locked issue titled *[agentops] Team
   heartbeat* up to date (every 5 minutes when something changes): whether the team is started, both
   plans' usage, switching, what each agent is doing and the last runs. Check it from your phone. It
