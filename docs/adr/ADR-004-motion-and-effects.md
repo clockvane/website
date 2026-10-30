@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Proposed — accepted when this PR merges |
+| Status | Accepted — **partly superseded by [ADR-005](ADR-005-immersive-layer.md)** (2026-10-30: §1.3, §2, §5 3D ban, §8 budgets, §9; see ADR-005 §11) |
 | Date | 2026-10-29 |
 | Deciders | tech-lead (author) · owner (@MohammedAbdulFarhan08) final say at Gate 2b |
 | Traces to | `docs/product/BRIEF.md` → "The feel" and "Not bloated — hard limits" · [ADR-001](ADR-001-stack.md) · [nfr.md](../architecture/nfr.md) P-1…P-11, SEC-1 · issue #79 |
