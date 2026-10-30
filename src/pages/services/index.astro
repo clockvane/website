@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/sections/PageHeader.astro';
+import ServiceRows from '../../components/sections/ServiceRows.astro';
+import CtaBand from '../../components/sections/CtaBand.astro';
+import { services } from '../../content/services';
+import {
+  servicesIntro as copy,
+  servicePageLabels,
+} from '../../content/service-pages';
+import { helpChoose } from '../../content/sections';
+import { siteOrigin } from '../../../site.config';
+const breadcrumbs = [{ label: servicePageLabels.home, href: '/' }];
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    ...breadcrumbs,
+    { label: copy.heading, href: '/services/' },
+  ].map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.label,
+    item: new URL(item.href, siteOrigin).href,
+  })),
+};
+---
+
+<BaseLayout title={copy.title} description={copy.description} motion>
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(structuredData).replace(/</g, '\u003c')}
+  />
+  <div class="container section">
+    <PageHeader title={copy.heading} lede={copy.lede} {breadcrumbs} />
+  </div>
+  <nav class="container" aria-label={copy.heading}>
+    <ul>
+      {
+        services.map((service) => (
+          <li>
+            <a class="standalone" href={`#${service.slug}`}>
+              {service.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <div class="container section"><ServiceRows variant="overview" /></div>
+  <CtaBand content={helpChoose} />
+</BaseLayout>
+
+<style>
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-0);
+    list-style: none;
+  }
+</style>
