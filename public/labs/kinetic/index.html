@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>
+      Concept 6 · Kinetic Editorial — Clockvane design lab (Gate 2d)
+    </title>
+    <meta
+      name="description"
+      content="Design prototype for Gate 2d. Not a public page."
+    />
+    <link
+      rel="preload"
+      href="/fonts/public-sans-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/labs/kinetic/kinetic.css" />
+    <script>
+      if (
+        /[?&]static\b/.test(location.search) ||
+        matchMedia('(prefers-reduced-motion: reduce)').matches
+      )
+        document.documentElement.classList.add('still');
+    </script>
+    <script type="module" src="/labs/kinetic/kinetic.js"></script>
+  </head>
+  <body>
+    <header class="bar">
+      <a class="brand" href="#top"
+        >Clockvane<span aria-hidden="true">®</span></a
+      >
+      <a class="pill" href="#audit">Book a call</a>
+    </header>
+    <main id="top">
+      <section class="hero" aria-labelledby="h1">
+        <p class="kicker">
+          <span>Automation that runs like clockwork</span
+          ><span aria-hidden="true">(01—06)</span>
+        </p>
+        <h1 id="h1" class="mega" data-split>
+          <span class="ln">We automate</span>
+          <span class="ln">the <em>boring</em></span>
+          <span class="ln">work in your</span>
+          <span class="ln">business</span>
+        </h1>
+        <div class="hero-foot">
+          <p class="lede">
+            Your team re-types orders, chases approvals and builds the same
+            report every Monday. Clockvane makes that work run by itself, so
+            people can spend their time on customers.
+          </p>
+          <div class="ctas">
+            <a class="cta" href="#audit"
+              >Book a free audit call <span aria-hidden="true">→</span></a
+            >
+            <p class="support">
+              For small businesses, startups and IT teams. We reply within 1
+              business day.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="ripple" aria-hidden="true">
+        <canvas></canvas>
+        <p class="ripple-fallback">CLOCKWORK</p>
+      </div>
+
+      <section
+        class="ticker"
+        aria-label="Example automation events (DRAFT, illustrative only)"
+      >
+        <button class="tick-toggle" type="button" aria-pressed="false">
+          Pause
+        </button>
+        <div class="tick-track">
+          <ul class="tick-list">
+            <li>Invoice #2041 filed</li>
+            <li>Order #5530 copied to the warehouse sheet</li>
+            <li>Approval request sent, 09:02</li>
+            <li>Monday report built</li>
+            <li>Release 1.4.2 shipped to staging</li>
+            <li>Unclear receipt held for a person</li>
+            <li>New enquiry routed to sales</li>
+            <li>Backup checked, 03:00</li>
+          </ul>
+        </div>
+        <p class="tick-note">DRAFT · illustrative events, not results</p>
+      </section>
+
+      <section class="services" aria-labelledby="h-services">
+        <h2 id="h-services" class="vh">What we do</h2>
+        <div class="pin">
+          <p class="progress" aria-hidden="true">
+            <span class="pnum">01</span> / 06
+          </p>
+          <ol class="track">
+            <li class="panel c-lime">
+              <p class="num" aria-hidden="true" data-n="01"></p>
+              <h3 class="title" data-split>Business process automation</h3>
+              <p class="mask">
+                <span
+                  >We take over the copy-paste work your team repeats every
+                  week.</span
+                >
+              </p>
+              <p class="for">
+                For small-business owners and operations managers
+              </p>
+            </li>
+            <li class="panel c-ink">
+              <p class="num" aria-hidden="true" data-n="02"></p>
+              <h3 class="title" data-split>AI automation</h3>
+              <p class="mask">
+                <span
+                  >We add an AI step where it helps, with a person checking
+                  anything unclear.</span
+                >
+              </p>
+              <p class="for">
+                For operations and IT managers, and owners with paperwork piling
+                up
+              </p>
+            </li>
+            <li class="panel c-paper">
+              <p class="num" aria-hidden="true" data-n="03"></p>
+              <h3 class="title" data-split>AI cost optimization</h3>
+              <p class="mask">
+                <span
+                  >We find where your AI spend goes, then test less costly ways
+                  to get the same work done.</span
+                >
+              </p>
+              <p class="for">
+                For founders, CTOs and IT managers whose AI bill keeps growing
+              </p>
+            </li>
+            <li class="panel c-inklime">
+              <p class="num" aria-hidden="true" data-n="04"></p>
+              <h3 class="title" data-split>Cloud and DevOps</h3>
+              <p class="mask">
+                <span
+                  >We set up your cloud and your release pipeline so launches
+                  stop being scary.</span
+                >
+              </p>
+              <p class="for">For founders, CTOs and IT managers</p>
+            </li>
+            <li class="panel c-lime">
+              <p class="num" aria-hidden="true" data-n="05"></p>
+              <h3 class="title" data-split>Websites and apps</h3>
+              <p class="mask">
+                <span
+                  >A fast, clear business website in 1–2 weeks, built to be
+                  found and to get enquiries.</span
+                >
+              </p>
+              <p class="for">For small-business owners and founders</p>
+            </li>
+            <li class="panel c-paper">
+              <p class="num" aria-hidden="true" data-n="06"></p>
+              <h3 class="title" data-split>Custom software</h3>
+              <p class="mask">
+                <span
+                  >When off-the-shelf tools do not fit, we build the missing
+                  piece.</span
+                >
+              </p>
+              <p class="for">For founders and operations managers</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="statement" aria-label="Our promise">
+        <p class="recombine">
+          <span>Automation</span> <span>that</span> <span>runs</span>
+          <span>like</span> <span class="hl">clockwork.</span>
+        </p>
+      </section>
+
+      <section class="end" id="audit" aria-labelledby="h-cta">
+        <h2 id="h-cta" class="mega" data-split>
+          Tell us about one slow process
+        </h2>
+        <p class="lede">
+          Book a free audit call. We will look at one slow process and tell you
+          what we would automate. We reply within 1 business day.
+        </p>
+        <a class="cta big" href="#top"
+          >Book a free audit call <span aria-hidden="true">→</span></a
+        >
+      </section>
+    </main>
+    <footer class="note">
+      Design prototype for Gate 2d (concept 6). Type-led motion with one WebGL
+      ripple, no third-party requests. Add <code>?static</code> for the still
+      version.
+    </footer>
+  </body>
+</html>
