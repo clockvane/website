@@ -1,11 +1,31 @@
 ---
-import { siteConfig } from '../../site.config';
+import { siteConfig, siteOrigin } from '../../site.config';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { homeSeo } from '../content/site';
+import { homeCopy } from '../content/home';
+import DispatchHero from '../components/sections/DispatchHero.astro';
+import ServiceRows from '../components/sections/ServiceRows.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteConfig.brand,
+  url: siteOrigin,
+};
 ---
 
-<BaseLayout {...homeSeo}>
-  <section class="container section">
-    <h1 class="measure">{siteConfig.brand}</h1>
+<BaseLayout {...homeSeo} motion>
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(organization).replaceAll('<', '\\u003c')}
+  />
+  <div class="container section"><DispatchHero /></div>
+  <section class="container section" aria-labelledby="services-title">
+    <p class="label">{homeCopy.services.label}</p>
+    <h2 id="services-title">{homeCopy.services.heading}</h2>
+    <p>{homeCopy.services.intro}</p>
+    <ServiceRows variant="home" />
   </section>
+  <CtaBand />
 </BaseLayout>
