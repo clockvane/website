@@ -142,3 +142,88 @@ Services to cover (one visual language for all of them): business process automa
 
 ### Out of scope
 No CMS or blog yet, no paid tools or services, no invented testimonials, logos or statistics (rule 9).
+
+## Change request 2 — 2026-10-30: immersive and unmistakably futuristic
+
+*Owner decision. It replaces the parts of the 2026-10-29 change request named below. Everything else
+still applies: who the site must impress, plain words, honest proof, accessibility, no invented facts.*
+
+### Why
+I looked at the concept C pages (PRs #93 and #104). They are clean, but **too basic**: boxes joined by
+lines, flowcharts and card rows. Nothing there would make anyone stop scrolling. That is not the team's
+fault. Our own 29 October limits (35 kB of script, a 15 kB hero, no 3D library) made anything else
+impossible. I am lifting those limits. I want a site people remember and share, at the level of the
+world's best immersive websites. Research with live references:
+[`docs/design/research/immersive-references.md`](../design/research/immersive-references.md).
+
+### What I want
+1. **A real-time 3D world, not pictures of diagrams.** The home page is one continuous scene the
+   visitor moves through as they scroll. It has light, depth, materials and particles (WebGL, with
+   WebGPU where it helps). Scrolling moves the camera through the story.
+2. **A signature that is ours.** Build it on the Clockvane idea: precision clockwork that runs by
+   itself, and a vane that shows the direction. Make it monumental and alive, so a visitor who moves
+   the cursor feels it respond. The team proposes how.
+3. **Every service is a transformation in the same world, never a box diagram.** One system changes
+   form for each service:
+   - business process automation;
+   - AI automation;
+   - AI cost optimization (chaos becoming an efficient stream);
+   - cloud and DevOps;
+   - websites and apps;
+   - custom software.
+4. **Interface details that belong to the world:**
+   - shader-based text effects;
+   - magnetic, cursor-reactive calls to action;
+   - cinematic transitions between sections and pages;
+   - optional sound design (off by default, with a visible toggle).
+5. **Bold art direction.** Near-black, light as the main material, and one electric accent. Large,
+   confident kinetic type. No template layout.
+6. **Still readable at once.** The headline and the call to action appear immediately on every device,
+   before the 3D finishes loading.
+7. **The "wow" test.** Each concept must credibly be an Awwwards Site of the Day nominee. Judge it by:
+   would a visitor take a screenshot, or send the link to a friend?
+
+**Not allowed:**
+- boxes and arrows, flowcharts, card grids or icon rows as the main visual;
+- flat SVG illustration as the hero;
+- stock 3D blobs, robots, glowing brains, purple "AI" gradients, matrix rain;
+- video backgrounds standing in for real-time graphics.
+
+### New performance limits
+These replace the 29 October limits table. Fast still matters, and the discipline now lives in how
+we load the 3D, not in banning it.
+
+| Limit | Value |
+|-------|-------|
+| First paint | Headline, text and call to action are plain HTML/CSS. LCP ≤ 2.5 s on the mobile lab test; layout shift ≤ 0.05 |
+| Script before the 3D starts | ≤ 50 kB compressed |
+| 3D layer (engine, shaders, scenes) | Loads after first paint, only on capable devices: ≤ 400 kB compressed script, plus ≤ 2 MB of compressed assets on desktop and ≤ 800 kB on phones. three.js is allowed; the tech lead confirms the engine in ADR-005 |
+| Lighthouse, mobile | Home and service pages: performance ≥ 90, other categories ≥ 95. All other pages: ≥ 95 in all four |
+| Frame rate | 60 fps on a mid-range laptop, ≥ 30 fps on a mid-range Android. GPU tier detection scales particles, resolution and effects |
+| Fallbacks | Reduced motion, data saver, no WebGL and low-end GPUs get a beautiful static render of the same world, with all content usable without JavaScript |
+| Always | Pause when the tab is hidden or the scene is off-screen; keyboard access and WCAG 2.2 AA throughout |
+
+### How the team should approach it
+1. **Designer (Gate 2c):** study the references, then build **two different immersive worlds** as
+   **live WebGL prototypes**:
+   - each one covers the home hero and the scroll journey through the six services, desktop and phone;
+   - put them under `public/labs/<concept>/` with `noindex`, so I can open them on the PR preview
+     link from my phone;
+   - recommend one; merging the `gate:2` PR approves that recommendation.
+
+   The two concepts must be truly different worlds, not two colourings of one idea.
+2. **Tech lead (ADR-005, at the same time):**
+   - choose the 3D engine and the loading strategy;
+   - set the device tiers and the fallback;
+   - set the testing approach (visual regression, frame-rate and size checks in CI);
+   - update `docs/architecture/nfr.md` to the limits above.
+
+   ADR-005 replaces the parts of ADR-004 that forbid 3D libraries and set the 35 kB / 15 kB budgets.
+3. **After Gate 2c:** the engineers build the immersive layer as a foundation, then the home and services
+   pages in it, then the other pages in the same language. The work already merged (design tokens, fonts,
+   motion controller, copy deck, contact form) stays where it fits.
+
+### Who works on the design
+The designer and the engineers run on the strongest models we have: GPT-6 Astra (high), with Claude
+Opus (high) when ChatGPT is at its limit. So do the people who approve the design: the product owner
+and the tech lead.
