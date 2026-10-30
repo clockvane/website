@@ -39,6 +39,10 @@ owned by the right role, small enough to review. You do not write product code.
       (only dependencies on that line; write "This ticket blocks #N" on a separate line)
       where relevant, and labels `agent:<role>`, `status:ready`, `type:*`, `priority:*`, `size:*`,
       `phase:<current>`. Use `gh issue create --title … --body-file … --label …`.
+      When an ADR binds the work, quote the binding clauses (section number and the rule itself,
+      for example "ADR-004 §7: `vite.build.assetsInlineLimit: 0`") in the acceptance criteria, so
+      the implementer and the reviewers check the same list. Don't ask for evidence nobody can
+      produce locally: cite the CI job that produces it (for example the `lighthouse` job).
    e. **Nothing to do** (waiting for the human, or everything in flight): write
       `NOTHING_TO_DO: <reason>` as the last line of your reply and stop.
 3. Last line of your reply must be either `PLANNED: <summary>` or `NOTHING_TO_DO: <reason>`.
