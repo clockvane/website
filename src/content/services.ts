@@ -1,5 +1,5 @@
 /** Shared names, order and summaries from copy-deck.md §§0 and 2. */
-export const services = [
+const entries = [
   {
     slug: 'process-automation',
     label: 'Business process automation',
@@ -25,6 +25,21 @@ export const services = [
       'Sort and draft replies to common emails',
       'Flag anything unclear for a person to check',
       'Keep a log of what the AI did',
+    ],
+  },
+  {
+    slug: 'ai-cost-optimization',
+    label: 'AI cost optimization',
+    linkLabel: 'Read about AI cost optimization',
+    summary:
+      'We find where your AI spend goes, then test less costly ways to get the same work done.',
+    problem:
+      'AI features are easy to switch on and hard to keep track of. If your AI bill keeps growing and nobody can say why, we help you see where the money goes and what could change.',
+    work: [
+      'A plain-language picture of where AI spend goes',
+      'Options we tested on your own cases, with what each one changes',
+      'A short written report with our recommendation',
+      'Handover of anything we set up',
     ],
   },
   {
@@ -68,7 +83,10 @@ export const services = [
       'APIs and back-office apps',
     ],
   },
-].map((service) => ({
+] as const;
+
+export type ServiceVariant = (typeof entries)[number]['slug'];
+export const services = entries.map((service) => ({
   ...service,
   href: `/services/${service.slug}/`,
 }));
