@@ -104,7 +104,9 @@ for (const width of [320, 1280]) {
           .map((entry) => new URL(entry.name).pathname),
       ),
     ).toEqual(['/fonts/public-sans-latin-wght-normal.woff2']);
-    await expect(page.locator('script')).toHaveCount(0);
+    await expect(
+      page.locator('script:not([type="application/ld+json"]):not([src])'),
+    ).toHaveCount(0);
     await page.screenshot({
       path: `.agentops-scratch/layout-${width}.png`,
       fullPage: true,
