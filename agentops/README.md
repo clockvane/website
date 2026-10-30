@@ -238,7 +238,9 @@ and claims its work under a shared lock, so two agents never take the same ticke
 - **Memory.** Each agent needs ~0.5–1.5 GB while it builds or tests. A run waits while Ubuntu has less than
   1.2 GB free and other agents are running. With 4 agents give WSL 6 GB: in Windows, edit
   `C:\Users\<you>\.wslconfig` → `[wsl2]` → `memory=6GB`, then run `wsl --shutdown` in PowerShell
-  (Ubuntu restarts on next use). `agents doctor` warns when it's too little.
+  (Ubuntu restarts on next use). `agents doctor` warns when it's too little. When a run ends, the
+  scheduler stops anything it left running (a dev or preview server, a headless browser), because agents
+  can't run `kill` themselves.
 - **Early Sprint 0.** Once ADR-001 and ADR-002 are merged, the EM creates the build groundwork tickets
   (scaffold, CI, preview deploys, headers) labeled `early-start`, and the scheduler lets them run during
   the design phase, before Gate 2. Nothing visual starts early. CI and deploy PRs still wait for you to
