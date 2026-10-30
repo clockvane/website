@@ -33,7 +33,7 @@ flowchart LR
 | 3 | `unit` | `npm test` (Vitest) with coverage report; enquiry handler under a Workers-like runtime | – | `contents: read` | failure or coverage drop on changed files |
 | 4 | `build` | `npm run build`; writes `SHA256SUMS`; uploads artifact `site-<sha>` (retention 90 days for `main` runs, 14 for PR runs) | 1-3 | `contents: read` | build error; budget breach (page weight, JS) |
 | 5 | `e2e-a11y` | downloads artifact, serves `dist/` statically, Playwright (Chromium only) plus `@axe-core/playwright` on every page; the header test runs against previews | 4 | `contents: read` | failed flow, any axe WCAG 2.2 AA violation |
-| 6 | `lighthouse` | `lhci autorun` against `dist/`, mobile and desktop on Home, Services, Contact; asserts ≥ 95 and CWV limits | 4 | `contents: read` | score or budget under target |
+| 6 | `lighthouse` | downloads artifact `site-<sha>`; `npm run test:dist` (no inline `<script>` except JSON-LD, ADR-004) when present; `npm run test:lighthouse` (`lhci autorun`, mobile, 3 runs, pages listed in `tests/e2e/lighthouserc.cjs`); writes scores and per-page JS/CSS/font/total sizes to the job summary; uploads `.lighthouseci/` as `lighthouse-<sha>` (14 days) | 4 | `contents: read` | score ≥ 95 or LCP/CLS/TBT limit not met; inline script found |
 | 7 | `html-links` | `html-validate`, internal link check, sitemap/robots/OG presence | 4 | `contents: read` | any broken link or invalid HTML |
 | 8 | `deploy-*` | see environments; runs only after 5-7 are green | 4-7 | `contents: read`, `deployments: write`, `pull-requests: write` (preview comment only) | deploy or smoke test fails |
 
