@@ -1,0 +1,256 @@
+---
+import { dispatchCopy as copy } from '../../content/dispatch';
+import { primaryCta } from '../../content/navigation';
+import SceneReplay from '../ui/SceneReplay.astro';
+interface Props {
+  id?: string;
+}
+const { id = 'dispatch-title' } = Astro.props;
+---
+
+<section class="dispatch-hero" aria-labelledby={id}>
+  <div class="hero-copy">
+    <h1 id={id}>{copy.title}</h1>
+    <p class="lede">{copy.lede}</p>
+    <div class="actions">
+      <a class="button standalone" href={primaryCta.href}>{primaryCta.label}</a
+      ><a class="standalone" href="/services/">{copy.secondary}</a>
+    </div>
+    <p>{copy.support}</p>
+  </div>
+  <figure class="dispatch-field" data-scene data-duration="2400">
+    <div class="field-tags">
+      <span>{copy.tag}</span><span>{copy.example}</span>
+    </div>
+    <div class="field-canvas" aria-hidden="true">
+      <svg
+        class="horizon"
+        viewBox="0 0 600 240"
+        preserveAspectRatio="none"
+        focusable="false"
+        ><path
+          d="M300 0L0 240M300 0L150 240M300 0V240M300 0L450 240M300 0L600 240M0 80H600M0 150H600M0 235H600"
+        ></path></svg
+      >
+      <ol class="field-tools">
+        {
+          copy.labels.map((label, index) => (
+            <li>
+              <span class="tool">{label}</span>
+              {index < 2 && (
+                <>
+                  <svg
+                    class:list={[
+                      'lane',
+                      'lane-compact',
+                      index === 0 ? 'first-leg' : 'last-leg',
+                    ]}
+                    viewBox="0 0 100 60"
+                    preserveAspectRatio="none"
+                    focusable="false"
+                  >
+                    <path d="M50 0V60" />
+                    <circle class="task" cx="50" cy="56" r="4" />
+                  </svg>
+                  <svg
+                    class:list={[
+                      'lane',
+                      'lane-wide',
+                      index === 0 ? 'first-leg' : 'last-leg',
+                    ]}
+                    viewBox="0 0 100 60"
+                    preserveAspectRatio="none"
+                    focusable="false"
+                  >
+                    <path d="M25 0L75 60" />
+                    <circle class="task" cx="75" cy="56" r="4" />
+                  </svg>
+                </>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+      <svg class="vane" viewBox="0 0 32 32" focusable="false"
+        ><path d="M4 28L16 4L28 28L16 21Z"></path></svg
+      >
+    </div>
+    <figcaption>
+      {copy.caption}<span class="visually-hidden"> {copy.description}</span>
+    </figcaption>
+    <SceneReplay
+      label={copy.replay}
+      name={`${copy.replay}: ${copy.replayName}`}
+    />
+  </figure>
+</section>
+<style>
+  .dispatch-hero {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .hero-copy {
+    text-align: center;
+    max-inline-size: var(--layout-hero-copy);
+    margin-inline: auto;
+  }
+  .hero-copy h1 {
+    font-size: clamp(
+      var(--font-size-h1-mobile),
+      6.5vw,
+      var(--font-size-hero-wide)
+    );
+    line-height: var(--font-line-height-hero);
+    letter-spacing: calc(var(--font-tracking-ratio-hero) * 1em);
+  }
+  .lede {
+    max-inline-size: var(--layout-hero-lede);
+    margin-inline: auto;
+    font-size: var(--font-size-lede);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-6);
+    margin-block-start: var(--space-6);
+  }
+  .button {
+    min-block-size: var(--size-large-control);
+  }
+  .dispatch-field {
+    inline-size: 100%;
+    max-inline-size: var(--layout-hero-diagram);
+    margin: var(--space-0) auto;
+    container: dispatch / inline-size;
+  }
+  .field-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-4);
+    border-block-start: var(--stroke-border) solid var(--color-dark-border);
+  }
+  .field-canvas {
+    position: relative;
+    padding: var(--space-8) var(--space-2);
+  }
+  .horizon {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    fill: none;
+    stroke: var(--color-dark-border);
+    stroke-width: var(--stroke-border);
+  }
+  .field-tools {
+    position: relative;
+    list-style: none;
+    padding: var(--space-0);
+    margin: var(--space-0);
+    display: grid;
+  }
+  li {
+    min-inline-size: 0;
+    text-align: center;
+  }
+  .tool {
+    display: block;
+    background: var(--color-dark-surface);
+    border: var(--stroke-border) solid var(--color-dark-border);
+    border-radius: var(--radius-small);
+    padding: var(--space-4);
+  }
+  .lane {
+    display: block;
+    inline-size: 100%;
+    block-size: var(--space-12);
+    fill: var(--color-dark-link);
+    stroke: var(--color-dark-link);
+    stroke-width: var(--stroke-diagram);
+  }
+  .lane-wide {
+    display: var(--lane-wide, none);
+    inline-size: 200%;
+  }
+  .lane-compact {
+    display: var(--lane-compact, block);
+  }
+  .first-leg .task {
+    opacity: 0;
+  }
+  .vane {
+    position: relative;
+    display: block;
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+    margin: var(--space-4) auto var(--space-0);
+    fill: var(--color-dark-link);
+  }
+  figcaption {
+    margin-block: var(--space-4);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js-motion) [data-state='playing'] .task,
+    :global(.js-motion) [data-state='paused'] .task {
+      animation: dispatch var(--motion-dispatch) var(--motion-ease-in-out) both;
+    }
+    :global(.js-motion) [data-state='playing'] .first-leg .task,
+    :global(.js-motion) [data-state='paused'] .first-leg .task {
+      animation-name: dispatch-first;
+    }
+    .lane {
+      --dispatch-x: 0px;
+    }
+    .lane-wide {
+      --dispatch-x: -50px;
+    }
+    :global(.js-motion) [data-state='playing'] .vane,
+    :global(.js-motion) [data-state='paused'] .vane {
+      animation: turn var(--motion-dispatch) var(--motion-ease-in-out) both;
+    }
+    :global(.js-motion) [data-state='paused'] :is(.task, .vane) {
+      animation-play-state: paused;
+    }
+  }
+  @keyframes dispatch {
+    0%,
+    49% {
+      transform: translate(var(--dispatch-x), -56px);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(var(--dispatch-x), -56px);
+      opacity: 1;
+    }
+    to {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+  }
+  @keyframes dispatch-first {
+    from {
+      transform: translate(var(--dispatch-x), -56px);
+      opacity: 1;
+    }
+    49% {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+    50%,
+    to {
+      transform: translate(0, 0);
+      opacity: 0;
+    }
+  }
+  @keyframes turn {
+    from {
+      transform: rotate(-45deg);
+    }
+    to {
+      transform: rotate(0);
+    }
+  }
+</style>

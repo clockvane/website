@@ -33,6 +33,7 @@ const saveData = () =>
     (navigator as { connection?: { saveData?: boolean } }).connection?.saveData,
   );
 const allowed = () =>
+  typeof IntersectionObserver !== 'undefined' &&
   motionAllowed({
     reducedMotion: reduced.matches,
     reducedData: lowData.matches,
@@ -94,17 +95,20 @@ function apply(): void {
   if (!on) stopAll();
 }
 
-const observer = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries) {
-      const s = scenes.get(entry.target);
-      if (!s) continue;
-      s.visible = entry.intersectionRatio >= VISIBLE_RATIO;
-      sync(s);
-    }
-  },
-  { threshold: [0, VISIBLE_RATIO] },
-);
+const observer =
+  typeof IntersectionObserver === 'undefined'
+    ? undefined
+    : new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const s = scenes.get(entry.target);
+            if (!s) continue;
+            s.visible = entry.intersectionRatio >= VISIBLE_RATIO;
+            sync(s);
+          }
+        },
+        { threshold: [0, VISIBLE_RATIO] },
+      );
 
 for (const el of document.querySelectorAll<HTMLElement>('[data-scene]')) {
   const s: Scene = {
@@ -113,8 +117,13 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-scene]')) {
     timer: 0,
     visible: false,
   };
-  scenes.set(el, s);
-  observer.observe(el);
+  const visual = el.querySelector<HTMLElement>('[data-scene-visual]') ?? el;
+  scenes.set(visual, s);
+  // A scene painted in its finished state must not jump back to a start frame.
+  const bounds = visual.getBoundingClientRect();
+  if (bounds.height > 0 && bounds.top < innerHeight && bounds.bottom > 0)
+    finish(s);
+  observer?.observe(visual);
   replayOf(s)?.addEventListener('click', (e) => {
     // aria-disabled keeps focus on the control while a run is active.
     if (s.el.dataset.state === 'done' && allowed()) restart(s);
@@ -131,6 +140,9 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-scene]')) {
 
 reduced.addEventListener('change', apply);
 lowData.addEventListener('change', apply);
+(
+  navigator as Navigator & { connection?: EventTarget }
+).connection?.addEventListener('change', apply);
 document.addEventListener('visibilitychange', () => {
   for (const s of scenes.values()) sync(s);
 });

@@ -5,6 +5,19 @@
   }
 }
 @media (min-width: token(breakpoint.tablet)) {
+  .services-home .service-row,
+  .services-overview .service-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-20);
+  }
+  .service-row:nth-child(even) .service-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .service-row:nth-child(even) .service-scene {
+    grid-column: 1;
+    grid-row: 1;
+  }
   .process-home {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -28,11 +41,8 @@
   .closing-grid {
     grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
   }
-  .services-overview .service-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .services-home .service-row {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  .service-row {
+    padding-block: var(--space-8);
   }
   .process-home {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -73,6 +83,22 @@
   }
   .footer-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container dispatch (min-width: token(breakpoint.tablet)) {
+  .field-tools {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --lane-compact: none;
+    --lane-wide: block;
+  }
+  .field-tools li {
+    padding-inline: var(--space-4);
+  }
+  .field-tools li:nth-child(2) {
+    margin-block-start: var(--space-12);
+  }
+  .field-tools li:nth-child(3) {
+    margin-block-start: var(--space-24);
   }
 }
 /* A wide viewport alone does not guarantee a wide diagram column. */
