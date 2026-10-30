@@ -76,6 +76,7 @@ function sync(s: Scene): void {
 
 function restart(s: Scene): void {
   s.playback = new Playback(sceneDuration(s.el.dataset.duration));
+  setState(s, 'paused');
   sync(s);
 }
 

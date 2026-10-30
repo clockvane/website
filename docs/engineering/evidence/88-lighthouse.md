@@ -9,6 +9,8 @@ page. All assertions in `tests/e2e/lighthouserc.cjs` passed: performance, access
 SEO ≥ 0.95; LCP ≤ 2000 ms; CLS ≤ 0.05; TBT ≤ 150 ms. This file records those results so reviewers can
 check them against a fresh run.
 
+Later commits do not change the existing pages' payload; no page opts into the motion controller yet.
+
 | Page | Perf | A11y | BP | SEO | LCP ms | CLS | TBT |
 |---|---|---|---|---|---|---|---|
 | / | 100 | 100 | 96 | 100 | 1206 | 0 | 0 |
