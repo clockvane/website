@@ -41,16 +41,14 @@ describe('shared page components', () => {
       const html = await container.renderToString(ServiceRows, {
         props: { variant },
       });
-      expect(html.match(/class="service-row"/g)).toHaveLength(5);
+      expect(html.match(/class="service-row"/g)).toHaveLength(6);
       let previous = -1;
       for (const service of services) {
         const position = html.indexOf(service.label);
         expect(position).toBeGreaterThan(previous);
         previous = position;
         expect(html).toContain(`href="${service.href}"`);
-        expect(html).toContain(
-          variant === 'home' ? service.summary : service.problem,
-        );
+        expect(html).toContain(service.summary);
       }
       expect(html).toContain(variant === 'home' ? '<h3' : '<h2');
       expect(html.includes('Typical work')).toBe(variant === 'overview');

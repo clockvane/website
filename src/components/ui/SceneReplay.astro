@@ -1,0 +1,37 @@
+---
+import { sceneCopy } from '../../content/service-scenes';
+interface Props {
+  label?: string;
+  name: string;
+}
+const { label = sceneCopy.replay, name } = Astro.props;
+---
+
+<button type="button" data-replay hidden aria-label={name}>{label}</button>
+<style>
+  button {
+    min-block-size: var(--size-target);
+    min-inline-size: var(--size-target);
+    padding: var(--space-2) var(--space-4);
+    border: var(--stroke-border) solid var(--color-dark-border);
+    border-radius: var(--radius-small);
+    background: var(--color-dark-surface);
+    color: var(--color-dark-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  button:hover {
+    color: var(--color-dark-link);
+    border-color: var(--color-dark-link);
+  }
+  button:active {
+    color: var(--color-dark-link-active);
+    border-color: var(--color-dark-link-active);
+  }
+  button[aria-disabled='true'] {
+    background: var(--color-dark-disabled-fill);
+    color: var(--color-dark-disabled-text);
+    border-style: dashed;
+    cursor: default;
+  }
+</style>

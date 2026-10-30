@@ -1,0 +1,289 @@
+---
+import type { ServiceVariant } from '../../content/services';
+import { serviceScenes } from '../../content/service-scenes';
+import SceneReplay from '../ui/SceneReplay.astro';
+import { services } from '../../content/services';
+interface Props {
+  variant: ServiceVariant;
+  standalone?: boolean;
+}
+const { variant, standalone = true } = Astro.props;
+const content = serviceScenes[variant];
+const service = services.find((entry) => entry.slug === variant)!;
+---
+
+<figure
+  class="service-scene"
+  data-scene-visual
+  data-variant={variant}
+  data-scene={standalone ? '' : undefined}
+  data-duration={standalone ? '1800' : undefined}
+>
+  <div class="scene-labels" aria-hidden="true">
+    {content.labels.map((label) => <span>{label}</span>)}
+  </div>
+  <svg viewBox="0 0 280 135" aria-hidden="true" focusable="false">
+    {
+      variant === 'process-automation' && (
+        <>
+          <path class="route" d="M35 67H245" />
+          <>
+            <rect x="5" y="40" width="60" height="54" rx="4" />
+            <rect x="110" y="40" width="60" height="54" rx="4" />
+            <rect x="215" y="40" width="60" height="54" rx="4" />
+          </>
+          <circle class="mark flow" cx="245" cy="67" r="7" />
+        </>
+      )
+    }
+    {
+      variant === 'ai-automation' && (
+        <>
+          <>
+            <rect x="10" y="10" width="65" height="80" rx="4" />
+            <path d="M22 30H63M22 45H63M22 60H52M75 50H140V25H240M140 50V110H240" />
+          </>
+          <>
+            <rect x="180" y="10" width="90" height="30" rx="4" />
+            <rect x="180" y="90" width="90" height="35" rx="4" />
+          </>
+          <path
+            class="mark read"
+            d="M195 25H250M195 103H220M230 103H250M195 113H250"
+          />
+        </>
+      )
+    }
+    {
+      variant === 'ai-cost-optimization' && (
+        <>
+          <>
+            <path d="M20 120H260" />
+            <rect class="mark" x="55" y="15" width="55" height="105" rx="4" />
+            <rect
+              class="mark cost"
+              x="170"
+              y="65"
+              width="55"
+              height="55"
+              rx="4"
+            />
+          </>
+        </>
+      )
+    }
+    {
+      variant === 'cloud-devops' && (
+        <>
+          <>
+            <path class="route" d="M35 67H245" />
+            <circle cx="35" cy="67" r="28" />
+            <circle cx="140" cy="67" r="28" />
+            <circle cx="245" cy="67" r="28" />
+          </>
+          <>
+            <path class="mark release" d="M20 67L30 77L50 57" />
+            <path class="mark release late" d="M125 67L135 77L155 57" />
+            <path class="route" d="M238 56V78M252 56V78" />
+          </>
+        </>
+      )
+    }
+    {
+      variant === 'websites-and-apps' && (
+        <>
+          <>
+            <rect x="15" y="5" width="250" height="125" rx="4" />
+            <path d="M15 25H265" />
+          </>
+          <g class="assemble">
+            <>
+              <rect class="mark" x="30" y="40" width="120" height="18" rx="4" />
+              <path d="M30 75H155M30 88H140" />
+            </>
+          </g>
+          <g class="assemble late">
+            <>
+              <rect class="mark" x="30" y="100" width="90" height="18" rx="4" />
+              <rect x="180" y="40" width="65" height="78" rx="4" />
+            </>
+          </g>
+        </>
+      )
+    }
+    {
+      variant === 'custom-software' && (
+        <>
+          <>
+            <path class="route" d="M60 67H220" />
+            <rect x="5" y="40" width="60" height="54" rx="4" />
+            <rect x="215" y="40" width="60" height="54" rx="4" />
+            <rect
+              class="mark join"
+              x="105"
+              y="42"
+              width="70"
+              height="50"
+              rx="4"
+            />
+          </>
+        </>
+      )
+    }
+  </svg>
+  <figcaption>
+    {content.caption}<span class="visually-hidden"> {content.description}</span>
+  </figcaption>
+  {standalone && <SceneReplay name={`Replay example: ${service.label}`} />}
+</figure>
+<style>
+  .service-scene {
+    margin: var(--space-0);
+    padding: var(--space-6);
+    background: var(--color-dark-surface);
+    border: var(--stroke-border) solid var(--color-dark-border);
+    border-radius: var(--radius-small);
+  }
+  .scene-labels {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  svg {
+    display: block;
+    inline-size: 100%;
+    fill: var(--color-dark-surface);
+    stroke: var(--color-dark-border);
+    stroke-width: var(--stroke-diagram);
+  }
+  .route {
+    stroke: var(--color-dark-link);
+  }
+  .mark {
+    fill: var(--color-dark-link);
+    stroke: var(--color-dark-link);
+  }
+  .read,
+  .release {
+    fill: none;
+  }
+  figcaption {
+    margin-block-end: var(--space-4);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .flow {
+      animation: flow var(--motion-diagram) var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .read {
+      animation: read var(--motion-diagram) var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .cost {
+      transform-box: fill-box;
+      transform-origin: bottom;
+      animation: cost var(--motion-diagram) var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .release {
+      animation: release calc(var(--motion-diagram) - var(--motion-stagger))
+        var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .assemble {
+      animation: assemble calc(var(--motion-diagram) - var(--motion-stagger))
+        var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .join {
+      animation: join var(--motion-diagram) var(--motion-ease-out) both;
+    }
+    :global(
+        .js-motion
+          [data-scene]:is([data-state='playing'], [data-state='paused'])
+      )
+      .late {
+      animation-delay: var(--motion-stagger);
+    }
+    :global(.js-motion [data-scene][data-state='paused'])
+      :is(.flow, .read, .cost, .release, .assemble, .join) {
+      animation-play-state: paused;
+    }
+  }
+  @keyframes flow {
+    from {
+      transform: translateX(-210px);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes read {
+    from {
+      transform: translateY(-12px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes cost {
+    from {
+      transform: scaleY(1.9);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+  @keyframes release {
+    from {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes assemble {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes join {
+    from {
+      transform: translateX(-35px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+</style>

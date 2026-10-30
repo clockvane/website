@@ -125,4 +125,53 @@ describe('motion controller DOM lifecycle', () => {
       expect(scene.dataset.state).toBe('done');
     },
   );
+
+  it('keeps an already-painted in-view scene finished without resetting its frame', async () => {
+    vi.spyOn(scene, 'getBoundingClientRect').mockReturnValue({
+      top: 10,
+      bottom: 210,
+      height: 200,
+    } as DOMRect);
+    vi.resetModules();
+    await import('../../../src/scripts/motion');
+    expect(scene.dataset.state).toBe('done');
+    intersect(1);
+    expect(scene.dataset.state).toBe('done');
+  });
+
+  it('leaves the static frame and hides replay when observers are unavailable', async () => {
+    vi.stubGlobal('IntersectionObserver', undefined);
+    vi.resetModules();
+    await import('../../../src/scripts/motion');
+    expect(scene.dataset.state).toBe('done');
+    expect(replay.hidden).toBe(true);
+    expect(document.documentElement.classList.contains('js-motion')).toBe(
+      false,
+    );
+  });
+
+  it('observes the illustration when replay lives in a larger service row', async () => {
+    const visual = document.createElement('figure');
+    visual.dataset.sceneVisual = '';
+    scene.append(visual);
+    vi.resetModules();
+    await import('../../../src/scripts/motion');
+    expect(observe).toHaveBeenLastCalledWith(visual);
+  });
+
+  it('immediately settles scenes when Save-Data changes', async () => {
+    const connection = Object.assign(new EventTarget(), { saveData: false });
+    vi.stubGlobal('navigator', { connection });
+    vi.resetModules();
+    await import('../../../src/scripts/motion');
+    intersect(1);
+    expect(scene.dataset.state).toBe('playing');
+    connection.saveData = true;
+    connection.dispatchEvent(new Event('change'));
+    expect(scene.dataset.state).toBe('done');
+    expect(replay.hidden).toBe(true);
+    expect(document.documentElement.classList.contains('js-motion')).toBe(
+      false,
+    );
+  });
 });
