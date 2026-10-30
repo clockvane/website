@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Window } from 'happy-dom';
 import { describe, expect, it } from 'vitest';
 import { services } from '../../../src/content/services';
@@ -9,7 +10,14 @@ import {
 import { siteOrigin } from '../../../site.config';
 
 describe('built Services pages', () => {
-  const sitemap = readFileSync('dist/sitemap-0.xml', 'utf8');
+  const dist = resolve(process.env.DIST_DIR ?? 'dist');
+  if (!existsSync(dist)) {
+    console.warn('dist/ is missing; run npm run build first.');
+    it.skip('dist/ is missing; run npm run build first', () => {});
+    return;
+  }
+
+  const sitemap = readFileSync(join(dist, 'sitemap-0.xml'), 'utf8');
   const titles = new Set<string>();
   const descriptions = new Set<string>();
   for (const route of [
@@ -18,7 +26,7 @@ describe('built Services pages', () => {
   ]) {
     it(`${route} has unique metadata, sitemap inclusion and ordered breadcrumbs`, () => {
       const document = new Window().document;
-      document.write(readFileSync(`dist${route}index.html`, 'utf8'));
+      document.write(readFileSync(join(dist, route, 'index.html'), 'utf8'));
       const title = document.title;
       const description = document
         .querySelector('meta[name="description"]')!

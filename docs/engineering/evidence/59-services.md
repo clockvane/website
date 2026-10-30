@@ -17,6 +17,19 @@ placeholders remain visible. The AI cost illustration describes a method, with n
 - Build tests check unique metadata, sitemap membership, Service/BreadcrumbList JSON-LD,
   process copy and CSP/script/CSS budgets. Component tests distinguish Home/overview copy.
 
+### CI fix verification (PR #108)
+
+The unit job runs before a build. Services artifact checks now follow the existing CSP suite:
+skip when the output directory is absent, and read artifacts from `DIST_DIR` or `dist/` when present.
+A present but incomplete build still fails on missing sitemap or page files.
+
+- With `dist/` moved aside, `npm test`: 92 passed, two artifact checks skipped.
+- `npm run lint`, `npm run check` and `npm run build`: passed.
+- After building, `npm test`: 130 passed, 100% measured line coverage.
+- `npm run test:dist` (the Lighthouse job's artifact check): 47 passed, including all seven
+  Services routes; no skips.
+- This fix changes only tests and evidence; the existing UI screenshots and budgets still apply.
+
 ## Screenshots
 
 Finished static frames, full pages, at 320px and 1440px:
