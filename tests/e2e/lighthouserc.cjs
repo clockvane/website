@@ -2,12 +2,19 @@
    Run with `npm run test:lighthouse`; the port comes from PORT. */
 // Lighthouse CI loads this file with require(), so it must stay CommonJS.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const { existsSync } = require('node:fs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { chromium } = require('@playwright/test');
 
 const port = Number(process.env.PORT) || 4411;
 // In WSL, chrome-launcher finds the Windows Chrome and cannot connect to it ("Unable to connect to
 // Chrome"). Use Playwright's Linux Chromium (installed for the e2e suite) unless CHROME_PATH is set.
-const chromePath = process.env.CHROME_PATH || chromium.executablePath();
+// Where Playwright's browser isn't installed (for example a CI runner with its own Chrome), let
+// chrome-launcher find Chrome as before.
+const playwrightChromium = chromium.executablePath();
+const chromePath =
+  process.env.CHROME_PATH ||
+  (existsSync(playwrightChromium) ? playwrightChromium : undefined);
 // Page PRs add their path here.
 const paths = ['/', '/about/', '/how-we-work/', '/contact/', '/privacy/'];
 
