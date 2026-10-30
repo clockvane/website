@@ -1325,6 +1325,26 @@ def routing_headroom(cfg: "Config", state: "State", now: float, lanes: Iterable[
     return out
 
 
+def refresh_unknown_codex_usage(cfg: "Config", state: "State", now: float,
+                                headroom: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """GPT work moved to Claude only because ChatGPT usage is unknown (no GPT run lately, so no reading):
+    ask Codex for a reading (one tiny request, at most every 20 minutes), so the GPT roles can go back."""
+    h = headroom.get("codex") or {}
+    if "usage unknown" not in str(h.get("blocked") or ""):
+        return headroom
+    if now - float(state.doc("codex_probe").get("at", 0)) < 20 * 60:
+        return headroom
+    state.put("codex_probe", {"at": now})
+    try:
+        err = probe_codex(cfg, state)
+    except Exception as exc:  # noqa: BLE001 — a failed probe leaves the routing as it was
+        err = str(exc)[:160]
+    if err:
+        log(f"ChatGPT usage check: {err}")
+        return headroom
+    return routing_headroom(cfg, state, time.time(), list(headroom))
+
+
 def switch_note(cfg: "Config", headroom: Dict[str, Dict[str, Any]], now: float) -> Optional[str]:
     """One plain line about switching, or None when every engine has room."""
     blocked = {ln: h for ln, h in headroom.items() if h.get("blocked")}
@@ -1665,12 +1685,31 @@ class Dispatcher:
                 if not author:
                     continue
                 key = f"fix:{n}:{sha}"
-                if self.state.attempts(key) >= 2:
+                tried = self.state.attempts(key)
+                if tried >= 1:
+                    # the author answered without a new commit (evidence, or a reasoned disagreement): the
+                    # reviewers who asked for changes look again at the same commit, once, before anyone
+                    # escalates to the owner
+                    again = [r for r in changes if self.state.attempts(f"rereview:{n}:{sha}:{r}") < 1]
+                    for role in again:
+                        candidates.append(Work(role, "review", linked_issue(pr), n, sha,
+                                               f"Re-review PR #{n} at the same commit {sha[:12]} as {role}. The author "
+                                               f"answered your last review without a new commit: read their latest PR "
+                                               f"comments and the PR description (evidence or a reasoned reply). Check "
+                                               f"each of your findings against that answer; approve if it resolves "
+                                               f"them, otherwise request changes again and say exactly what is still "
+                                               f"missing. Required reviewers for this PR: {', '.join(required)}.",
+                                               f"rereview:{n}:{sha}:{role}"))
+                    if again:
+                        continue
+                if tried >= 2:
                     if self.escalates(author):
                         self._escalate(n, f"`{author}` did not push a fix after 2 attempts.")
                     continue
                 candidates.append(Work(author, "fix", linked_issue(pr), n, sha,
-                                       f"Reviewers requested changes: {', '.join(changes)}. Address their latest reviews.",
+                                       f"Reviewers requested changes: {', '.join(changes)}. Address their latest reviews. "
+                                       f"Evidence a reviewer asks for belongs in the PR description or a committed file "
+                                       f"under docs/engineering/evidence/, not only in a comment.",
                                        key))
                 continue
             if missing:
@@ -2644,7 +2683,10 @@ def _orchestrate(args: argparse.Namespace, cfg: Config, state: State) -> int:
             waiting = unverified_workers(cfg, state)
             note("verify", f"{', '.join(waiting)} wait for `agents codex-check` (a quick safety test of their copy)"
                  if waiting else None)
-            note("switch", switch_note(cfg, routing_headroom(cfg, state, now, active_lanes(cfg, state)), now))
+            hr = routing_headroom(cfg, state, now, active_lanes(cfg, state))
+            if team_started(cfg, now):
+                hr = refresh_unknown_codex_usage(cfg, state, now, hr)
+            note("switch", switch_note(cfg, hr, now))
         started = team_started(cfg, now)
         if not spawned and any(worker_busy(state, w) for w in set(workers) | set(ENGINES)):
             # agents of an earlier check (possibly an older kit that doesn't know about claims) are still
