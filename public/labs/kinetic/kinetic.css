@@ -65,12 +65,8 @@ a {
   display: inline-flex;
   align-items: center;
 }
-.brand span {
-  font-size: 0.6em;
-  vertical-align: super;
-  font-weight: 500;
-}
 .pill {
+  white-space: nowrap;
   color: var(--ink);
   background: var(--lime);
   text-decoration: none;
@@ -486,3 +482,14 @@ a {
 .panel .num::before {
   content: attr(data-n);
 } /* decorative numeral, kept out of the text tree */
+
+@media (max-width: 24.99rem) {
+  .pill {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .brand {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+}

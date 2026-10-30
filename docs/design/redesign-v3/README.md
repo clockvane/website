@@ -91,4 +91,10 @@ The SEO score of 60 is expected: the prototypes are `noindex`. Best practices fo
   needs the owner's device on the preview link.
 
 ## Contrast (computed with `.agentops-scratch/contrast.mjs`)
-See the PR body for the full table: 22 pairs, all pass AA.
+See the PR body for the full table: 17 pairs, all pass AA.
+
+## Production build
+The prototypes are throwaway. The production build follows ADR-005 (three.js, rendering in a worker,
+NFR P-12 budgets, AVIF/WebP posters per P-7, WebGL context-loss handling). Moving to a custom engine
+like the prototype's needs an ADR-005 amendment first. Per BRIEF Q1, automation and DevOps get visual
+emphasis (for example the sorting yard and the depot as larger districts or first stops).
