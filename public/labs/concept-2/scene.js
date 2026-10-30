@@ -79,22 +79,47 @@ void main(){ vec2 q=gl_PointCoord-.5; float d=dot(q,q); float a=exp(-d*22.)*vA; 
 
 run({
   init(gl, T) {
-    const prog = compile(gl, VS, FS), post = makePost(gl), vao = gl.createVertexArray();
-    let n = T.particles, w = 1, h = 1, vane = 0.3;
+    const prog = compile(gl, VS, FS),
+      post = makePost(gl),
+      vao = gl.createVertexArray();
+    let n = T.particles,
+      w = 1,
+      h = 1,
+      vane = 0.3;
     return {
-      setTier(nT) { n = nT.particles; },
-      resize(nw, nh) { w = nw; h = nh; post.resize(w, h); },
+      setTier(nT) {
+        n = nT.particles;
+      },
+      resize(nw, nh) {
+        w = nw;
+        h = nh;
+        post.resize(w, h);
+      },
       frame(st) {
-        const target = Math.atan2(st.my + 0.12, st.mx + (Math.abs(st.mx) < 0.02 ? 0.6 : 0));
-        let dv = target - vane; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); vane += dv * 0.05;
+        const target = Math.atan2(
+          st.my + 0.12,
+          st.mx + (Math.abs(st.mx) < 0.02 ? 0.6 : 0),
+        );
+        let dv = target - vane;
+        dv = Math.atan2(Math.sin(dv), Math.cos(dv));
+        vane += dv * 0.05;
         post.begin();
-        gl.clearColor(0.012, 0.01, 0.01, 1); gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
-        gl.useProgram(prog.p); gl.bindVertexArray(vao);
-        const u = prog.u, asp = w / h;
-        gl.uniform1f(u.uT, st.t); gl.uniform1f(u.uS, st.p); gl.uniform1f(u.uAsp, asp);
-        gl.uniform1f(u.uOff, asp > 1.2 ? 0.34 : 0); gl.uniform1f(u.uOffY, asp < 0.8 ? 0.42 : 0); gl.uniform1f(u.uVaneA, vane);
-        gl.uniform1f(u.uSize, (h / 900) * 22 * Math.sqrt(120000 / n)); gl.uniform2f(u.uM, st.mx, st.my);
+        gl.clearColor(0.012, 0.01, 0.01, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        gl.useProgram(prog.p);
+        gl.bindVertexArray(vao);
+        const u = prog.u,
+          asp = w / h;
+        gl.uniform1f(u.uT, st.t);
+        gl.uniform1f(u.uS, st.p);
+        gl.uniform1f(u.uAsp, asp);
+        gl.uniform1f(u.uOff, asp > 1.2 ? 0.34 : 0);
+        gl.uniform1f(u.uOffY, asp < 0.8 ? 0.42 : 0);
+        gl.uniform1f(u.uVaneA, vane);
+        gl.uniform1f(u.uSize, (h / 900) * 22 * Math.sqrt(120000 / n));
+        gl.uniform2f(u.uM, st.mx, st.my);
         gl.drawArrays(gl.POINTS, 0, n);
         post.end(st.t, 0.003 + Math.min(0.05, Math.abs(st.vel) * 0.03), 1.4);
       },
@@ -102,11 +127,27 @@ run({
   },
   // Optional sound: filtered noise as wind; its pitch follows scroll speed. Off by default.
   voice(ctx, out) {
-    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    const len = ctx.sampleRate * 2,
+      buf = ctx.createBuffer(1, len, ctx.sampleRate),
+      d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3; bp.frequency.value = 400;
-    const g = ctx.createGain(); g.gain.value = 0.25; src.connect(bp).connect(g).connect(out); src.start();
-    return (st) => { bp.frequency.setTargetAtTime(300 + Math.min(1500, Math.abs(st.vel) * 900) + st.mx * 80, ctx.currentTime, 0.15); };
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 3;
+    bp.frequency.value = 400;
+    const g = ctx.createGain();
+    g.gain.value = 0.25;
+    src.connect(bp).connect(g).connect(out);
+    src.start();
+    return (st) => {
+      bp.frequency.setTargetAtTime(
+        300 + Math.min(1500, Math.abs(st.vel) * 900) + st.mx * 80,
+        ctx.currentTime,
+        0.15,
+      );
+    };
   },
 });

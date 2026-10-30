@@ -86,24 +86,50 @@ const accent = [0.36, 0.88, 1.0]; // #5CE1FF ion
 
 run({
   init(gl, T) {
-    const prog = compile(gl, FULLSCREEN_VS, FS), post = makePost(gl), vao = gl.createVertexArray();
-    let steps = T.steps, w = 1, h = 1, vane = 0.4;
+    const prog = compile(gl, FULLSCREEN_VS, FS),
+      post = makePost(gl),
+      vao = gl.createVertexArray();
+    let steps = T.steps,
+      w = 1,
+      h = 1,
+      vane = 0.4;
     return {
-      setTier(nT) { steps = nT.steps; },
-      resize(nw, nh) { w = nw; h = nh; post.resize(w, h); },
+      setTier(nT) {
+        steps = nT.steps;
+      },
+      resize(nw, nh) {
+        w = nw;
+        h = nh;
+        post.resize(w, h);
+      },
       frame(st) {
         const s = st.p;
         // Cumulative lock (process automation), then one transformation per service chapter.
         const lock = Math.min(1, Math.max(0, (s - 0.35) / 0.6));
-        const A = [lock, bump(s, 2), bump(s, 3)], B = [bump(s, 4), bump(s, 5), bump(s, 6)];
-        const target = Math.atan2(st.my + 0.15, st.mx + (Math.abs(st.mx) < 0.02 ? 0.6 : 0));
-        let dv = target - vane; dv = Math.atan2(Math.sin(dv), Math.cos(dv)); vane += dv * 0.06;
+        const A = [lock, bump(s, 2), bump(s, 3)],
+          B = [bump(s, 4), bump(s, 5), bump(s, 6)];
+        const target = Math.atan2(
+          st.my + 0.15,
+          st.mx + (Math.abs(st.mx) < 0.02 ? 0.6 : 0),
+        );
+        let dv = target - vane;
+        dv = Math.atan2(Math.sin(dv), Math.cos(dv));
+        vane += dv * 0.06;
         post.begin();
-        gl.useProgram(prog.p); gl.bindVertexArray(vao);
+        gl.useProgram(prog.p);
+        gl.bindVertexArray(vao);
         const u = prog.u;
-        gl.uniform2f(u.uRes, w, h); gl.uniform1f(u.uT, st.t); gl.uniform1f(u.uZ, 6 - s * 7.2 - st.t * 0.12);
-        gl.uniform1f(u.uSteps, steps); gl.uniform1f(u.uOff, w / h > 1.2 ? 0.42 : 0); gl.uniform1f(u.uOffY, w / h < 0.8 ? 0.28 : 0); gl.uniform1f(u.uVaneA, vane);
-        gl.uniform2f(u.uM, st.mx, st.my); gl.uniform3fv(u.uA, A); gl.uniform3fv(u.uB, B); gl.uniform3fv(u.uAcc, accent);
+        gl.uniform2f(u.uRes, w, h);
+        gl.uniform1f(u.uT, st.t);
+        gl.uniform1f(u.uZ, 6 - s * 7.2 - st.t * 0.12);
+        gl.uniform1f(u.uSteps, steps);
+        gl.uniform1f(u.uOff, w / h > 1.2 ? 0.42 : 0);
+        gl.uniform1f(u.uOffY, w / h < 0.8 ? 0.28 : 0);
+        gl.uniform1f(u.uVaneA, vane);
+        gl.uniform2f(u.uM, st.mx, st.my);
+        gl.uniform3fv(u.uA, A);
+        gl.uniform3fv(u.uB, B);
+        gl.uniform3fv(u.uAcc, accent);
         gl.drawArrays(gl.TRIANGLES, 0, 3);
         post.end(st.t, 0.004 + Math.min(0.05, Math.abs(st.vel) * 0.03), 0.8);
       },
@@ -111,17 +137,26 @@ run({
   },
   // Optional sound: a soft escapement tick locked to the mechanism, plus a low hum. Off by default.
   voice(ctx, out) {
-    const hum = ctx.createOscillator(), hg = ctx.createGain();
-    hum.frequency.value = 55; hg.gain.value = 0.05; hum.connect(hg).connect(out); hum.start();
+    const hum = ctx.createOscillator(),
+      hg = ctx.createGain();
+    hum.frequency.value = 55;
+    hg.gain.value = 0.05;
+    hum.connect(hg).connect(out);
+    hum.start();
     let next = 0;
     return (st) => {
       const now = ctx.currentTime;
       if (now < next) return;
       next = now + 0.5 - Math.min(0.3, Math.abs(st.vel) * 0.2);
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = 'triangle'; o.frequency.value = 1800 + Math.random() * 200;
-      g.gain.setValueAtTime(0.12, now); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
-      o.connect(g).connect(out); o.start(now); o.stop(now + 0.05);
+      const o = ctx.createOscillator(),
+        g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = 1800 + Math.random() * 200;
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+      o.connect(g).connect(out);
+      o.start(now);
+      o.stop(now + 0.05);
     };
   },
 });
