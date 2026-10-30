@@ -1,0 +1,102 @@
+/* Clockvane labs — shared shell for the Gate 2c WebGL worlds (design prototype, noindex). */
+@font-face {
+  font-family: "Public Sans";
+  src: url("/fonts/public-sans-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --ink: #f2f1ec;
+  --ink-2: #a9adb5;
+  --void: #07080a;
+  --accent: #5ce1ff;
+  --on-accent: #07080a;
+  --edge: #6b717c;
+  --step: clamp(1rem, 0.6rem + 1.6vw, 1.75rem);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--void); }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--void);
+  font: 400 1rem/1.55 "Public Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+/* The world: fixed behind the HTML. Poster first, canvas fades in over it. */
+.world { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.world img, .world canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.world canvas { opacity: 0; transition: opacity 1.2s ease; }
+.world.is-live canvas { opacity: 1; }
+.world.is-live img { opacity: 0; transition: opacity 1.2s ease 0.4s; }
+/* Scrim keeps text over a moving scene at AA on every frame. */
+.world::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgb(7 8 10 / 0.88) 0%, rgb(7 8 10 / 0.8) 45%, rgb(7 8 10 / 0.6) 64%, rgb(7 8 10 / 0) 92%);
+}
+@media (max-width: 47.99rem) {
+  .world::after { background: linear-gradient(180deg, rgb(7 8 10 / 0.3) 0%, rgb(7 8 10 / 0.78) 28%, rgb(7 8 10 / 0.9) 100%); }
+}
+
+.bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: center; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem);
+}
+.brand { font-weight: 800; letter-spacing: -0.02em; text-decoration: none; font-size: 1.125rem; }
+.bar .spacer { flex: 1; }
+.chip {
+  font: inherit; font-size: 0.875rem; color: var(--ink); background: var(--void);
+  border: 1px solid var(--edge); border-radius: 999px; padding: 0.5rem 0.9rem; min-height: 44px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); }
+.chip:hover { border-color: var(--ink-2); }
+
+main { position: relative; z-index: 1; }
+.chapter {
+  min-height: 100svh; display: grid; align-content: center;
+  padding: 6rem clamp(1.25rem, 6vw, 6rem) 4rem; max-width: 46rem;
+}
+.chapter.hero { max-width: 64rem; min-height: 100svh; }
+@media (max-width: 47.99rem) { .chapter { align-content: end; padding-bottom: 3.5rem; } }
+.eyebrow { font-size: 0.875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 1rem; }
+.eyebrow b { color: var(--accent); font-weight: 600; }
+h1 {
+  font-size: clamp(2.6rem, 1rem + 7.2vw, 7.5rem); line-height: 0.92; letter-spacing: -0.045em;
+  font-weight: 800; margin: 0 0 1.5rem; font-variation-settings: "wght" var(--w, 800);
+}
+h2 { font-size: clamp(2rem, 1rem + 4vw, 4.25rem); line-height: 0.98; letter-spacing: -0.035em; font-weight: 750; margin: 0 0 1rem; }
+.lede { font-size: var(--step); line-height: 1.4; color: var(--ink); max-width: 36rem; margin: 0 0 2rem; }
+p { max-width: 36rem; }
+.for { color: var(--ink-2); font-size: 0.9375rem; }
+.caption { color: var(--ink-2); font-size: 0.9375rem; border-left: 2px solid var(--accent); padding-left: 0.75rem; }
+.ctas { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; }
+.cta {
+  display: inline-flex; align-items: center; gap: 0.6rem; min-height: 52px; padding: 0 1.6rem;
+  border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700;
+  text-decoration: none; font-size: 1.0625rem; will-change: transform; transition: box-shadow 0.3s ease;
+}
+.cta:hover { box-shadow: 0 0 0 6px rgb(255 255 255 / 0.08), 0 0 48px -6px var(--accent); }
+.cta:focus-visible { outline-color: var(--ink); }
+.link { font-weight: 600; text-underline-offset: 0.3em; min-height: 44px; display: inline-flex; align-items: center; }
+.support { color: var(--ink-2); font-size: 0.9375rem; margin-top: 1.25rem; }
+
+/* Chapter rail: progress through the six services. */
+.rail { position: fixed; right: clamp(0.75rem, 2vw, 2rem); top: 50%; translate: 0 -50%; z-index: 5;
+  display: grid; gap: 0.6rem; list-style: none; margin: 0; padding: 0; }
+.rail li { width: 3px; height: 28px; background: var(--edge); border-radius: 2px; transition: background 0.4s, height 0.4s; }
+.rail li.on { background: var(--accent); height: 44px; }
+@media (max-width: 47.99rem) { .rail { display: none; } }
+
+.note { position: relative; z-index: 1; padding: 2rem clamp(1.25rem, 6vw, 6rem) 3rem; color: var(--ink-2); font-size: 0.875rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Shader-driven headline scramble (DOM fallback of the SDF effect). */
+.scramble span { display: inline-block; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
