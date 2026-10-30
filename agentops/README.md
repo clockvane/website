@@ -172,6 +172,9 @@ provides the 30-minute clock through Task Scheduler.
 
 ### GPT agents (the Codex lane)
 
+To stop using ChatGPT, set `engines.codex.enabled` to `false` (or run `agents workers --gpt 0`); every role then
+runs on Claude.
+
 Some agents run on OpenAI models through the **Codex CLI** with your ChatGPT sign-in, in their own
 copies of the repo, **at the same time** as the Claude agents. Which ones is set in
 `agentops/config.json → roles`:
