@@ -84,6 +84,11 @@ Founder roles, bios, expertise confirmation, credentials, public proof URLs and 
 retain their owner-input placeholders; no portraits or unapproved proof links are shown.
 The shared audit CTA label and contact route are configured in `site.config.ts`.
 
+The Services overview and six detail pages use the shared scenes and a single static route
+template at `src/pages/services/[slug].astro`. Approved detail copy lives in
+`src/content/service-pages.ts`; names and links come from `src/content/services.ts`.
+Unconfirmed package, ownership and AI cost scope retain the deck's placeholders.
+
 ## Repository layout
 
 ```

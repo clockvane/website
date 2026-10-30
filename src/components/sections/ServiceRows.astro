@@ -4,6 +4,7 @@ import { sectionLabels } from '../../content/sections';
 import { serviceScenes, sceneCopy } from '../../content/service-scenes';
 import ServiceScene from './ServiceScene.astro';
 import SceneReplay from '../ui/SceneReplay.astro';
+import { servicePages, overviewWork } from '../../content/service-pages';
 interface Props {
   variant?: 'home' | 'overview';
 }
@@ -26,16 +27,21 @@ const Heading = variant === 'home' ? 'h3' : 'h2';
             {serviceScenes[service.slug].category}
           </p>
           <Heading>{service.label}</Heading>
-          <p>{service.summary}</p>
+          <p>
+            {variant === 'overview'
+              ? servicePages[service.slug].summary
+              : service.summary}
+          </p>
           <p>
             {sceneCopy.audience}
             {serviceScenes[service.slug].audience}
           </p>
           {variant === 'overview' && (
             <div class="service-work">
+              <p>{servicePages[service.slug].workflow}</p>
               <h3>{sectionLabels.typicalWork}</h3>
               <ul>
-                {service.work.map((item) => (
+                {(overviewWork[service.slug] ?? service.work).map((item) => (
                   <li>{item}</li>
                 ))}
               </ul>

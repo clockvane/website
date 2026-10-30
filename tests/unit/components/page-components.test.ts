@@ -8,6 +8,7 @@ import WorkflowDiagram from '../../../src/components/sections/WorkflowDiagram.as
 import ResultPanel from '../../../src/components/sections/ResultPanel.astro';
 import Card from '../../../src/components/ui/Card.astro';
 import { services } from '../../../src/content/services';
+import { servicePages } from '../../../src/content/service-pages';
 import { services as navigation } from '../../../src/content/navigation';
 import { helpChoose, homeProcess } from '../../../src/content/sections';
 
@@ -48,7 +49,13 @@ describe('shared page components', () => {
         expect(position).toBeGreaterThan(previous);
         previous = position;
         expect(html).toContain(`href="${service.href}"`);
-        expect(html).toContain(service.summary);
+        expect(html).toContain(
+          variant === 'home'
+            ? service.summary
+            : servicePages[service.slug].summary,
+        );
+        if (variant === 'overview')
+          expect(html).toContain(servicePages[service.slug].workflow);
       }
       expect(html).toContain(variant === 'home' ? '<h3' : '<h2');
       expect(html.includes('Typical work')).toBe(variant === 'overview');
