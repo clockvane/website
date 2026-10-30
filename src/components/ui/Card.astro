@@ -30,9 +30,9 @@ const hasContent = title || body || link || Astro.slots.has('default');
 
 <style>
   .card {
-    background: var(--color-light-surface);
-    color: var(--color-light-text);
-    border: var(--stroke-border) solid var(--color-light-border);
+    background: var(--color-dark-surface);
+    color: var(--color-dark-text);
+    border: var(--stroke-border) solid var(--color-dark-border);
     border-radius: var(--radius-small);
     padding: var(--card-padding, var(--space-6));
     min-inline-size: 0;
@@ -46,14 +46,14 @@ const hasContent = title || body || link || Astro.slots.has('default');
     margin-block: var(--space-0);
   }
   .card a {
-    color: var(--color-light-link);
+    color: var(--color-dark-link);
   }
   .card a:hover,
   .card a:active {
-    color: var(--color-light-link-hover);
+    color: var(--color-dark-link-hover);
   }
   .card a:focus-visible {
-    outline-color: var(--color-light-focus);
+    outline-color: var(--color-dark-focus);
   }
   @media (forced-colors: active) {
     .card a:focus-visible {

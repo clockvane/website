@@ -92,8 +92,8 @@ const { currentPath } = Astro.props;
 
 <style>
   .site-header {
-    background: var(--color-light-background);
-    border-block-end: var(--stroke-border) solid var(--color-light-border);
+    background: var(--color-dark-background);
+    border-block-end: var(--stroke-border) solid var(--color-dark-border);
     z-index: var(--elevation-header);
   }
   .header-row {
@@ -124,21 +124,21 @@ const { currentPath } = Astro.props;
     min-block-size: var(--size-target);
     min-inline-size: var(--size-target);
     padding: var(--space-2) var(--space-4);
-    border: var(--stroke-border) solid var(--color-light-border);
+    border: var(--stroke-border) solid var(--color-dark-border);
     border-radius: var(--radius-small);
-    background: var(--color-light-background);
-    color: var(--color-light-text);
+    background: var(--color-dark-background);
+    color: var(--color-dark-text);
     font-size: var(--font-size-small);
     font-weight: var(--font-weight-semibold);
     line-height: var(--font-line-height-ui);
   }
   summary:hover,
   details[open] > summary {
-    background: var(--color-light-surface);
+    background: var(--color-dark-surface);
   }
   summary:active,
   details[open] > summary {
-    border-color: var(--color-light-text);
+    border-color: var(--color-dark-text);
   }
   .open-label,
   details[open] > summary .closed-label {
@@ -152,7 +152,7 @@ const { currentPath } = Astro.props;
   }
   .disclosure-panel {
     padding: var(--space-4);
-    border: var(--stroke-border) solid var(--color-light-border);
+    border: var(--stroke-border) solid var(--color-dark-border);
     margin-block-start: var(--space-2);
     max-inline-size: var(--layout-form);
   }

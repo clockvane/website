@@ -5,12 +5,8 @@
   font-weight: 100 900;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Newsreader';
-  src: url('/fonts/newsreader-latin-wght-normal.woff2') format('woff2');
-  font-style: normal;
-  font-weight: 200 800;
-  font-display: swap;
+:root {
+  color-scheme: dark;
 }
 * {
   box-sizing: border-box;
@@ -24,8 +20,8 @@ body {
   flex-direction: column;
   container: page / inline-size;
   margin: var(--space-0);
-  background: var(--color-light-background);
-  color: var(--color-light-text);
+  background: var(--color-dark-background);
+  color: var(--color-dark-text);
   font-family: var(--font-family-body);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
@@ -49,17 +45,31 @@ h1,
 h2,
 h3 {
   font-family: var(--font-family-heading);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--font-line-height-heading);
+  letter-spacing: calc(var(--font-tracking-ratio-heading) * 1em);
 }
 h1 {
   font-size: var(--font-size-h1-mobile);
+  font-weight: var(--font-weight-display);
 }
 h2 {
-  font-size: var(--font-size-h2-mobile);
+  font-size: clamp(
+    var(--font-size-h2-mobile),
+    3.5vw,
+    var(--font-size-h2-desktop)
+  );
 }
 h3 {
   font-size: var(--font-size-h3);
+  line-height: var(--font-line-height-ui);
+  letter-spacing: var(--font-tracking);
+}
+/* Optional category and row-number labels; never essential instructions. */
+.label {
+  font-family: var(--font-family-label);
+  font-size: var(--font-size-label);
+  letter-spacing: calc(var(--font-tracking-ratio-label) * 1em);
 }
 p + p,
 h1 + p,
@@ -67,14 +77,14 @@ h2 + p {
   margin-block-start: var(--space-4);
 }
 a {
-  color: var(--color-light-link);
+  color: var(--color-dark-link);
   text-decoration: underline;
   text-underline-offset: var(--space-1);
   text-decoration-thickness: var(--stroke-border);
 }
 a:hover,
 a:active {
-  color: var(--color-light-link-hover);
+  color: var(--color-dark-link-hover);
   text-decoration-thickness: var(--stroke-focus);
 }
 a[aria-current='page'] {
@@ -82,7 +92,7 @@ a[aria-current='page'] {
 }
 :focus-visible,
 [tabindex='-1']:focus {
-  outline: var(--stroke-focus) solid var(--color-light-focus);
+  outline: var(--stroke-focus) solid var(--color-dark-focus);
   outline-offset: var(--stroke-focus-gap);
 }
 /* Keep the skip destination's indicator inside the viewport. */
@@ -90,27 +100,11 @@ main:focus {
   outline: none;
 }
 main:focus h1 {
-  outline: var(--stroke-focus) solid var(--color-light-focus);
+  outline: var(--stroke-focus) solid var(--color-dark-focus);
   outline-offset: var(--stroke-focus-gap);
 }
 [id] {
   scroll-margin-block-start: var(--layout-anchor-offset);
-}
-.inverse {
-  background: var(--color-inverse-background);
-  color: var(--color-inverse-text);
-}
-.inverse a {
-  color: var(--color-inverse-link);
-}
-.inverse a:hover {
-  color: var(--color-inverse-link-hover);
-}
-.inverse a:active {
-  color: var(--color-inverse-link-active);
-}
-.inverse :focus-visible {
-  outline-color: var(--color-inverse-focus);
 }
 .standalone {
   display: inline-flex;
@@ -127,21 +121,21 @@ main:focus h1 {
   inline-size: 100%;
   min-block-size: var(--size-control);
   padding: var(--space-3) var(--space-6);
-  border: var(--stroke-border) solid var(--color-light-action);
+  border: var(--stroke-border) solid var(--color-dark-action);
   border-radius: var(--radius-small);
-  color: var(--color-light-on-action);
-  background: var(--color-light-action);
+  color: var(--color-dark-on-action);
+  background: var(--color-dark-action);
   text-decoration: none;
 }
 .button:hover {
-  color: var(--color-light-on-action);
-  background: var(--color-light-action-hover);
-  border-color: var(--color-light-action-hover);
+  color: var(--color-dark-on-action);
+  background: var(--color-dark-action-hover);
+  border-color: var(--color-dark-action-hover);
 }
 .button:active {
-  color: var(--color-light-on-action);
-  background: var(--color-light-action-active);
-  border-color: var(--color-light-action-active);
+  color: var(--color-dark-on-action);
+  background: var(--color-dark-action-active);
+  border-color: var(--color-dark-action-active);
 }
 .nav-list {
   list-style: none;
@@ -166,8 +160,20 @@ main:focus h1 {
 @media (forced-colors: active) {
   :focus-visible,
   [tabindex='-1']:focus,
-  main:focus h1,
-  .inverse :focus-visible {
+  main:focus h1 {
     outline-color: Highlight;
+  }
+}
+/* Motion lifecycle (ADR-004): the finished state is the default; only the
+   controller's playing/paused states animate decorative marks. */
+[data-scene][data-state='paused'] * {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-group(root) {
+    animation-duration: var(--motion-page);
   }
 }

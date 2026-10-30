@@ -7,7 +7,7 @@ interface Props {
 const { content = closingCta } = Astro.props;
 ---
 
-<section class="inverse section">
+<section class="cta-band section">
   <div class="container closing-grid">
     <div><h2>{content.heading}</h2><p class="measure">{content.body}</p></div>
     <div class="cta-action">
@@ -28,19 +28,8 @@ const { content = closingCta } = Astro.props;
   .cta-action {
     padding: var(--space-2);
   }
-  .button {
-    color: var(--color-inverse-on-action);
-    background: var(--color-inverse-action);
-    border-color: var(--color-inverse-action);
-  }
-  .button:hover {
-    color: var(--color-inverse-on-action);
-    background: var(--color-inverse-action-hover);
-    border-color: var(--color-inverse-action-hover);
-  }
-  .button:active {
-    color: var(--color-inverse-on-action);
-    background: var(--color-inverse-action-active);
-    border-color: var(--color-inverse-action-active);
+  .cta-band {
+    background: var(--color-dark-surface);
+    border-block: var(--stroke-border) solid var(--color-dark-border);
   }
 </style>

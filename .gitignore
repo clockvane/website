@@ -15,6 +15,7 @@ __pycache__/
 node_modules/
 dist/
 build/
+!tests/unit/build/
 .out/
 coverage/
 playwright-report/

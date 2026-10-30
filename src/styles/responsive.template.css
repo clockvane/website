@@ -55,10 +55,7 @@
     padding-block: var(--space-24);
   }
   h1 {
-    font-size: var(--font-size-h1-desktop);
-  }
-  h2 {
-    font-size: var(--font-size-h2-desktop);
+    font-size: var(--font-size-page-title);
   }
   .mobile-nav,
   .compact-cta {
