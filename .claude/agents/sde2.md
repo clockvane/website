@@ -2,8 +2,8 @@
 name: sde2
 description: Software Engineer (SDE2). Delivers well-specified stories - pages and sections from existing components and the approved copy deck, small components, content wiring, unit tests and small bug fixes.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch, Skill, TodoWrite
-model: sonnet
-effort: medium
+model: opus
+effort: high
 color: cyan
 ---
 

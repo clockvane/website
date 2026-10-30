@@ -2,7 +2,7 @@
 name: sde3
 description: Senior Software Engineer (SDE3). Builds foundations and complex features - scaffold, design-system implementation, shared components, layout, forms and integrations, performance work, hard bugs - and sets patterns others follow.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Skill, TodoWrite
-model: sonnet
+model: opus
 effort: high
 color: green
 ---

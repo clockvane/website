@@ -21,13 +21,13 @@ your plans have room left.
 
 | Agent | Model / effort | Does | Reviews |
 |-------|----------------|------|---------|
-| `product-owner` | Sonnet · medium | PRD, personas, metrics, competitor scan — stands in for you day to day | product, content, design docs; gate PRs |
+| `product-owner` | **Opus** · high | PRD, personas, metrics, competitor scan — stands in for you day to day | product, content, design docs; gate PRs |
 | `eng-manager` | Sonnet · medium | Grooms the backlog, sequences sprints, opens gate PRs, retros | substitute reviewer |
 | `tech-lead` | **Opus** · high | ADR-001 stack, architecture, NFRs, standards | architecture docs, `arch-impact` PRs |
-| `ux-designer` | Sonnet · high | Sitemap, wireframes, design system, home-page prototype | `ui-review` PRs |
+| `ux-designer` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Creative direction, design system, live WebGL prototypes | `ui-review` PRs |
 | `content-writer` | Sonnet · medium | Voice & tone, copy deck per page, SEO copy | — |
-| `sde3` | Sonnet · high | Scaffold, design-system code, shared components, forms, hard bugs | — |
-| `sde2` | Sonnet · medium | Pages and sections from existing components and approved copy | — |
+| `sde3` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Scaffold, design-system code, shared components, forms, hard bugs | — |
+| `sde2` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Pages and sections from existing components and approved copy | — |
 | `qa-engineer` | Sonnet · medium | Test strategy, e2e / accessibility / Lighthouse suites | every code PR (runs the tests) |
 | `code-reviewer` | Sonnet · high, read-only | Independent staff-level review | every code PR |
 | `security-reviewer` | Sonnet · high, read-only in reviews | Threat model, headers/CSP, privacy | deps, pipelines, server code, forms |
@@ -179,8 +179,8 @@ copies of the repo, **at the same time** as the Claude agents. Which ones is set
 | Agent | Engine | Model |
 |-------|--------|-------|
 | UX designer | Codex | `gpt-6-astra` (effort high) |
-| SDE 3 | Codex | `gpt-6.1-sol` (effort high) |
-| SDE 2 | Codex | `gpt-6.1-sol` (effort medium) |
+| SDE 3 | Codex | `gpt-6-astra` (effort high) |
+| SDE 2 | Codex | `gpt-6-astra` (effort high) |
 | everyone else | Claude Code | as in `.claude/agents/*.md` |
 
 - **Same rules.** Codex reads `AGENTS.md` (which points to `CLAUDE.md`) and gets the role file and
@@ -197,7 +197,9 @@ copies of the repo, **at the same time** as the Claude agents. Which ones is set
   answers without actually trying the test commands, it is asked again (up to 3 times).
 - **Its own limits.** The GPT lane reads your ChatGPT plan usage from Codex and stops at
   `agents limits --engine codex --session N` (default 85% session, 85% week). On Plus, GPT-6 Astra allows
-  roughly 5–45 messages per 5 hours, so the designer runs a few times a day; GPT-6.1 Sol allows more.
+  roughly 5–45 messages per 5 hours. Since 2026-10-30 the designer and both engineers run on Astra
+  (owner's choice: design quality first), so the ChatGPT plan reaches its limit sooner and their work
+  switches to Claude Opus more often.
 - **Reviews stay independent.** GPT work is reviewed by the Claude reviewers and vice versa. Two
   different reviewers can review the same PR at once; a fix and a review of the same PR never overlap.
 - **Owner-only merges.** Any agent PR that changes rules, the scheduler, workflows or deploy files
