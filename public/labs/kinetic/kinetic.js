@@ -272,7 +272,8 @@ const startRipple = () => {
   };
   new IntersectionObserver(([e]) => {
     visible = e.isIntersecting;
-    visible ? run() : halt();
+    if (visible) run();
+    else halt();
   }).observe(band);
   document.addEventListener('visibilitychange', () =>
     document.hidden ? halt() : run(),
