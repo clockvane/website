@@ -36,6 +36,7 @@ def make_cfg(tmp: Path, **overrides):
                      "pause_file": str(tmp / "no-pause"), "window_file": str(tmp / "window.json")}
     data["schedule"]["mode"] = "always"
     data["idle"]["transcript_dirs"] = [str(tmp / "projects")]
+    data["engines"]["codex"]["enabled"] = True  # the tests model the GPT lane; the owner may switch it off
     for k, v in overrides.items():
         cur = data
         keys = k.split(".")
@@ -553,7 +554,8 @@ class LiveUsage(unittest.TestCase):
         self.assertEqual((pct, src.startswith("learned")), (12.0, True))
         limits = ao.effective_limits(self.cfg)
         self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", self.live(90), limits), 0.6)  # 6% * $0.10
-        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", None, limits), 4.0)
+        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", None, limits),
+                         float(BASE_CFG["run"]["max_budget_usd"]["implement"]))
         ao.learn_run_cost(self.st, {"action": "fix", "outcome": "usage-limit-reached", "usage_delta": {"five_hour": 1}})
         self.assertEqual(ao.expected_run_pct(self.cfg, self.st, "fix")[1], "starting guess")
 
@@ -1740,6 +1742,17 @@ class Failover(unittest.TestCase):
         fine = {"claude": self.ROOM, "codex": self.ROOM}
         with mock.patch.object(ao, "probe_codex", lambda *a: self.fail("no probe expected")):
             self.assertIs(ao.refresh_unknown_codex_usage(self.cfg, self.st, NOW + 9999, fine), fine)
+
+    def test_owner_switches_gpt_off_everything_runs_on_claude(self):
+        off = make_cfg(self.tmp, **{"engines.codex.enabled": False})
+        self.st.put("codex_check", {"passed": True, "version": "v"})
+        self.assertEqual(ao.active_workers(off, self.st), ["claude", "claude-2"])
+        self.assertEqual(ao.active_lanes(off, self.st), ["claude"])
+        self.assertIsNone(ao.codex_off_reason(off, self.st))  # switched off on purpose: no "please run codex-check"
+        gh = FakeGH(issues=[{"number": 116, "labels": self.L("status:ready", "agent:ux-designer"), "body": ""}])
+        d = ao.Dispatcher(off, gh, self.st, NOW, lane="claude", lanes=ao.active_lanes(off, self.st), worker="claude")
+        self.assertEqual(d.choose("build", "m").issue, 116)
+        self.assertEqual(ao.routing_headroom(off, self.st, NOW, ao.active_lanes(off, self.st)), {})
 
     def test_processes_a_run_left_behind_are_stopped(self):
         import subprocess

@@ -172,6 +172,10 @@ provides the 30-minute clock through Task Scheduler.
 
 ### GPT agents (the Codex lane)
 
+> **Switched off by the owner on 2026-10-30, until he says otherwise** (`engines.codex.enabled: false` in
+> `agentops/config.json`). Every role, including the designer and the engineers, runs on Claude; nothing
+> uses the ChatGPT plan. To switch back on, set it to `true` again.
+
 Some agents run on OpenAI models through the **Codex CLI** with your ChatGPT sign-in, in their own
 copies of the repo, **at the same time** as the Claude agents. Which ones is set in
 `agentops/config.json → roles`:
