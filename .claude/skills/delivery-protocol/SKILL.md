@@ -34,6 +34,11 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
    secrets. Keep the PR focused on this ticket. Run your role file's self-check if it has one, and
    check the diff the way its reviewers will (accessibility and contrast for anything visual, the
    ADRs and `docs/engineering/standards.md` for code): fixing it now is cheaper than a review round.
+   For an `arch-impact` ticket, or any ticket that names an ADR: list every ADR section it touches
+   in the PR body under **ADR checklist** (for example `- [x] ADR-004 §7 — assetsInlineLimit: 0 set
+   in astro.config.mjs`) and tick each one only after checking the diff against it. Evidence a
+   reviewer will need (test, Lighthouse or size output) goes in the PR body or a committed file
+   under `docs/engineering/evidence/`, not only in a comment.
 6. **Push.** `git push -u origin HEAD`.
 7. **Open the PR.** Write the body from `.github/pull_request_template.md` (all sections, evidence
    included, `Closes #<ISSUE>`) into a file under `.agentops-scratch/`, then:
