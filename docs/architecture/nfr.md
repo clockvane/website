@@ -4,8 +4,8 @@
 |-------|-------|
 | Owner | tech-lead |
 | Status | Proposed (Gate 2 input) |
-| Last updated | 2026-10-29 (P-4, P-5, P-6, P-8, P-10, P-11 per ADR-004) |
-| Traces to | PRD §7, §8.3–8.7 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) |
+| Last updated | 2026-10-30 (change request 2 limits per ADR-005: P-1, P-4, P-8, P-9, P-11, new P-12…P-14, L-1) |
+| Traces to | PRD §7, §8.3–8.7 · BRIEF change request 2 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) · [ADR-005](../adr/ADR-005-immersive-layer.md) |
 
 Every NFR has an ID, a measurable target and how it is checked. "CI" means the check fails the PR.
 Key pages = Home, Services, one Service detail, Contact.
@@ -14,24 +14,41 @@ Key pages = Home, Services, one Service detail, Contact.
 Measured with Lighthouse CI on the built `dist/`, mobile preset (simulated Moto G Power, slow 4G),
 median of 3 runs.
 
+Owner limits from change request 2 (2026-10-30), which replace the 29 October table:
+
+| Limit | Value |
+|-------|-------|
+| First paint | Headline, text and call to action are plain HTML/CSS. LCP ≤ 2.5 s on the mobile lab test; layout shift ≤ 0.05 |
+| Script before the 3D starts | ≤ 50 kB compressed |
+| 3D layer (engine, shaders, scenes) | Loads after first paint, only on capable devices: ≤ 400 kB compressed script, plus ≤ 2 MB of compressed assets on desktop and ≤ 800 kB on phones. Engine: three.js ([ADR-005](../adr/ADR-005-immersive-layer.md) §1) |
+| Lighthouse, mobile | Home and service pages: performance ≥ 90, other categories ≥ 95. All other pages: ≥ 95 in all four |
+| Frame rate | 60 fps on a mid-range laptop, ≥ 30 fps on a mid-range Android. GPU tier detection scales particles, resolution and effects |
+| Fallbacks | Reduced motion, data saver, no WebGL and low-end GPUs get a beautiful static render of the same world, with all content usable without JavaScript |
+| Always | Pause when the tab is hidden or the scene is off-screen; keyboard access and WCAG 2.2 AA throughout |
+
+The IDs below make those limits checkable. "Compressed" = gzip -9, measured over `dist/`.
+
 | ID | Metric | Budget | Check |
 |----|--------|--------|-------|
-| P-1 | Largest Contentful Paint | ≤ 2.0 s lab (≤ 2.5 s p75 field) | CI (LHCI assertion) |
+| P-1 | Largest Contentful Paint | ≤ 2.5 s lab, mobile (≤ 2.5 s p75 field); the LCP element is HTML text, never the canvas | CI (LHCI assertion) |
 | P-2 | Cumulative Layout Shift | ≤ 0.05 lab (≤ 0.1 p75 field) | CI |
 | P-3 | Total Blocking Time (lab proxy for INP) | ≤ 150 ms; INP ≤ 200 ms p75 field | CI (TBT), field once analytics exist |
-| P-4 | JavaScript per page (compressed), all effects included | ≤ 35 kB total on any page; hero visual code ≤ 15 kB; motion controller ≤ 5 kB; contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-004](../adr/ADR-004-motion-and-effects.md) §2) | CI (LHCI resource budget + `dist/` bundle-size check) |
+| P-4 | JavaScript before the 3D starts (compressed) | ≤ 50 kB per page, of which motion controller ≤ 5 kB, immersive boot ≤ 8 kB, contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-005](../adr/ADR-005-immersive-layer.md) §2–§3) | CI (`dist/` bundle-size check per chunk + LHCI) |
 | P-5 | CSS per page (compressed) | ≤ 40 kB | CI |
 | P-6 | Fonts | ≤ 3 files, ≤ 120 kB total WOFF2, self-hosted | CI |
 | P-7 | Images | ≤ 200 kB above the fold; AVIF/WebP; explicit width/height | CI + review |
-| P-8 | Total page weight (compressed) | ≤ 600 kB on key pages | CI |
-| P-9 | Requests on first load | ≤ 20 | CI |
+| P-8 | Total page weight before the 3D starts (compressed) | ≤ 600 kB on key pages (3D layer counted in P-12) | CI |
+| P-9 | Requests on first load, before the 3D starts | ≤ 20 | CI |
 | P-10 | No-JS reading | All content readable and nav usable with JS disabled; form posts natively; no element stuck in a pre-animation hidden state | Playwright run with JS disabled |
-| P-11 | Motion | Only `transform`/`opacity` animated; effects pause off-screen and in hidden tabs; reduced motion and Save-Data load no hero renderer and run no animations; static fallback without WebGL ([ADR-004](../adr/ADR-004-motion-and-effects.md) §3–§4) | Playwright `reducedMotion: 'reduce'` and no-WebGL runs + review |
+| P-11 | Motion | Only `transform`/`opacity` animated; effects pause off-screen and in hidden tabs; reduced motion and Save-Data load no 3D layer and run no animations ([ADR-004](../adr/ADR-004-motion-and-effects.md) §3–§4, [ADR-005](../adr/ADR-005-immersive-layer.md) §5–§6) | Playwright `reducedMotion: 'reduce'` and no-WebGL runs + review |
+| P-12 | 3D layer (engine, worker, shaders, scenes; compressed) | Starts after `load` + idle, only on tiers 1–3; script ≤ 400 kB; assets ≤ 2 MB desktop, ≤ 800 kB phone (tier 1); rendering in a worker, no main-thread long task > 50 ms while it loads or scrolls; 60 fps mid-range laptop, ≥ 30 fps mid-range Android; DPR, particles and post-processing per tier ([ADR-005](../adr/ADR-005-immersive-layer.md) §4) | CI size check + LHCI forced-tier run + frame-time smoke test; real-device fps on the release checklist |
+| P-13 | Static fallback | Reduced motion, Save-Data, slow connection, no JS, no WebGL2/`OffscreenCanvas` and low-end GPUs (tier 0) get the static render of the same world; engine chunks are not requested; all content and the form usable | Playwright fallback runs (network assertion + screenshot + axe) |
+| P-14 | Visual stability of the 3D | No layout shift when the canvas appears (box reserved in CSS); deterministic frames match baselines | Canvas visual regression in CI |
 
 ## 2. Lighthouse targets
 | ID | Category | Target on key pages | Check |
 |----|----------|---------------------|-------|
-| L-1 | Performance | ≥ 95 | CI |
+| L-1 | Performance | Home and service pages ≥ 90; all other pages ≥ 95 (mobile preset; home also with `?tier=1`, [ADR-005](../adr/ADR-005-immersive-layer.md) §9) | CI |
 | L-2 | Accessibility | ≥ 95 (aim 100) | CI |
 | L-3 | Best Practices | ≥ 95 | CI |
 | L-4 | SEO | ≥ 95 (aim 100) | CI |
