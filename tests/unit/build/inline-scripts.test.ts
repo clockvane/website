@@ -1,6 +1,6 @@
 import { existsSync, globSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 
 function inlineScripts(html: string): string[] {
@@ -47,7 +47,7 @@ describe('inline-script detection', () => {
 });
 
 describe('built HTML CSP (ADR-004)', () => {
-  const dist = fileURLToPath(new URL('../../../dist/', import.meta.url));
+  const dist = resolve(process.env.DIST_DIR ?? 'dist');
   if (!existsSync(dist)) {
     console.warn('dist/ is missing; run npm run build first.');
     it.skip('dist/ is missing; run npm run build first', () => {});
@@ -63,6 +63,37 @@ describe('built HTML CSP (ADR-004)', () => {
     it(`${page} has no inline scripts except JSON-LD`, () => {
       const html = readFileSync(join(dist, page), 'utf8');
       expect(inlineScripts(html), `Inline scripts in ${page}`).toEqual([]);
+    });
+    it(`${page} fits compressed script and stylesheet budgets`, () => {
+      const html = readFileSync(join(dist, page), 'utf8');
+      const scripts = [
+        ...new Set(
+          [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map(
+            (match) => match[1]!,
+          ),
+        ),
+      ];
+      const styles = [
+        ...new Set(
+          [
+            ...html.matchAll(
+              /<link\b[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g,
+            ),
+          ].map((match) => match[1]!),
+        ),
+      ];
+      const size = (path: string) =>
+        gzipSync(readFileSync(join(dist, path))).byteLength;
+      expect(
+        scripts.reduce((total, path) => total + size(path), 0),
+      ).toBeLessThanOrEqual(35000);
+      expect(
+        styles.reduce((total, path) => total + size(path), 0),
+      ).toBeLessThanOrEqual(40000);
+      for (const script of scripts.filter((path) =>
+        /MotionScript|motion\./.test(path),
+      ))
+        expect(size(script), script).toBeLessThanOrEqual(5000);
     });
   }
 });

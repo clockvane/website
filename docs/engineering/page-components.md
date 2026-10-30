@@ -1,14 +1,15 @@
 # Shared page components
 
 Issue #65 implements the design-system inventory for page composition. These static Astro
-components ship no JavaScript. Use them inside `BaseLayout`; pages still own section order,
+components render complete static HTML. Pages with scenes opt into the shared motion controller
+with `<BaseLayout motion ...>`; pages still own section order,
 metadata, sitemap inclusion and the decision to omit the closing band on utility pages.
 
 | Component | Contract |
 | --- | --- |
 | `sections/PageHeader.astro` | Required `title`; optional `lede`, `action: { label, href }`, `breadcrumbs: { label, href }[]`. Breadcrumbs contain ancestors only: the component appends the current title as plain text. Supplies the page's h1. |
 | `sections/CtaBand.astro` | Defaults to approved `closing-cta`. Pass `content={helpChoose}` from `src/content/sections.ts` on Services to produce its single merged band. CTA label/destination use the existing shared navigation action. Unconfirmed audit length is omitted. |
-| `sections/ServiceRows.astro` | `variant="home"` (default): h3, shared summary, explicit link. `variant="overview"`: h2, problem, work list and stable slug anchor. Names/order/links/copy come from `src/content/services.ts`; navigation derives its service list from the same module. |
+| `sections/ServiceRows.astro` | `variant="home"` (default): h3, shared summary, audience, link/replay and scene. `variant="overview"`: h2, summary, audience, work list and stable slug anchor. Six names/order/links come from `src/content/services.ts`; navigation derives its service list from the same module. |
 | `sections/ProcessSteps.astro` | Required `steps: { title, body, output? }[]`; optional `variant="home"` or `"timeline"` (default). Place below an h2. Home becomes two/four columns at tablet/desktop; timeline keeps chronological order and puts optional outputs alongside steps on desktop. Empty steps render nothing. |
 | `ui/Card.astro` | Optional `title`, `body`, `link: { label, href }`, default slot and `headingLevel="h2"` or `"h3"` (default). Empty cards render nothing; cards without links have no tab stops. Light palette is retained inside inverse bands. |
 | `sections/WorkflowDiagram.astro` | Required `labels`: exactly three short labels, each an array of one or two authored lines; required `description`: equivalent ordered prose explaining the steps and human approval before the final step. Both SVG variants are decorative; the adjacent figcaption supplies the single alternative. No IDs can collide across instances. |
@@ -75,3 +76,40 @@ Committed visual evidence (320 / 1440 px):
 [desktop](evidence/75-branching-1440.png),
 [connected tools mobile](evidence/75-connected-tools-320.png) ·
 [desktop](evidence/75-connected-tools-1440.png).
+
+## Dispatch components (#103)
+
+`DispatchHero.astro` supplies the centred h1, configured audit CTA, Services link and dispatch
+field. Use it once per page (optional `id` customizes the heading ID). `ServiceScene.astro` takes
+a typed `variant` matching one of the six service slugs. It includes caption, equivalent hidden
+prose, `data-scene`, 1800 ms timing and a hidden replay button. `ServiceRows` composes all six
+with copy first in DOM order; the decorative art alternates at tablet width. Each row owns its
+replay, while its `[data-scene-visual]` illustration supplies the observer bounds. Do not nest
+another standalone scene inside that row. Labels stay HTML at the user's font size.
+
+```astro
+<BaseLayout title={title} description={description} motion>
+  <div class="container section"><DispatchHero /></div>
+  <section class="container section">
+    <h2>What we do</h2>
+    <ServiceRows variant="home" />
+  </section>
+</BaseLayout>
+```
+
+For a detail page, use `<ServiceScene variant="ai-automation" />` with the same layout opt-in.
+Without `motion`, scenes stay complete and replay stays hidden. No additional scene script,
+renderer or dependency is shipped. Copy comes from `dispatch.ts`, `services.ts` and
+`service-scenes.ts`, transcribed from the approved deck. AI spend bars explicitly describe a
+method, never a saving. The existing Q13/Q14 content decisions stay with their owning tickets.
+
+The controller keeps scenes already visible at initial paint finished so they never flash back
+to their start frame; their explicit replay remains available. Other scenes play once at 35%
+illustration visibility, pause offscreen/in hidden tabs, then settle. Escape retains replay focus.
+Reduced motion, Save-Data and unavailable observers show the static frame and hide replay.
+
+`npm run test:components` also injects `/__motion/` into the isolated artifact. It tests all five
+widths, 200% text, axe, lifecycle and fallback behavior; screenshots go to
+`.agentops-scratch/103-scenes-{320,1440}.png`. To apply the production CSP and gzip checks to
+that artifact, run `DIST_DIR=.agentops-scratch/components-dist npm run test:dist` after it builds.
+Production page assembly remains #58/#59. Measurements: [evidence](evidence/103-scenes.md).

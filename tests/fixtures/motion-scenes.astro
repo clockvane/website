@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../src/layouts/BaseLayout.astro';
+import DispatchHero from '../../src/components/sections/DispatchHero.astro';
+import ServiceRows from '../../src/components/sections/ServiceRows.astro';
+---
+
+<BaseLayout
+  title="Dispatch component fixture"
+  description="Test-only dispatch hero and service scenes."
+  noindex
+  motion
+>
+  <div class="container section"><DispatchHero /></div>
+  <section class="container section">
+    <h2>What we do</h2><ServiceRows />
+  </section>
+</BaseLayout>

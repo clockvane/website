@@ -7,11 +7,16 @@ const config = {
     {
       name: 'component-fixture',
       hooks: {
-        'astro:config:setup': ({ injectRoute }) =>
+        'astro:config:setup': ({ injectRoute }) => {
           injectRoute({
             pattern: '/__components/',
             entrypoint: './tests/fixtures/page-components.astro',
-          }),
+          });
+          injectRoute({
+            pattern: '/__motion/',
+            entrypoint: './tests/fixtures/motion-scenes.astro',
+          });
+        },
       },
     },
   ],
