@@ -134,9 +134,9 @@
   "claude_bin": "claude",
   "gh_bin": "gh",
   "engines": {
-    "_readme": "Codex lane: roles with engine 'codex' run on the Codex CLI (your ChatGPT plan) in a second copy of the repo, at the same time as the Claude lane. It switches on only after `agents codex-check` passes. enabled=false (owner, 2026-10-30): the GPT agents are switched off until the owner says otherwise; their roles run on Claude.",
+    "_readme": "Codex lane: roles with engine 'codex' run on the Codex CLI (your ChatGPT plan) in a second copy of the repo, at the same time as the Claude lane. It switches on only after `agents codex-check` passes.",
     "codex": {
-      "enabled": false,
+      "enabled": true,
       "bin": "codex",
       "clone_dir": "~/agents/clockvane-website-codex",
       "sessions_dir": "~/.codex/sessions",
