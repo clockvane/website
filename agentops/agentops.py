@@ -1502,15 +1502,26 @@ def ci_state(check_runs: List[Dict[str, Any]], statuses: List[Dict[str, Any]], c
 REVIEW_SHA_RX = re.compile(r"agentops:review\b[^>]*\bsha=([0-9a-f]{7,40})")
 
 
-def review_rounds(bodies: List[str]) -> int:
+REVIEW_ROLE_RX = re.compile(r"agentops:review\b[^>]*\brole=([a-z0-9-]+)")
+
+
+def review_rounds(bodies: List[str], roles: Optional[Iterable[str]] = None) -> int:
     """How many review rounds ended in 'changes': one per reviewed commit, however many reviewers
-    asked for changes on it (two reviewers on the same commit are one round, not two)."""
-    rounds: set = set()
+    asked for changes on it (two reviewers on the same commit are one round, not two).
+    With `roles`: the most commits any ONE of those reviewers rejected. A PR has failed its review
+    rounds when the same reviewer keeps asking for changes, not when each round brings a different
+    reviewer's new finding (PR #93: four rounds, but no reviewer rejected more than twice)."""
+    wanted = set(roles) if roles is not None else None
+    rounds: Dict[str, set] = {}
     for i, b in enumerate(bodies):
         if "agentops:review" in b and "verdict=changes" in b:
             m = REVIEW_SHA_RX.search(b)
-            rounds.add(m.group(1) if m else f"#{i}")
-    return len(rounds)
+            r = REVIEW_ROLE_RX.search(b)
+            who = (r.group(1) if r else "?") if wanted is not None else "*"
+            if wanted is not None and who not in wanted:
+                continue
+            rounds.setdefault(who, set()).add(m.group(1) if m else f"#{i}")
+    return max((len(v) for v in rounds.values()), default=0)
 
 
 DEP_RX = re.compile(r"(?im)^\s*[-*]?\s*(?:depends on|blocked by)\s*:?\s*(.+)$")
@@ -1677,10 +1688,11 @@ class Dispatcher:
             changes = [r for r in required if verdict.get(r) == "failure"]
             missing = [r for r in required if verdict.get(r) not in ("success", "failure")]
             if changes:
-                if review_rounds(self.gh.pr_review_bodies(n)) >= rcfg.get("max_review_rounds", 3):
+                if review_rounds(self.gh.pr_review_bodies(n), changes) >= rcfg.get("max_review_rounds", 3):
                     if self.primary:
-                        self._escalate(n, f"{rcfg.get('max_review_rounds', 3)} review rounds without approval "
-                                          f"(still requested by: {', '.join(changes)}). Please decide.")
+                        self._escalate(n, f"{', '.join(changes)} asked for changes in "
+                                          f"{rcfg.get('max_review_rounds', 3)} review rounds without approving. "
+                                          f"Please decide.")
                     continue
                 if not author:
                     continue
