@@ -16,6 +16,7 @@
     "typecheck": "astro check",
     "check": "astro check && tsc --noEmit",
     "test": "vitest run --coverage",
+    "test:dist": "vitest run tests/unit/build",
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:components": "playwright test --config tests/e2e/components.config.ts",
     "test:a11y": "playwright test --config tests/e2e/playwright.config.ts pages.spec.ts",

@@ -2,8 +2,11 @@
  * The single motion controller (ADR-004). It owns motion policy, one shared
  * IntersectionObserver, pausing, replay and Escape. Scenes are plain HTML/CSS:
  * `<section data-scene data-duration="1800">` with an optional `[data-replay]`
- * button. CSS shows the finished state first and animates only under
- * `.js-motion [data-scene][data-state]`, so no-JS readers lose nothing.
+ * button. CSS shows the finished state first. Scope keyframes only to
+ * `.js-motion [data-scene][data-state='playing']` and
+ * `.js-motion [data-scene][data-state='paused']`, never `done`, so pause keeps
+ * progress and completion removes the animation for replay. No-JS readers
+ * keep the finished state.
  */
 import {
   Playback,

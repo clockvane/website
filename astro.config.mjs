@@ -14,5 +14,6 @@ export default defineConfig({
     }),
   ],
   build: { inlineStylesheets: 'never' },
+  vite: { build: { assetsInlineLimit: 0 } },
   server: { host: '127.0.0.1', port: Number(process.env.PORT) || 4321 },
 });
