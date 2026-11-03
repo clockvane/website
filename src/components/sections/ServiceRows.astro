@@ -1,9 +1,6 @@
 ---
 import { services } from '../../content/services';
 import { sectionLabels } from '../../content/sections';
-import { serviceScenes, sceneCopy } from '../../content/service-scenes';
-import ServiceScene from './ServiceScene.astro';
-import SceneReplay from '../ui/SceneReplay.astro';
 interface Props {
   variant?: 'home' | 'overview';
 }
@@ -17,49 +14,32 @@ const Heading = variant === 'home' ? 'h3' : 'h2';
       <section
         id={variant === 'overview' ? service.slug : undefined}
         class="service-row"
-        data-scene
-        data-duration="1800"
       >
-        <div class="service-copy">
-          <p class="label">
-            {String(index + 1).padStart(2, '0')} /{' '}
-            {serviceScenes[service.slug].category}
-          </p>
-          <Heading>{service.label}</Heading>
-          <p>{service.summary}</p>
-          <p>
-            {sceneCopy.audience}
-            {serviceScenes[service.slug].audience}
-          </p>
-          {variant === 'overview' && (
-            <div class="service-work">
-              <h3>{sectionLabels.typicalWork}</h3>
-              <ul>
-                {service.work.map((item) => (
-                  <li>{item}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div class="service-actions">
-            <a class="standalone" href={service.href}>
-              {service.linkLabel}
-            </a>
-            <SceneReplay name={`Replay example: ${service.label}`} />
+        <p class="label">{String(index + 1).padStart(2, '0')}</p>
+        <Heading>{service.label}</Heading>
+        <p>{service.summary}</p>
+        {variant === 'overview' && (
+          <div class="service-work">
+            <h3>{sectionLabels.typicalWork}</h3>
+            <ul>
+              {service.work.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
           </div>
-        </div>
-        <ServiceScene variant={service.slug} standalone={false} />
+        )}
+        <a class="standalone" href={service.href}>
+          {service.linkLabel}
+        </a>
       </section>
     ))
   }
 </div>
-<p>{sceneCopy.note}</p>
 
 <style>
   .service-row {
     display: grid;
-    gap: var(--space-8);
-    align-items: center;
+    gap: var(--space-4);
     padding-block: var(--space-6);
     border-block-start: var(--stroke-border) solid var(--color-dark-border);
   }
@@ -69,23 +49,9 @@ const Heading = variant === 'home' ? 'h3' : 'h2';
   .service-row > * {
     min-inline-size: 0;
   }
-  h3 + p {
-    margin-block-start: var(--space-4);
-  }
   a {
+    justify-self: start;
     margin-block: var(--space-2);
-  }
-  .service-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4);
-    margin-block-start: var(--space-4);
-  }
-  .service-work,
-  .label + h2,
-  .label + h3 {
-    margin-block-start: var(--space-4);
   }
   ul {
     padding-inline-start: var(--space-6);

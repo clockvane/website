@@ -12,10 +12,6 @@ const config = {
             pattern: '/__components/',
             entrypoint: './tests/fixtures/page-components.astro',
           });
-          injectRoute({
-            pattern: '/__motion/',
-            entrypoint: './tests/fixtures/motion-scenes.astro',
-          });
         },
       },
     },

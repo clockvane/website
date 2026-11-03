@@ -4,7 +4,6 @@ import PageHeader from '../../../src/components/sections/PageHeader.astro';
 import ServiceRows from '../../../src/components/sections/ServiceRows.astro';
 import ProcessSteps from '../../../src/components/sections/ProcessSteps.astro';
 import CtaBand from '../../../src/components/sections/CtaBand.astro';
-import WorkflowDiagram from '../../../src/components/sections/WorkflowDiagram.astro';
 import ResultPanel from '../../../src/components/sections/ResultPanel.astro';
 import Card from '../../../src/components/ui/Card.astro';
 import { services } from '../../../src/content/services';
@@ -41,7 +40,7 @@ describe('shared page components', () => {
       const html = await container.renderToString(ServiceRows, {
         props: { variant },
       });
-      expect(html.match(/class="service-row"/g)).toHaveLength(6);
+      expect(html.match(/class="service-row"/g)).toHaveLength(services.length);
       let previous = -1;
       for (const service of services) {
         const position = html.indexOf(service.label);
@@ -100,19 +99,6 @@ describe('shared page components', () => {
     expect(await container.renderToString(CtaBand)).toContain(
       'Tell us about one slow process',
     );
-  });
-
-  it('provides one adjacent diagram alternative, even with multiple instances', async () => {
-    const props = {
-      labels: [['Code'], ['Test'], ['Release']],
-      description: 'Code is tested and released after approval.',
-    };
-    const html = (
-      await container.renderToString(WorkflowDiagram, { props })
-    ).repeat(2);
-    expect(html.match(/<figcaption/g)).toHaveLength(2);
-    expect(html.match(/aria-hidden="true"/g)).toHaveLength(2);
-    expect(html).not.toMatch(/style=|<style|\sid=|tabindex|role="img"/);
   });
 
   it('uses a page h1 or focusable inline h2, with optional result actions', async () => {
