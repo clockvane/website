@@ -1,5 +1,7 @@
 # Sitemap
 
+> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
+
 Status: draft for Gate 2 · Owner: UX/UI Designer · Ticket: #12
 Inputs: `docs/product/PRD.md` (sections 5, 6, 8), `docs/product/personas.md`, `docs/product/success-metrics.md`.
 Flows and navigation diagrams: `user-flows.md`.

@@ -1,5 +1,7 @@
 # Dispatch field v2 — computed contrast
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Issue #86. Exhaustive **allowed pairs**, using opaque sRGB values from [tokens.json](tokens.json). Ratios are symmetric: reversed button label/icon pairs use the same rows. Canvas and panel are the only surfaces for text/controls; no light theme or extra bright band. Focus uses ice on the exposed canvas/panel gap, including around primary buttons. Disabled controls use panel fill, muted text and line border, never opacity.
 
 | Foreground / background | Ratio | Needed (text / UI) | Result / uses |

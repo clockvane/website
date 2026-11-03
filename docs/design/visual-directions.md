@@ -1,5 +1,7 @@
 # Visual directions
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Status: draft for Gate 2 · Owner: UX/UI Designer · Ticket: #30
 Inputs: `docs/product/PRD.md`, `personas.md`, `docs/content/voice-and-tone.md`, `wireframes.md`, `sitemap.md`, ADR-001 (plain CSS + tokens, self-hosted WOFF2), `nfr.md` (P-5 CSS ≤ 30 kB, P-6 ≤ 2 families, ≤ 4 files, ≤ 100 kB WOFF2).
 

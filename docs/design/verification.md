@@ -1,5 +1,7 @@
 # V2 verification — issue #86
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Measured 2026-10-29 against the current built pages with the new tokens. These checks protect the existing shell and journeys; they do **not** claim that #88/#58/#59's Concept C page layouts or motion have been implemented.
 
 ## Repository and browser checks
@@ -39,4 +41,4 @@ Gzip sums of unique external CSS/script resources referenced by each built HTML 
 
 ## Selected prototype (historical design evidence)
 
-Concept C's centred oversized promise, perspective dispatch route and alternating six service scenes are shown in the existing [390px](redesign/evidence/c-390-reduced.png) / [1440px](redesign/evidence/c-1440-reduced.png) screenshots. [Full C mobile Lighthouse JSON](redesign/evidence/c-lighthouse-mobile.json) and [PR #85 measurements](redesign/evidence/measurements.json): 100/100/100/60 (SEO intentionally noindex), median LCP 1.209s, CLS/TBT 0; JS 828 B, CSS 3327 B, renderer 0 B, page 34,241 B. This prototype is unchanged; its measurements are feasibility evidence, separate from the current-build measurements above. Production motion budgets and later checks are in [motion.md](motion.md).
+Concept C's centred oversized promise, perspective dispatch route and alternating six service scenes are shown in the existing 390px (removed with change request 3) / 1440px (removed with change request 3) screenshots. Full C mobile Lighthouse JSON (removed with change request 3) and PR #85 measurements (removed with change request 3): 100/100/100/60 (SEO intentionally noindex), median LCP 1.209s, CLS/TBT 0; JS 828 B, CSS 3327 B, renderer 0 B, page 34,241 B. This prototype is unchanged; its measurements are feasibility evidence, separate from the current-build measurements above. Production motion budgets and later checks are in [motion.md](motion.md).
