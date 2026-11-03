@@ -15,14 +15,15 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
     .locator('meta[name="description"]')
     .getAttribute('content');
   await page.goto('/about/');
-  await expect(page).toHaveTitle('About us | Clockvane');
+  await expect(page).toHaveTitle(`About us | ${siteConfig.brand}`);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'About Clockvane',
+    `About ${siteConfig.brand}`,
   );
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    'Meet the founders behind Clockvane, an India-based team that automates boring work for small businesses worldwide.',
+    aboutCopy.description,
   );
+  expect(aboutCopy.description).not.toMatch(/small business|startup/i);
   expect(await page.title()).not.toBe(homeTitle);
   expect(aboutCopy.description).not.toBe(homeDescription);
   const main = page.getByRole('main');
@@ -35,14 +36,12 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
     aboutCopy.expertise.caveat,
     aboutCopy.expertise.note,
     aboutCopy.proof.body,
-    aboutCopy.name.body,
   ])
     await expect(main).toContainText(text);
   await expect(main.locator('h2')).toHaveText([
     aboutCopy.who.heading,
     aboutCopy.expertise.heading,
     aboutCopy.proof.heading,
-    aboutCopy.name.heading,
     'Tell us about one slow process',
   ]);
   await expect(main.getByRole('listitem')).toHaveText(
