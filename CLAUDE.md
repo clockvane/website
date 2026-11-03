@@ -5,12 +5,15 @@ organization would: written requirements, design reviews, ADRs, groomed tickets,
 independent reviewers, CI/CD and human sign-off gates. Speed is never a reason to skip a step.
 
 ## The company (placeholder identity)
-- Brand: **Clockvane** (one word, capital C only; never "Clockvane Labs/Tech/Solutions").
-  Tagline idea: "Automation that runs like clockwork." The name is final; the domain (planned:
-  clockvane.com) and email are not live yet. Name, domain, email and socials must live in ONE
-  config file (see rule 5) so they are easy to change.
-- What we sell: automation of boring business work, websites and apps for businesses, custom
-  software development, cloud & DevOps, AI automation.
+- Brand: **Clockvane** for now (one word, capital C only). **The name may change**, so nothing may
+  be built around it: no visuals, metaphors, animations or copy that play on the name (no clocks,
+  vanes, gears or clockwork). Tagline: "Built by experts. Powered by AI." (it works with any name).
+  The domain and email are not live yet. Name, domain, email and socials must live in ONE config file
+  (see rule 5), so a rename is a one-line change.
+- What we offer (change request 3 in `docs/product/BRIEF.md`): **expert support** for individuals and
+  companies (we have expert individuals who can help), **AI automation** for companies, **website
+  creation**, and **solutions for companies**. Write for any client in a professional tone, and
+  never describe clients by size or stage ("small businesses", "startups").
 - Owner and only human: **@MohammedAbdulFarhan08**. He is the stakeholder and final approver.
   His original brief is `docs/product/BRIEF.md` (read-only for agents).
 
