@@ -6,6 +6,7 @@ import { z } from 'zod';
  */
 export const siteConfigSchema = z.object({
   brand: z.string().min(1),
+  tagline: z.string().min(1),
   domain: z.string().min(1),
   email: z.string().min(1),
   phone: z.string().min(1),
@@ -27,7 +28,8 @@ export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
 export const siteConfig: SiteConfig = siteConfigSchema.parse({
   brand: 'Clockvane',
-  domain: '[[PLACEHOLDER: production domain, planned clockvane.com]]',
+  tagline: 'Built by experts. Powered by AI.',
+  domain: '[[PLACEHOLDER: production domain]]',
   email: '[[PLACEHOLDER: public contact email]]',
   phone: '[[PLACEHOLDER: public phone number, optional]]',
   socials: {

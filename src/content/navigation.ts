@@ -1,4 +1,4 @@
-/** Labels/order from copy-deck.md shared blocks; routes from sitemap.md. */
+/** Service labels/order from services.ts (change request 3); routes from sitemap.md. */
 import { services as serviceContent } from './services';
 import { siteConfig } from '../../site.config';
 export const services = serviceContent.map(({ href, label }) => ({

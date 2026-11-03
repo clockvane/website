@@ -1,7 +1,7 @@
 import { siteConfig } from '../../site.config';
 
-/** Approved copy-deck.md: site.footer-line and home SEO. */
-export const footerLine = `${siteConfig.brand} automates the boring work in small businesses, and builds the websites and cloud setups that run it. India · working with clients worldwide.`;
+/** Copy-deck.md home SEO; footer line is a change request 3 DRAFT until copy deck v3. */
+export const footerLine = `${siteConfig.tagline} Expert support, AI automation, website creation and solutions for companies. India · working with clients worldwide.`;
 export const homeSeo = {
   title: `Automate repetitive business work | ${siteConfig.brand}`,
   description:

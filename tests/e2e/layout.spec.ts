@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { siteConfig, siteOrigin } from '../../site.config';
+import { services } from '../../src/content/navigation';
 
 for (const width of [320, 480, 768, 1024, 1280]) {
   test(`shared shell at ${width}px works without JavaScript`, async ({
@@ -33,7 +34,7 @@ for (const width of [320, 480, 768, 1024, 1280]) {
     await expect(summary.locator('..')).toHaveAttribute('open', '');
     await expect(
       page.getByRole('banner').getByRole('link', {
-        name: 'Business process automation',
+        name: services[0]!.label,
         exact: true,
       }),
     ).toBeVisible();

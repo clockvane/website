@@ -3,13 +3,19 @@ import { isPlaceholder, siteConfig, siteConfigSchema } from '../../site.config';
 import { primaryCta } from '../../src/content/navigation';
 
 describe('site config', () => {
-  it('matches its schema and names the brand', () => {
-    expect(siteConfigSchema.parse(siteConfig).brand).toBe('Clockvane');
+  it('matches its schema and holds a name-independent tagline', () => {
+    const parsed = siteConfigSchema.parse(siteConfig);
+    expect(parsed.brand).not.toBe('');
+    expect(parsed.tagline).toBe('Built by experts. Powered by AI.');
+    expect(parsed.tagline).not.toContain(parsed.brand);
   });
 
   it('rejects an invalid config', () => {
     expect(
       siteConfigSchema.safeParse({ ...siteConfig, brand: '' }).success,
+    ).toBe(false);
+    expect(
+      siteConfigSchema.safeParse({ ...siteConfig, tagline: '' }).success,
     ).toBe(false);
     expect(siteConfigSchema.safeParse({}).success).toBe(false);
   });
