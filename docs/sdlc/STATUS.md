@@ -23,7 +23,7 @@ Q1 services and packages; Q2 pricing stance; Q3 target client and region; Q4 pri
 Artifacts:
 - Decisions: [ADR-001 stack](../adr/ADR-001-stack.md), [ADR-002 hosting](../adr/ADR-002-hosting.md), [ADR-003 repo structure](../adr/ADR-003-repository-structure.md)
 - Engineering: [architecture](../architecture/architecture.md), [NFRs](../architecture/nfr.md), [standards](../engineering/standards.md)
-- UX: [sitemap](../design/sitemap.md), [user flows](../design/user-flows.md), [wireframes](../design/wireframes.md), [visual directions](../design/visual-directions.md), [design system](../design/design-system.md), [tokens](../design/tokens.json), [home-page prototype](../design/prototype/index.html)
+- UX: [sitemap](../design/sitemap.md), [user flows](../design/user-flows.md), [wireframes](../design/wireframes.md), [visual directions](../design/visual-directions.md), [design system](../design/design-system.md), [tokens](../design/tokens.json), home-page prototype (removed with change request 3)
 - Content: [voice and tone](../content/voice-and-tone.md), [copy deck](../content/copy-deck.md), [microcopy](../content/microcopy.md)
 - DevOps: [CI/CD](../devops/cicd.md), [release process](../devops/release.md)
 - Security: [threat model](../security/threat-model.md), [headers](../security/headers.md), [privacy](../security/privacy.md)

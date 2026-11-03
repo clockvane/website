@@ -1,5 +1,7 @@
 # PRD — Clockvane company website
 
+> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
+
 | Field | Value |
 |-------|-------|
 | Owner | product-owner |

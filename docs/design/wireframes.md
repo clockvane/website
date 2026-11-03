@@ -1,5 +1,7 @@
 # Dispatch field wireframes — v2
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Issue #86 · Concept C selected on PR #85. Replaces the Gate 2 Workshop ledger layouts. Normative companions: [components](components.md), [tokens](tokens.json), [motion](motion.md). Copy keys below refer to the current [copy deck](../content/copy-deck.md); exact text is maintained there, never invented in diagrams.
 
 ## Shared frame and breakpoint behavior
@@ -110,4 +112,4 @@ These are restyles of existing journeys, not new copy or routes. All use the sha
 
 ## Build acceptance
 
-Check all five widths plus 200% text/400% zoom, keyboard skip/menu/replay/form/result flows, AA contrast and forced colors. Reduced-motion, Save-Data, no-JS and no-WebGL must show finished illustrations and usable content. Compare the selected [390px](redesign/evidence/c-390-reduced.png) / [1440px](redesign/evidence/c-1440-reduced.png) snapshots for direction, but use this document for production content order and readable label sizes. Footer, contact states, error messages and focus behavior are fully specified in components.md. No screenshots in #86 claim that the still-unbuilt production layouts are complete.
+Check all five widths plus 200% text/400% zoom, keyboard skip/menu/replay/form/result flows, AA contrast and forced colors. Reduced-motion, Save-Data, no-JS and no-WebGL must show finished illustrations and usable content. Compare the selected 390px (removed with change request 3) / 1440px (removed with change request 3) snapshots for direction, but use this document for production content order and readable label sizes. Footer, contact states, error messages and focus behavior are fully specified in components.md. No screenshots in #86 claim that the still-unbuilt production layouts are complete.

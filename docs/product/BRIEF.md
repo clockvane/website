@@ -60,6 +60,8 @@ and contact details, languages, legal/company details.
 
 ## Change request — 2026-10-29: a clean, futuristic, fast website
 
+> **Its services, audiences and visual direction are replaced by change request 3 (2026-11-03).** Kept for history.
+
 *Owner decision. It replaces the visual direction approved at Gate 2 ("Workshop ledger") and the
 "calm, not flashy" guidance. Everything else in this brief and the Gate 1 answers still applies.*
 
@@ -145,6 +147,8 @@ No CMS or blog yet, no paid tools or services, no invented testimonials, logos o
 
 ## Change request 2 — 2026-10-30: immersive and unmistakably futuristic
 
+> **Replaced by change request 3 (2026-11-03).** Kept for history.
+
 *Owner decision. It replaces the parts of the 2026-10-29 change request named below. Everything else
 still applies: who the site must impress, plain words, honest proof, accessibility, no invented facts.*
 
@@ -154,7 +158,7 @@ lines, flowcharts and card rows. Nothing there would make anyone stop scrolling.
 fault. Our own 29 October limits (35 kB of script, a 15 kB hero, no 3D library) made anything else
 impossible. I am lifting those limits. I want a site people remember and share, at the level of the
 world's best immersive websites. Research with live references:
-[`docs/design/research/immersive-references.md`](../design/research/immersive-references.md).
+`docs/design/research/immersive-references.md` (removed with change request 3).
 
 ### What I want
 1. **A real-time 3D world, not pictures of diagrams.** The home page is one continuous scene the
@@ -227,3 +231,80 @@ we load the 3D, not in banning it.
 The designer and the engineers run on the strongest models we have: GPT-6 Astra (high), with Claude
 Opus (high) when ChatGPT is at its limit. So do the people who approve the design: the product owner
 and the tech lead.
+
+## Change request 3 — 2026-11-03: clean and product-led like Mobbin, new services, name-independent
+
+*Owner decision. It replaces change request 2 (the immersive 3D direction) completely, and the service
+list, audiences and visual direction of change request 1. Plain words, honesty (no invented facts) and
+accessibility still apply.*
+
+### Why
+Every concept so far was built around our name: a clock, a vane, clockwork. We may change the company
+name later, so nothing on the site may depend on it. And I want the site to look and feel like
+[mobbin.com](https://mobbin.com): clean, light, confident and product-led.
+
+### Name-independent
+- The name stays **Clockvane** for now, and only in `site.config.ts`. No visual, metaphor, illustration,
+  animation or copy may be built around the name: no clocks, vanes, gears, clockwork or "runs like
+  clockwork". A rename must be a one-line config change.
+- Tagline, chosen to work with any name: **"Built by experts. Powered by AI."**
+
+### What we offer (replaces the service list)
+1. **Expert support.** Experienced specialists help individuals and companies with advice,
+   troubleshooting, hands-on help and guidance on technical work. We have expert individuals who can
+   help. [[PLACEHOLDER: areas of expertise and how a session works]]
+2. **AI automation.** AI agents and automations built into companies' workflows.
+3. **Website creation.** Websites and web apps, designed and built.
+4. **Solutions for companies.** Tailored software and technical solutions.
+   [[PLACEHOLDER: scope of the solutions we offer]]
+
+Removed as separate services: business process automation, AI cost optimization, cloud and DevOps,
+and custom software. That expertise can appear inside expert support and solutions; the product owner
+decides the wording.
+
+### Who it's for
+Any client: individuals and companies, in a professional tone. Never describe clients by size or
+stage ("small businesses", "startups"). Say plainly that expert individuals are available to help.
+
+### Look and feel: like mobbin.com
+Open mobbin.com live on a laptop and on a phone before designing anything. Take these qualities from
+it, translated to our business:
+- **A light canvas.** White or near-white background and near-black text. Colour comes from imagery and
+  one small accent.
+- **A confident headline sentence** with small visual tokens woven in between the words, the way Mobbin
+  puts app icons inline. For us the tokens are services, tools and topics, never pictures of invented
+  people.
+- **Product-led imagery everywhere.** Crisp UI screens and cards in auto-scrolling columns and marquees.
+  For us these are original example screens we design ourselves: website pages, an AI assistant at
+  work, an automation run, an expert support session. Label them as examples; never fake client work.
+- **A "one place for everything" section,** like Mobbin's Apps, Sites, Screens and Flows tabs, for our
+  four services, each with its own thumbnails.
+- **An AI section with a live-feeling demo:** a prompt, steps appearing, a result, like Mobbin's agent
+  section.
+- **Pill buttons, generous whitespace, rounded cards and soft shadows.** Motion is smooth and subtle:
+  marquees, hover lifts, scroll reveals.
+- **The section rhythm:** hero, tools strip, problem and solution, the four services, the AI demo,
+  stories (only once they are real; placeholders until then), a closing call to action, and a rich
+  footer.
+
+Not allowed: 3D worlds, particles, dark sci-fi, anything that plays on the name, and invented logos,
+testimonials or numbers (rule 9).
+
+### Limits
+- Lighthouse mobile ≥ 95 in all four categories on every page; LCP ≤ 2.0 s; CLS ≤ 0.05.
+- Script ≤ 50 kB compressed per page. No animation framework is needed: CSS marquees and small
+  vanilla JS do the job.
+- Images: AVIF or WebP, responsive sizes, lazy below the fold; page weight ≤ 1.5 MB.
+- With reduced motion, marquees stop and the page stays complete. WCAG 2.2 AA throughout.
+- ADR-005 (the 3D layer) is withdrawn and ADR-004 (CSS-first motion) applies again. The tech lead
+  updates `docs/architecture/nfr.md`.
+
+### How the team should approach it
+1. **Clean up first.** Remove everything built around the name or the dropped concepts: code, copy
+   and documents.
+2. **Product owner:** PRD v3. **Content writer:** copy deck v3. **Tech lead:** NFR v3 and ADR-005
+   withdrawn.
+3. **Designer:** design system v3 and one live prototype of the home page and the services overview
+   in this style, done properly on phone and laptop, at **Gate 2e** (a `gate:2` PR; merging approves it).
+4. **Engineers:** design system v3 in code, then the home page, the four service pages, and the
+   existing pages restyled.

@@ -2,10 +2,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Proposed — accepted when this PR merges. Partly supersedes [ADR-004](ADR-004-motion-and-effects.md) (see §11) |
+| Status | **Withdrawn** (owner decision, 2026-11-03: change request 3 in `docs/product/BRIEF.md` drops the immersive 3D direction). [ADR-004](ADR-004-motion-and-effects.md) applies again in full. Kept for history only |
 | Date | 2026-10-30 |
 | Deciders | tech-lead (author) · owner (@MohammedAbdulFarhan08) final say |
-| Traces to | `docs/product/BRIEF.md` → "Change request 2" · [immersive references](../design/research/immersive-references.md) · [ADR-001](ADR-001-stack.md) · [nfr.md](../architecture/nfr.md) P-1…P-14, SEC-1 · issue #109 |
+| Traces to | `docs/product/BRIEF.md` → "Change request 2" · immersive references (removed with change request 3) · [ADR-001](ADR-001-stack.md) · [nfr.md](../architecture/nfr.md) P-1…P-14, SEC-1 · issue #109 |
 | Evidence | [Engine bundle sizes, measured](../engineering/evidence/adr-005-engine-sizes.md) |
 
 ## Context

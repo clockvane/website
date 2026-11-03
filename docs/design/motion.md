@@ -1,5 +1,7 @@
 # Dispatch field motion — v2
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Issue #86 · [ADR-004](../adr/ADR-004-motion-and-effects.md) governs implementation. Original SVG + CSS explain examples, not a live monitoring product. No Canvas/WebGL renderer is needed; the allowed renderer budget is left unused. No animation library, framework, video, particle loop, pointer tracking or scroll-jacking. Copy and accessible descriptions: deck `home.field`, `home.services`, and §3.7 service animations.
 
 ## Shared lifecycle (applies to every sequence below)
@@ -46,6 +48,6 @@ Every page also has fonts 26,832 B / 1 file (limits 120,000 B / 3), total ≤600
 
 ## Evidence and implementation checks
 
-Unchanged selected prototype: [C Lighthouse JSON](redesign/evidence/c-lighthouse-mobile.json), [mobile metrics and sizes](redesign/evidence/measurements.json), [390px](redesign/evidence/c-390-reduced.png) / [1440px](redesign/evidence/c-1440-reduced.png) static screenshots. PR #85 measured C at performance/accessibility/best-practices **100/100/100**, SEO **60** due to intentional noindex; median LCP 1.209s, CLS 0, TBT 0. JS **828 B**, CSS **3327 B**, renderer **0 B**, page **34,241 B**. These are feasibility evidence for the selected design, not a new v2 production measurement. #86 adds no prototype animation or shipped JS.
+Unchanged selected prototype: C Lighthouse JSON (removed with change request 3), mobile metrics and sizes (removed with change request 3), 390px (removed with change request 3) / 1440px (removed with change request 3) static screenshots. PR #85 measured C at performance/accessibility/best-practices **100/100/100**, SEO **60** due to intentional noindex; median LCP 1.209s, CLS 0, TBT 0. JS **828 B**, CSS **3327 B**, renderer **0 B**, page **34,241 B**. These are feasibility evidence for the selected design, not a new v2 production measurement. #86 adds no prototype animation or shipped JS.
 
 Implementation must check: base CSS never hides flow/read/cost/release/assemble/join/trail outside the JS playing gate; reduced-motion, Save-Data and no-JS request/run no hero code; offscreen/hidden tab pause and resume; completion/replay/Escape focus; one shared observer per threshold; no moving text or label collisions at five target widths; full static workflow explanation; first-party requests only and CSP intact. Measure production bytes and mobile Lighthouse again after implementation. Historical prototype evidence remains a snapshot; do not regenerate it silently from later copy/config.

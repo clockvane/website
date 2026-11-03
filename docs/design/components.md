@@ -1,5 +1,7 @@
 # Dispatch field components — v2
 
+> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+
 Issue #86 · Implements the owner's Concept C selection on [PR #85](https://github.com/clockvane/website/pull/85#issuecomment-6507923611). This is the production specification; the selected prototype is a historical snapshot. [Tokens](tokens.json) · [wireframes](wireframes.md) · [motion](motion.md) · [computed contrast](contrast.md). These replace Workshop ledger rules, including its light-only forms and CSS stroke-draw animation.
 
 ## Color and focus contract

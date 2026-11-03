@@ -1,5 +1,7 @@
 # Voice and tone
 
+> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
+
 Status: draft for Gate 2 · Owner: content-writer · Ticket: #13
 Inputs: `docs/product/PRD.md`, `personas.md`, `competitor-scan.md`, owner answers in `BRIEF.md` (Q12 tone).
 

@@ -1,5 +1,7 @@
 # Copy deck (MVP pages, redesign concept C)
 
+> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
+
 Status: updated for Gate 2b concept C · Owner: content-writer · Tickets: #23, #87
 Inputs: `voice-and-tone.md`, `docs/design/sitemap.md`, `docs/design/wireframes.md`, `docs/product/BRIEF.md` (owner answers), `docs/product/PRD.md`.
 Form, error and empty-state copy lives in `microcopy.md`.
@@ -12,7 +14,7 @@ Form, error and empty-state copy lives in `microcopy.md`.
 - Primary CTA label: **Book a free audit call** (owner answer Q4). See the open decision in section 13: the sitemap and wireframes still say "Start a conversation".
 - Spelling is British until the owner confirms.
 - Typical timelines come from the owner's answer Q1. Time-saving statements are examples, not results.
-- Redesign (ticket #87): home follows concept C (`docs/design/redesign/concept-c/`): an oversized centred promise, the dispatch field, six service rows, a closing band. Six services per PRD section 4. Audiences (PRD section 3) get their answer in the lede, the `for` line on each service row and the service detail pages. No savings figures anywhere. Diagram and animation copy describes examples, never client results.
+- Redesign (ticket #87): home follows concept C (removed with change request 3): an oversized centred promise, the dispatch field, six service rows, a closing band. Six services per PRD section 4. Audiences (PRD section 3) get their answer in the lede, the `for` line on each service row and the service detail pages. No savings figures anywhere. Diagram and animation copy describes examples, never client results.
 - Any line marked "DRAFT" in the concept C prototype is replaced by the copy here.
 
 ---
