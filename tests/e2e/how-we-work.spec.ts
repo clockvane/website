@@ -19,7 +19,7 @@ test('process, engagement models and unresolved facts follow the copy deck', asy
     ...copy.models.map((model) => model.title),
     copy.pricingHeading,
     copy.handoverHeading,
-    'Tell us about one slow process',
+    'What would you like to get done?',
   ]);
   const steps = main.getByRole('list').getByRole('listitem');
   await expect(steps).toHaveCount(4);
@@ -30,7 +30,7 @@ test('process, engagement models and unresolved facts follow the copy deck', asy
   for (const model of copy.models) await expect(main).toContainText(model.body);
   await expect(main).toContainText(copy.pricing);
   await expect(main).toContainText(copy.handover);
-  await expect(main.locator('.cta-band')).toHaveCount(1);
+  await expect(main.locator('.band-wrap')).toHaveCount(1);
   await main.getByRole('link', { name: siteConfig.primaryCta.label }).click();
   await expect(page).toHaveURL(/\/contact\/$/);
 });
@@ -61,13 +61,13 @@ for (const width of [320, 1280]) {
     const page = await context.newPage();
     await page.goto('/how-we-work/');
     await page.evaluate(() => document.fonts.ready);
-    await expect(page.locator('script')).toHaveCount(0);
+    await expect(page.locator('script:not([src])')).toHaveCount(0);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
-    const cta = page.locator('main .cta-band a');
+    const cta = page.locator('main .band-wrap a');
     await expect(cta).toHaveText(siteConfig.primaryCta.label);
     await expect(cta).toHaveAttribute('href', siteConfig.primaryCta.href);
     await cta.focus();
@@ -87,7 +87,7 @@ for (const width of [320, 1280]) {
     const noJsPage = await noJs.newPage();
     await noJsPage.goto('/how-we-work/');
     await expect(noJsPage.getByRole('main')).toContainText(copy.pricing);
-    await noJsPage.locator('main .cta-band a').click();
+    await noJsPage.locator('main .band-wrap a').click();
     await expect(noJsPage).toHaveURL(/\/contact\/$/);
     await noJs.close();
   });

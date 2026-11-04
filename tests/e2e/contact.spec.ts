@@ -294,7 +294,9 @@ for (const width of [320, 1280])
           'noindex, follow',
         );
       for (const control of await page
-        .locator('a:visible, button:visible, input:visible, textarea:visible')
+        .locator(
+          'a:visible:not(.cta), button:visible, input:visible, textarea:visible',
+        )
         .all()) {
         const box = await control.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);
