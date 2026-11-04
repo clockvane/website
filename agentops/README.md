@@ -31,7 +31,7 @@ your plans have room left.
 | `qa-engineer` | Sonnet · medium | Test strategy, e2e / accessibility / Lighthouse suites | every code PR (runs the tests) |
 | `code-reviewer` | Sonnet · high, read-only | Independent staff-level review | every code PR |
 | `security-reviewer` | Sonnet · high, read-only in reviews | Threat model, headers/CSP, privacy | deps, pipelines, server code, forms |
-| `devops-lead` | Sonnet · high | ADR-002 hosting, CI/CD design, environments, releases, exit plan | pipeline and infra PRs |
+| `devops-lead` | GPT-6 Astra · high (Claude fallback: Sonnet · high) | ADR-002 hosting, CI/CD design, environments, releases, exit plan | pipeline and infra PRs |
 | `devops-engineer` | Sonnet · medium | Workflows, Dockerfile, IaC, Lighthouse CI, Dependabot | — |
 
 Why SDE3 vs SDE2 still matters with agents: the SDE3 gets the pattern-setting and tricky work at
@@ -184,6 +184,7 @@ copies of the repo, **at the same time** as the Claude agents. Which ones is set
 | UX designer | Codex | `gpt-6-astra` (effort high) |
 | SDE 3 | Codex | `gpt-6-astra` (effort high) |
 | SDE 2 | Codex | `gpt-6-astra` (effort high) |
+| DevOps lead | Codex | `gpt-6-astra` (effort high) |
 | everyone else | Claude Code | as in `.claude/agents/*.md` |
 
 - **Same rules.** Codex reads `AGENTS.md` (which points to `CLAUDE.md`) and gets the role file and
