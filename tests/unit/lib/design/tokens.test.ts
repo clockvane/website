@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import tokens from '../../../../docs/design/tokens.json';
+import tokens from '../../../../docs/design/tokens-legacy.json';
 import {
   tokenMedia,
   tokenProperties,
