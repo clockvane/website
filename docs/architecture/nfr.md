@@ -1,56 +1,78 @@
 # Non-functional requirements — Clockvane website
 
-> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
-
 | Field | Value |
 |-------|-------|
 | Owner | tech-lead |
-| Status | Proposed (Gate 2 input) |
-| Last updated | 2026-10-30 (change request 2 limits per ADR-005: P-1, P-4, P-8, P-9, P-11, new P-12…P-14, L-1) |
-| Traces to | PRD §7, §8.3–8.7 · BRIEF change request 2 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) · [ADR-005](../adr/ADR-005-immersive-layer.md) |
+| Status | v3, Proposed (Gate 2e input) |
+| Last updated | 2026-11-04 (v3 for change request 3: P-1, P-4, P-7, P-8, P-9, P-10, P-11, new P-15, §1.1, L-1, A-7) |
+| Traces to | PRD §7, §8.3–8.7 · BRIEF change request 3 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) |
 
 Every NFR has an ID, a measurable target and how it is checked. "CI" means the check fails the PR.
-Key pages = Home, Services, one Service detail, Contact.
+Key pages = Home, Services, one Service detail, Contact. Budgets in §1 and §2 apply to every page.
 
 ## 1. Performance (NFR-PERF-1, -2, -3)
 Measured with Lighthouse CI on the built `dist/`, mobile preset (simulated Moto G Power, slow 4G),
 median of 3 runs.
 
-Owner limits from change request 2 (2026-10-30), which replace the 29 October table:
+Owner limits from change request 3 (2026-11-03), which replace the change request 2 table:
 
 | Limit | Value |
 |-------|-------|
-| First paint | Headline, text and call to action are plain HTML/CSS. LCP ≤ 2.5 s on the mobile lab test; layout shift ≤ 0.05 |
-| Script before the 3D starts | ≤ 50 kB compressed |
-| 3D layer (engine, shaders, scenes) | Loads after first paint, only on capable devices: ≤ 400 kB compressed script, plus ≤ 2 MB of compressed assets on desktop and ≤ 800 kB on phones. Engine: three.js ([ADR-005](../adr/ADR-005-immersive-layer.md) §1) |
-| Lighthouse, mobile | Home and service pages: performance ≥ 90, other categories ≥ 95. All other pages: ≥ 95 in all four |
-| Frame rate | 60 fps on a mid-range laptop, ≥ 30 fps on a mid-range Android. GPU tier detection scales particles, resolution and effects |
-| Fallbacks | Reduced motion, data saver, no WebGL and low-end GPUs get a beautiful static render of the same world, with all content usable without JavaScript |
-| Always | Pause when the tab is hidden or the scene is off-screen; keyboard access and WCAG 2.2 AA throughout |
+| Lighthouse, mobile, every page | ≥ 95 in all four categories |
+| First paint | LCP ≤ 2.0 s on the mobile lab test; layout shift ≤ 0.05 |
+| Script | ≤ 50 kB compressed per page, motion controller ≤ 5 kB; CSS marquees and small vanilla JS, no animation framework |
+| Images | AVIF or WebP, responsive `srcset`/`sizes`, lazy below the fold, explicit dimensions |
+| Page weight | ≤ 1.5 MB compressed |
+| Motion | Marquees stop with reduced motion and the page stays complete; WCAG 2.2 AA throughout |
 
-The IDs below make those limits checkable. "Compressed" = gzip -9, measured over `dist/`.
+The IDs below make those limits checkable. "Compressed" = gzip -9, measured over `dist/`. IDs P-12 to
+P-14 are retired and not reused.
 
 | ID | Metric | Budget | Check |
 |----|--------|--------|-------|
-| P-1 | Largest Contentful Paint | ≤ 2.5 s lab, mobile (≤ 2.5 s p75 field); the LCP element is HTML text, never the canvas | CI (LHCI assertion) |
+| P-1 | Largest Contentful Paint | ≤ 2.0 s lab, mobile (≤ 2.5 s p75 field). The LCP element is the HTML headline or an eager image with `fetchpriority="high"`, never an element that is hidden until revealed or inserted by script | CI (LHCI assertion) |
 | P-2 | Cumulative Layout Shift | ≤ 0.05 lab (≤ 0.1 p75 field) | CI |
 | P-3 | Total Blocking Time (lab proxy for INP) | ≤ 150 ms; INP ≤ 200 ms p75 field | CI (TBT), field once analytics exist |
-| P-4 | JavaScript before the 3D starts (compressed) | ≤ 50 kB per page, of which motion controller ≤ 5 kB, immersive boot ≤ 8 kB, contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-005](../adr/ADR-005-immersive-layer.md) §2–§3) | CI (`dist/` bundle-size check per chunk + LHCI) |
-| P-5 | CSS per page (compressed) | ≤ 40 kB | CI |
+| P-4 | JavaScript per page (compressed) | ≤ 50 kB, of which motion controller ≤ 5 kB, contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-004](../adr/ADR-004-motion-and-effects.md) §2) | CI (`dist/` size check per chunk and per page) |
+| P-5 | CSS per page (compressed) | ≤ 40 kB | CI (`dist/` size check) |
 | P-6 | Fonts | ≤ 3 files, ≤ 120 kB total WOFF2, self-hosted | CI |
-| P-7 | Images | ≤ 200 kB above the fold; AVIF/WebP; explicit width/height | CI + review |
-| P-8 | Total page weight before the 3D starts (compressed) | ≤ 600 kB on key pages (3D layer counted in P-12) | CI |
-| P-9 | Requests on first load, before the 3D starts | ≤ 20 | CI |
-| P-10 | No-JS reading | All content readable and nav usable with JS disabled; form posts natively; no element stuck in a pre-animation hidden state | Playwright run with JS disabled |
-| P-11 | Motion | Only `transform`/`opacity` animated; effects pause off-screen and in hidden tabs; reduced motion and Save-Data load no 3D layer and run no animations ([ADR-004](../adr/ADR-004-motion-and-effects.md) §3–§4, [ADR-005](../adr/ADR-005-immersive-layer.md) §5–§6) | Playwright `reducedMotion: 'reduce'` and no-WebGL runs + review |
-| P-12 | 3D layer (engine, worker, shaders, scenes; compressed) | Starts after `load` + idle, only on tiers 1–3; script ≤ 400 kB; assets ≤ 2 MB desktop, ≤ 800 kB phone (tier 1); rendering in a worker, no main-thread long task > 50 ms while it loads or scrolls; 60 fps mid-range laptop, ≥ 30 fps mid-range Android; DPR, particles and post-processing per tier ([ADR-005](../adr/ADR-005-immersive-layer.md) §4) | CI size check + LHCI forced-tier run + frame-time smoke test; real-device fps on the release checklist |
-| P-13 | Static fallback | Reduced motion, Save-Data, slow connection, no JS, no WebGL2/`OffscreenCanvas` and low-end GPUs (tier 0) get the static render of the same world; engine chunks are not requested; all content and the form usable | Playwright fallback runs (network assertion + screenshot + axe) |
-| P-14 | Visual stability of the 3D | No layout shift when the canvas appears (box reserved in CSS); deterministic frames match baselines | Canvas visual regression in CI |
+| P-7 | Images | AVIF with WebP fallback only (no PNG, JPEG or GIF in the page); `srcset` and `sizes` on every raster image; `loading="lazy"` below the fold; `width` and `height` always; ≤ 200 kB above the fold; each generated file ≤ 100 kB (§1.1) | CI (§1.1) + review |
+| P-8 | Total page weight (compressed) | ≤ 1.5 MB on every page, counting every image a visitor loads by scrolling to the end | CI (§1.1) |
+| P-9 | Requests on first load, before any scrolling | ≤ 40. Raised from 20: browsers fetch lazy images near the viewport, so an image-rich first screen uses more requests at little cost over HTTP/2. P-1 and P-8 are the limits that protect the visitor | CI |
+| P-10 | No-JS reading | All content readable and nav usable with JS disabled; form posts natively; no element stuck in a pre-animation hidden state; marquees show their stopped layout | Playwright run with JS disabled |
+| P-11 | Motion | Only `transform`/`opacity` animated; effects pause off-screen and in hidden tabs; reduced motion and Save-Data run no looping or scroll-driven animation ([ADR-004](../adr/ADR-004-motion-and-effects.md) §3–§4) | Playwright `reducedMotion: 'reduce'` run + review |
+| P-15 | Marquees | Run only when motion is allowed and the controller has loaded; a visible pause control on each one or its group; pause on hover and on keyboard focus; stop with reduced motion; loop copies are `aria-hidden`, hold nothing focusable and cost no extra image bytes ([ADR-004](../adr/ADR-004-motion-and-effects.md) §4) | Playwright: pause control by keyboard, `document.getAnimations()` empty under reduced motion, axe |
+
+### 1.1 Image pipeline and how CI checks it
+Example screens become optimised images at build time, with the Astro image tooling already chosen in
+[ADR-001](../adr/ADR-001-stack.md). There is no third-party image CDN and no runtime image service.
+Measurements: [evidence](../engineering/evidence/nfr-v3-image-pipeline.md).
+
+1. **Source.** Original screens we design ourselves, committed as PNG under `src/assets/examples/`,
+   at most 1600 px wide. Nothing goes in `public/`, because that skips the pipeline. No remote sources,
+   so `image.domains` stays empty.
+2. **Build.** Pages render them with `<Picture>` from `astro:assets` (sharp), and the files land in
+   `dist/_astro/` with hashed names. Use `formats={['avif']}`, `fallbackFormat="webp"` (the default
+   fallback would ship PNG) and `widths={[320, 480, 640, 960]}`, with `sizes` set to the slot's real
+   width. Keep the default encoder quality unless a visual check says otherwise. Leave `image.layout`
+   off: this path needs no injected styles and emits no `style=` attributes, which SEC-1 requires.
+3. **Loading.** Only images in the first screen are `loading="eager"`, and at most one has
+   `fetchpriority="high"`. Everything else is `loading="lazy"` and `decoding="async"`.
+4. **Build cost (O-3).** Generated images are cached in `node_modules/.astro/assets`. CI restores that
+   folder after `npm ci`, because a cold run spends about 1 s per screen on this laptop.
+
+The `lighthouse` CI job enforces this on every page, using two checks because Lighthouse does not
+scroll and so never sees most lazy images:
+
+| Check | Asserts |
+|-------|---------|
+| LHCI (`tests/e2e/lighthouserc.cjs`) | P-1…P-3, categories; `resource-summary:total:size` ≤ 1 500 000 and `resource-summary:total:count` ≤ 40; `resource-summary:font:size` ≤ 120 000; `unsized-images` and `modern-image-formats` as errors; `uses-responsive-images` and `offscreen-images` as warnings |
+| `dist/` scan (`npm run test:dist`, same job) | Script and CSS gzip sizes (P-4, P-5), measured here because the preview server's transfer sizes may not be compressed. No `.png`, `.jpg`, `.jpeg` or `.gif` in `dist/_astro/`. Every `<img>` that is not SVG has `alt`, `width`, `height`, `srcset` and `sizes`. Each generated image ≤ 100 kB. Above the fold: the largest AVIF candidate of each image that is not lazy sums to ≤ 200 kB. Whole page: gzip HTML + CSS + JS + all fonts + the largest AVIF candidate of each distinct image ≤ 1.5 MB, a deliberate upper bound |
 
 ## 2. Lighthouse targets
-| ID | Category | Target on key pages | Check |
+| ID | Category | Target on every page | Check |
 |----|----------|---------------------|-------|
-| L-1 | Performance | Home and service pages ≥ 90; all other pages ≥ 95 (mobile preset; home also with `?tier=1`, [ADR-005](../adr/ADR-005-immersive-layer.md) §9) | CI |
+| L-1 | Performance | ≥ 95 (mobile preset) | CI |
 | L-2 | Accessibility | ≥ 95 (aim 100) | CI |
 | L-3 | Best Practices | ≥ 95 | CI |
 | L-4 | SEO | ≥ 95 (aim 100) | CI |
@@ -64,7 +86,7 @@ The IDs below make those limits checkable. "Compressed" = gzip -9, measured over
 | A-4 | Contrast: text ≥ 4.5:1 (large ≥ 3:1), UI components ≥ 3:1 | Design tokens checked at design review; axe in CI |
 | A-5 | Target size ≥ 24×24 CSS px (2.5.8) | Review + Playwright bounding-box check on nav/CTA/form |
 | A-6 | Forms: visible labels, errors linked with `aria-describedby`, announced via live region, no colour-only signals; no CAPTCHA by default (3.3.8) | Playwright + axe |
-| A-7 | `prefers-reduced-motion` honoured; no auto-playing motion > 5 s | Review + CSS lint rule |
+| A-7 | `prefers-reduced-motion` honoured. Anything that auto-plays for more than 5 s, marquees included, has a visible pause control (2.2.2) and stops with reduced motion | Playwright (P-15) + review + CSS lint rule |
 | A-8 | Reflow at 320 px and 200% zoom with no loss of content or horizontal scroll | Playwright screenshots at 320 px |
 | A-9 | Meaningful `alt` on content images; decorative images `alt=""` | CI (html-validate + axe) |
 
@@ -109,7 +131,7 @@ Check: header test against the preview deploy (and a securityheaders-style scan 
 |----|--------|-----|
 | O-1 | Uptime ≥ 99.9% monthly for static pages (bounded by the free-tier host SLA) | Free external uptime monitor (set up in operate phase; account by the human) |
 | O-2 | Enquiry path: failed deliveries are visible — handler returns an error state to the visitor with fallback contact method; no silent drops | E2E test + manual test before launch |
-| O-3 | Build time ≤ 3 min in CI; local `npm run build` peak memory ≤ 2 GB | CI timing; measured in Sprint 0 |
+| O-3 | Build time ≤ 3 min in CI; local `npm run build` peak memory ≤ 2 GB | CI timing; measured in Sprint 0; image cost in §1.1 |
 | O-4 | Rollback = redeploy previous artifact in ≤ 15 min | Pipeline design (CI/CD ticket) |
 | O-5 | Recovery: site rebuildable from git alone (no state outside the repo except secrets) | By design |
 

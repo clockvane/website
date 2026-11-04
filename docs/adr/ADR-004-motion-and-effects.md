@@ -2,10 +2,27 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Accepted. It was partly superseded by [ADR-005](ADR-005-immersive-layer.md) on 2026-10-30; ADR-005 was withdrawn on 2026-11-03 (change request 3), so this ADR applies in full again. The tech lead re-confirms the budgets for change request 3 |
+| Status | Accepted, amended 2026-11-03 (below). It was partly superseded by [ADR-005](ADR-005-immersive-layer.md) on 2026-10-30; ADR-005 was withdrawn on 2026-11-03 (change request 3), so this ADR applies in full again |
 | Date | 2026-10-29 |
 | Deciders | tech-lead (author) · owner (@MohammedAbdulFarhan08) final say at Gate 2b |
-| Traces to | `docs/product/BRIEF.md` → "The feel" and "Not bloated — hard limits" · [ADR-001](ADR-001-stack.md) · [nfr.md](../architecture/nfr.md) P-1…P-11, SEC-1 · issue #79 |
+| Traces to | `docs/product/BRIEF.md` → "The feel", "Not bloated — hard limits" and change request 3 · [ADR-001](ADR-001-stack.md) · [nfr.md](../architecture/nfr.md) P-1…P-11, P-15, SEC-1 · issues #79, #123 |
+
+## Amended 2026-11-03 (change request 3; written 2026-11-04, #123)
+Change request 3 sets its own limits and asks for a different kind of motion, so some of the 29 October
+budgets and rules change. Context and Options below stay as the record of that date; the Decision
+sections are updated.
+
+| Item | 29 October | Now | Reason |
+|------|-----------|-----|--------|
+| Lighthouse, LCP, CLS, INP, CSS, fonts, motion controller, contact enhancement | §Context, §2 | **Confirmed**, and Lighthouse applies to every page | Same values in change request 3, or not touched by it |
+| Total script per page | ≤ 35 kB | **≤ 50 kB** | Owner's limit in change request 3 |
+| Hero renderer (Canvas 2D or WebGL) | Optional, ≤ 15 kB | **Removed** | "CSS marquees and small vanilla JS do the job", and no concept needs one. Bringing it back needs a new ADR |
+| Whole page | ≤ 600 kB | **≤ 1.5 MB** | Owner's limit; the site is now image-rich |
+| Infinite loops | Not allowed | **Allowed for marquees only**, under §4 and §6 | The brief asks for auto-scrolling marquees. WCAG 2.2.2 still applies, so each has a pause control |
+
+The motion controller stays, and marquees (§4) and the AI demo are what it is for. Marquee support is
+still to be built within its 5 kB. The AI demo follows §6: it stops by itself within 5 s or has a pause
+control.
 
 ## Context
 The owner's change request asks for a futuristic, motion-rich redesign (a signature interactive hero,
@@ -56,6 +73,8 @@ B scores highest, but on its own it cannot deliver the brief's signature hero. C
 optional, isolated module. **Decision: B as the base for every page, with C's hero renderer allowed on
 the home page only (and on at most one other page with an ADR note), and D rejected.**
 
+*Amended 2026-11-03: the hero renderer is removed, so the decision is now B on every page, with D rejected.*
+
 ## Decision
 ### 1. Layers, in the order we reach for them
 1. **HTML + CSS first.** If CSS can do it, CSS does it. Content and layout never depend on motion.
@@ -64,27 +83,21 @@ the home page only (and on at most one other page with an ADR note), and D rejec
    class / `data-state` attribute; CSS does the animating), pausing, and small pointer interactions.
    Components never add their own observers or `requestAnimationFrame` loops; they register with
    the controller.
-3. **One hero renderer (optional)** — `src/scripts/hero/` loaded with a dynamic `import()` by the
-   controller only when the policy allows it (§3) and after the page is idle. Canvas 2D by default;
-   hand-written WebGL only if Canvas 2D cannot do the concept. ≤ 15 kB compressed including shaders.
 
 ### 2. JavaScript budget per page (compressed; enforced by CI — see §6)
 | Bucket | Budget |
 |--------|--------|
 | Motion controller (`motion.ts`) | ≤ 5 kB |
-| Hero renderer (home, plus one approved page at most) | ≤ 15 kB |
 | Contact-form enhancement (Contact page) | ≤ 15 kB (unchanged) |
 | Any other first-party script (needs a PR reason, ADR-001 rule) | remainder |
-| **Total, any page** | **≤ 35 kB**; third-party JS: **0** |
+| **Total, any page** | **≤ 50 kB**; third-party JS: **0** |
 
 ### 3. Motion policy (one place, in the controller and in CSS)
 | Condition | Behaviour |
 |-----------|-----------|
-| `prefers-reduced-motion: reduce` | No hero renderer is loaded. All scroll-driven, looping and parallax motion is off; elements are shown in their final state. Only instant or ≤ 150 ms opacity changes for feedback (focus, hover, validation) remain. View Transitions are disabled (`@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }`). The static design is designed, not degraded (brief, "Calm on request"). |
-| `navigator.connection.saveData` true, or `prefers-reduced-data: reduce` where supported | Same as reduced motion for the hero (static fallback, renderer not downloaded); CSS micro-interactions stay. |
-| Low-power hint: `navigator.hardwareConcurrency ≤ 4` **and** `deviceMemory ≤ 2` (where exposed), or the first 30 frames average > 20 ms | Hero switches to its static fallback and stops its frame loop. |
-| No JavaScript | Every element is visible in its final state: hidden-until-revealed states are applied only under a `.js-motion` class the controller adds to `<html>`. No content, link or form depends on JS (P-10). |
-| WebGL unavailable / context lost | Feature-detect `canvas.getContext('webgl2' \|\| 'webgl')`; on failure or `webglcontextlost`, show the static fallback. Never a blank box. |
+| `prefers-reduced-motion: reduce` | All scroll-driven, looping and parallax motion is off, marquees included; elements are shown in their final state. Only instant or ≤ 150 ms opacity changes for feedback (focus, hover, validation) remain. View Transitions are disabled (`@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }`). The static design is designed, not degraded (brief, "Calm on request"). |
+| `navigator.connection.saveData` true, or `prefers-reduced-data: reduce` where supported | Same as reduced motion for marquees and looping motion; CSS micro-interactions stay. |
+| No JavaScript | Every element is visible in its final state: hidden-until-revealed states are applied only under a `.js-motion` class the controller adds to `<html>`, and marquees show their stopped layout. No content, link or form depends on JS (P-10). |
 
 ### 4. Allowed techniques
 | Technique | Rules |
@@ -95,7 +108,7 @@ the home page only (and on at most one other page with an ADR note), and D rejec
 | View Transitions API | **Cross-document** transitions only (`@view-transition { navigation: auto; }` in CSS) — no client router, no SPA. Short (≤ 300 ms), off under reduced motion. Same-document `document.startViewTransition()` allowed for in-page state changes inside the controller, with a no-API fallback that just swaps the state. |
 | SVG animation | Inline or external SVG animated with CSS (`stroke-dashoffset`, `transform`, `opacity`). SMIL (`<animate>`) is not allowed (harder to pause and to disable for reduced motion). Decorative SVG has `aria-hidden="true"`; meaningful SVG has a `<title>` or a text equivalent. |
 | IntersectionObserver | Only through the controller: **one** shared observer per threshold set, unobserve after one-shot reveals, used both to start and to **pause** animations that leave the viewport. No `scroll` event listeners for animation. |
-| Canvas 2D / WebGL hero | Rules: (a) feature detection and a static fallback (SVG or CSS) rendered in the HTML, so it is also the LCP-safe and no-JS state; (b) the canvas is **not** the LCP element — the headline is, and it renders without waiting for JS; (c) loaded with dynamic `import()` after `requestIdleCallback` (or `load` + timeout); (d) pause with IntersectionObserver when off-screen and on `visibilitychange` when the tab is hidden; (e) **stop when idle**: no frame loop when nothing changes — run on interaction or for a bounded sequence, then stop; no infinite autoplay loop; (f) `devicePixelRatio` capped at 2; (g) canvas sized by CSS with fixed aspect ratio (CLS = 0); (h) no Web Workers from blobs, no `eval`, no WASM in v1; (i) release GPU resources on `pagehide`. |
+| Marquees | CSS `transform` keyframes on a track of images. Rules: (a) the animation applies only under `.js-motion` when motion is allowed (§3); without JS or with reduced motion the track shows its stopped layout, designed so that nothing clipped carries information; (b) the controller adds the loop copies at run time, so the HTML holds no duplicate content; copies are `aria-hidden="true"` with `alt=""`, hold nothing focusable and reuse the same image URLs; (c) each marquee, or each group in a section, has a real `<button>` pause control with visible focus, before it in DOM order; once paused it stays paused until the visitor presses play (WCAG 2.2.2); (d) it also pauses on hover and `focus-within`, and the controller pauses it off-screen and in hidden tabs, through a state attribute and `animation-play-state`; (e) cards in a moving track are not interactive; (f) the "example" label is HTML text beside the marquee, not only inside an image, and anything a visitor needs to read also exists as HTML text; (g) the track has a fixed aspect ratio (CLS = 0); (h) images follow [nfr.md](../architecture/nfr.md) §1.1. |
 | Pointer micro-interactions | `pointermove` handlers are passive, throttled to `requestAnimationFrame`, and write only `transform` / custom properties. Disabled for `pointer: coarse` where they add nothing. |
 
 ### 5. Not allowed, and why
@@ -108,18 +121,18 @@ the home page only (and on at most one other page with an ADR note), and D rejec
 | Third-party scripts, CDNs, remote fonts | CSP `script-src 'self'`, privacy, no third-party JS (P-4). |
 | Inline scripts and inline event handlers (`onclick=…`), `eval`, `new Function`, `javascript:` URLs | Break CSP SEC-1. Astro `<script>` must be processed (bundled to a file); `is:inline` is forbidden except JSON-LD (`type="application/ld+json"`, data, not executed). |
 | `style` attributes set from the server for animation | CSP `style-src 'self'`. Setting `element.style.setProperty()` from our own script is fine (CSSOM is not blocked by CSP). |
-| Scroll-jacking, smooth-scroll libraries, cursor replacements, infinite decorative loops | Hurt usability, accessibility (WCAG 2.2.2 Pause, Stop, Hide) and INP. |
+| Scroll-jacking, smooth-scroll libraries, cursor replacements, infinite decorative loops other than §4 marquees | Hurt usability, accessibility (WCAG 2.2.2 Pause, Stop, Hide) and INP. |
 | Animating layout properties or large-area blur | Causes layout/paint per frame; jank on mid-range Android. |
 | Content hidden until JS runs (outside the `.js-motion` pattern) | Breaks no-JS reading (P-10) and SEO. |
 
 ### 6. Accessibility and keyboard / focus for interactive visuals
 - Anything that moves for more than 5 s, or loops, has a visible **pause control** (WCAG 2.2.2) unless
   it is off under reduced motion **and** stops by itself within 5 s.
-- Interactive visuals (e.g. the hero "clockwork") are operable with keyboard: real `<button>` elements
-  (inside the DOM, not drawn on the canvas) for every action, visible focus (design-system focus
+- Interactive visuals (e.g. the AI demo) are operable with keyboard: real `<button>` elements
+  (inside the DOM) for every action, visible focus (design-system focus
   ring), logical tab order, and `Escape` returns to a neutral state. Pointer-only gestures have a
   single-pointer / keyboard alternative (WCAG 2.5.1, 2.5.7).
-- The canvas itself is `aria-hidden="true"`; the story it tells exists as text in the HTML. State
+- Moving visuals are `aria-hidden="true"` when they add nothing for a screen reader; what they show exists as text in the HTML. State
   changes that matter are announced through an existing `aria-live="polite"` region, sparingly.
 - No flashing more than 3 times per second (WCAG 2.3.1). Focus is never moved by an animation.
 - Text over animated backgrounds keeps AA contrast in every frame (test the worst frame).
@@ -128,26 +141,25 @@ the home page only (and on at most one other page with an ADR note), and D rejec
 The existing policy (nfr.md SEC-1) does **not** change: `script-src 'self'`, `style-src 'self'`, no
 `'unsafe-inline'`, no `'unsafe-eval'`, no `worker-src` / `blob:` additions. To keep Astro from inlining
 small bundled scripts, `astro.config.mjs` sets `vite.build.assetsInlineLimit: 0` (stylesheets are
-already `inlineStylesheets: 'never'`). Shaders are string constants inside the hero module.
+already `inlineStylesheets: 'never'`).
 
 ### 8. How CI proves the budgets
 | Check | What it proves | Ticket |
 |-------|----------------|--------|
-| Lighthouse CI resource budgets (`budget.json` or `resource-summary` assertions in `tests/e2e/lighthouserc.cjs`) on every key page, mobile preset, median of 3 | P-1…P-3, P-4 total script, P-5 CSS, P-6 fonts, P-8 page weight, P-9 requests, categories ≥ 95 | follow-up A |
-| Bundle-size check over `dist/` (Vitest under `tests/unit/` or a build test reading `dist/_astro/*.js`, gzip size per chunk, per page sum) | Controller ≤ 5 kB, hero ≤ 15 kB, page total ≤ 35 kB; fails with the offending chunk name | follow-up B |
+| Lighthouse CI resource budgets (`budget.json` or `resource-summary` assertions in `tests/e2e/lighthouserc.cjs`) on every key page, mobile preset, median of 3 | P-1…P-3, P-6 fonts, P-8 page weight on first load, P-9 requests, categories ≥ 95 (full list in nfr.md §1.1) | follow-up A |
+| Bundle-size check over `dist/` (Vitest under `tests/unit/` or a build test reading `dist/_astro/*.js`, gzip size per chunk, per page sum) | Controller ≤ 5 kB, page total ≤ 50 kB, CSS ≤ 40 kB, plus the image checks in nfr.md §1.1; fails with the offending chunk name | follow-up B |
 | `dist/` HTML scan: no `<script>` without `src` except `application/ld+json`, no `on*=` attributes, no `style=` attributes | CSP compatibility | follow-up B |
-| Playwright project with `reducedMotion: 'reduce'` over key pages | Hero renderer not requested (network assertion), no running animations (`document.getAnimations()` empty after load), content in final state, axe passes | follow-up C |
+| Playwright project with `reducedMotion: 'reduce'` over key pages | No running animations, marquees stopped and complete (`document.getAnimations()` empty after load), content in final state, axe passes | follow-up C |
 | Playwright with JavaScript disabled (existing P-10 run) extended to motion pages | All content visible, nothing stuck in a hidden state | follow-up C |
-| Playwright with WebGL disabled (`--disable-webgl`) on home | Static fallback visible, no console errors | follow-up C |
 | Review checklist (standards.md) | Only transform/opacity animated, pause off-screen / hidden tab, idle stop | PR review |
 
 **Follow-up tickets** (the EM creates them; they run after Gate 2b, before any effect is merged):
 - **A.** `ci: Lighthouse CI resource budgets for P-4/P-5/P-6/P-8/P-9` (agent: qa / devops).
 - **B.** `test: bundle-size and inline-script checks over dist/` + `assetsInlineLimit: 0` (agent: sde).
-- **C.** `test(e2e): reduced-motion, no-JS and no-WebGL Playwright runs` (agent: qa).
+- **C.** `test(e2e): reduced-motion and no-JS Playwright runs` (agent: qa).
 - **D.** `feat(motion): motion controller src/scripts/motion.ts with policy + observers` (agent: sde),
   `Depends on` A and B.
-- **E.** `feat(home): signature hero renderer` — after the concept is chosen at Gate 2b, `Depends on` D.
+- **E.** Cancelled by the 2026-11-03 amendment (no hero renderer). In its place: marquee support in the controller and the budgets in nfr.md §1.1 (the EM tickets them).
 
 ### 9. Feasibility input for the designer (#80)
 Prototypes are judged against this ADR: Lighthouse mobile ≥ 95 report attached, the JS bytes of the
@@ -158,7 +170,7 @@ library from §5 is not buildable without a new ADR.
 - **Good:** the brief's experiences are possible while the site stays CSS-first; one module owns all
   motion policy, so reduced-motion and Save-Data behaviour is consistent and testable; no new runtime
   dependency; CSP unchanged.
-- **Cost:** a hand-written hero renderer is our code to maintain; every animated component needs a
+- **Cost:** every animated component needs a
   designed static state; three new CI checks add a few minutes to CI.
 - **Risk:** scroll-driven animations and cross-document View Transitions are not in every engine.
   Mitigation: both are progressive enhancement — the site is complete without them.
@@ -169,7 +181,7 @@ library from §5 is not buildable without a new ADR.
 - **To more capability (a library):** the controller is the only place motion code is wired, so a
   library could replace its internals behind the same `data-state` / register API; requires a new ADR
   with measured bytes and the same budgets.
-- **To less (CSS only):** delete `src/scripts/motion.ts` and the hero module; because every element
+- **To less (CSS only):** delete `src/scripts/motion.ts`; because every element
   already has a designed final state without JS, pages keep working — only the enhancement is lost.
-- **Off Astro:** the controller and hero are plain TypeScript modules with no framework API, so they
-  move to any static generator unchanged.
+- **Off Astro:** the controller is a plain TypeScript module with no framework API, so it
+  moves to any static generator unchanged.
