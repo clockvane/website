@@ -4,7 +4,7 @@
 |-------|-------|
 | Owner | tech-lead |
 | Status | Proposed (Gate 2 input) |
-| Last updated | 2026-10-22 |
+| Last updated | 2026-11-04 |
 | Applies to | Stack in [ADR-001](../adr/ADR-001-stack.md); layout in [architecture](../architecture/architecture.md) |
 
 These rules add stack-specific detail to CLAUDE.md. Where they conflict, CLAUDE.md wins.
@@ -61,7 +61,8 @@ Local runs: one `astro dev` or `astro preview` at a time; stop it before finishi
   the JS budget (nfr.md P-4). No UI framework (React/Vue/Svelte) without an ADR. Motion follows
   [ADR-004](../adr/ADR-004-motion-and-effects.md): CSS first, all motion JS through `src/scripts/motion.ts`,
   animate only `transform`/`opacity`, no `is:inline` scripts (JSON-LD excepted), no animation libraries.
-- Images via Astro `<Image>`/`<Picture>` with width, height and `alt` (empty only if decorative).
+- Images via Astro `<Picture>` from `src/assets/`, never `public/`, with width, height and `alt` (empty
+  only if decorative). Formats, widths and loading rules are in [nfr.md](../architecture/nfr.md) §1.1.
 - Proof components accept a list and render nothing when it is empty (FR-5). Never seed fake data.
 - Every interactive element has hover, focus-visible, active, disabled, loading and error states as
   defined in the design system.
