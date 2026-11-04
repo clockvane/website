@@ -1,164 +1,116 @@
-# Voice and tone
+# Voice and tone v3
 
-> ⚠️ **Partly superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): new services, name-independent, Mobbin-style look. Being rewritten for change request 3; where they differ, the brief wins.
-
-Status: draft for Gate 2 · Owner: content-writer · Ticket: #13
-Inputs: `docs/product/PRD.md`, `personas.md`, `competitor-scan.md`, owner answers in `BRIEF.md` (Q12 tone).
-
-Brand, domain and email appear in copy only as tokens: `{{brand.name}}`, `{{brand.domain}}`, `{{brand.email}}`. This guide writes the brand as **Clockvane** only to explain the rule.
+Status: draft for review · Owner: content-writer · Ticket: #124
+Sources: [PRD v3](../product/PRD.md), [owner change request 3](../product/BRIEF.md), [copy deck](copy-deck.md).
 
 ## 1. Who we sound like
-A calm, capable engineer explaining the job to a busy business owner over a call. We say what we will do, what it takes and what it costs. We do not perform.
+A capable specialist explaining the work clearly to someone who needs help. Professional, confident and approachable. We say what we can help with, how to start and what needs to be agreed.
 
-Voice in one line: **"We automate the boring stuff."** Plain, confident, specific.
+Positioning: expert support, AI automation, website creation and solutions for companies, in one place. Expert individuals help individuals and companies. The voice must welcome either without assuming technical knowledge.
 
 ## 2. Voice pillars
-| Pillar | What it means | What it is not |
-|--------|---------------|----------------|
-| **Plain** | Short sentences, everyday words, one idea each. Explain a technical term the first time, or skip it. | Dumbed down. The IT manager still gets exact scope. |
-| **Confident** | State what we do and recommend a next step. | Boastful. No superlatives, no "the best". |
-| **Specific** | Name the chore (re-keying orders, chasing invoice approvals, weekly reports) and the time it takes, as ranges or examples. | Vague category words ("solutions", "end-to-end"). |
-| **Honest** | Say what we do not know yet, what is not included, what a thing costs. Placeholders are fine in drafts; invented facts never are. | Humble-bragging or fake modesty. |
-| **Human** | "We" and "you". Real people are behind the firm. | Corporate third person ("the Company"). |
+| Pillar | Write this way |
+|--------|----------------|
+| Professional | Respect the reader's problem. Avoid jokes about their skills or tools. |
+| Confident | Name the work and a useful next step. Avoid superlatives and unsupported certainty. |
+| Plain | Short sentences, familiar words, one idea at a time. Explain technical terms when needed. |
+| Specific | Name the task: sorting requests, copying document details, preparing a reply or updating a page. |
+| Honest | Separate confirmed services, illustrative examples and facts still awaiting owner input. |
 
 ## 3. Tone by context
-Voice stays the same. Tone shifts with the moment.
+| Context | Tone and purpose |
+|---------|------------------|
+| Home and services | Direct and useful: problem, outcome, approach, evidence, next step. An early CTA is fine. |
+| Expert support | Welcoming and practical. A person can ask for help without a company or a prepared brief. |
+| Process and pricing | Matter-of-fact. State the pricing approach; agree scope before quoting timing or cost. |
+| About and proof | Factual and personal. Use owner-supplied names and approved public work. |
+| Forms and success | Brief and helpful. Say what to provide and when to expect a reply. |
+| Errors and 404 | Calm and blame-free. Explain what happened and how to continue. |
+| Privacy | Precise, plain language tied to the actual data flow. Unconfirmed details stay editorial. |
 
-| Context | Tone | Note |
-|---------|------|------|
-| Home and service pages | Direct, warm, benefit-led | Problem first, then how, then proof, then CTA. |
-| How we work, pricing | Candid, matter-of-fact | Say what drives cost. Use "from" prices only once the owner confirms the numbers. |
-| About | Personal, modest | Only owner-supplied facts. No years in business or team size beyond what is confirmed. |
-| Forms and success messages | Helpful, brief | Tell people what happens next and when (reply within 1 business day, per owner answer Q4). |
-| Errors | Calm, blame-free, fixable | Say what went wrong and how to fix it. Never "Invalid input". |
-| 404, empty states | Light, one gentle touch at most | Always give a way back. No jokes at the visitor's expense. |
-| Legal and privacy | Plain English, precise | Short sentences. Say what is collected and why. |
+## 4. Reading level and style
+- Aim for a reading age of 12–14. Use familiar verbs and explain necessary technical terms.
+- Aim for sentences under 18 words; keep them below 30 where practical. Paragraphs contain one to three sentences.
+- Lead with the customer's need and outcome. Use “you” and “we”, active voice and sentence case.
+- Keep British spelling consistent: enquiry, organisation, labelled. This is an editorial default, not a pending owner decision.
+- Use digits for actual quantities, an en dash for ranges and words for dates. A range still needs a factual source or explicit hypothetical context.
+- Headings name the content. Links say where they go. Avoid decorative emoji, shouting capitals and exclamation marks.
+- Never describe clients by size, headcount, funding or stage. Describe the work they need help with.
 
-## 4. Reading level and style rules
-- Aim for a reading age of about 12–14 (Flesch-Kincaid grade 8 or lower). Technical service pages may reach grade 10 where a term needs it.
-- Sentences: average under 18 words, never more than 30.
-- Paragraphs: 1–3 sentences. Prefer a bullet list for three or more parallel items.
-- Active voice. "We connect your shop to your accounting tool", not "Integration is provided".
-- Lead with the customer: "You" appears more than "we" in the first paragraph of every section.
-- Numbers as digits (3 days). Ranges with an en dash (1–2 weeks). Dates in words (23 October 2026).
-- Sentence case for headings and buttons. No Title Case Everywhere, no ALL CAPS, no exclamation marks except in rare success moments (none planned).
-- Spelling: use **British spelling** (organisation, automate) consistently until the owner says otherwise. [[PLACEHOLDER: owner to confirm British vs US spelling]]
-- Use the serial comma only when a list is ambiguous without it.
-- Avoid emoji and decorative symbols in copy.
-- Link text says where it goes ("Read how we work"), never "click here".
-- Alt text describes the content or purpose of the image in under 125 characters. Decorative images get empty alt.
+## 5. Words we use and avoid
+| Prefer | Avoid |
+|--------|-------|
+| help, advice, troubleshoot, build, connect | empower, unlock, supercharge, leverage |
+| repeated task, workflow, request, page | pain points, ecosystem, digital transformation |
+| individuals and companies | audience labels based on company size or stage |
+| agreed scope, fixed price, monthly option | competitive pricing, flexible commercial models |
+| expert individuals, with confirmed areas of support | anonymous credentials, rankings or experience claims |
+| what the AI reads, drafts or checks | AI hype without a task or review point |
 
-## 5. Words we use and words we avoid
-| Prefer | Instead of |
-|--------|-----------|
-| boring tasks, repetitive work, chores | pain points, inefficiencies |
-| automate, set up, build, connect | leverage, utilise, deploy synergies |
-| fixed price, "from" price (once confirmed) | competitive pricing, flexible commercial models |
-| we | the Company, our team of experts |
-| start, begin | embark on a journey |
-| works, runs | seamless, frictionless |
-| made for how you work | tailored, bespoke, end-to-end |
-| small business, startup | SMB, enterprise-grade |
-| tools you already use | tech stack ecosystem |
+Avoid: synergy, cutting-edge, world-class, revolutionary, game-changing, best-in-class, next-generation, state-of-the-art, holistic, turnkey, seamless, end-to-end, trusted partner, leading provider and “we are passionate about”.
 
-**Banned words and phrases** (owner Q12 plus competitor scan): synergy, cutting-edge, world-class, revolutionary, game-changing, best-in-class, next-generation, state-of-the-art, holistic, turnkey, seamless, robust, scalable (unless the exact limit is stated), end-to-end, tailored, empower, unlock, supercharge, "digital transformation", "we are passionate about", "trusted partner", "one-stop shop", "leading provider".
+“Tailored software and technical solutions” is the confirmed offer; follow it with a concrete problem or scope discussion. “Free” needs Q23 confirmation. “Secure”, “guaranteed” and quantified performance need evidence and an approved scope; they are not filler adjectives.
 
-**Be careful with:** "AI" (say what the AI step does: "reads incoming invoices and fills in the spreadsheet"), "free" (only when it is truly free, such as the audit call), "guarantee" (never without a written policy), "secure" (say what we do: access rules, backups, handover).
+## 6. Name-independent identity
+- In copy, the brand is only `{brand}`, mapped to `site.config.ts`. Email, domain, booking and social links also come from config; use tokens, never literal company contact values.
+- No name story, pun or name-based metaphor anywhere, including About, alt text, demo labels and metadata. Copy must still work after a one-line config rename.
+- The chosen tagline is **Built by experts. Powered by AI.** Use it exactly. It does not mean that every task is autonomous or every service is an AI product.
+- There is no alternate tagline to choose. The four-service positioning replaces the former automation-only pitch.
 
-## 6. Brand name and tagline
-- The name is **Clockvane**: one word, capital C only. Never "Clockvane Labs", "Clockvane Tech", "ClockVane" or "CLOCKVANE". In copy, write the token `{{brand.name}}`.
-- The name may still change (owner Q9). So no copy may rely on a pun that only works with the name, and the name story ("a clock keeps time by itself; a vane turns to point the business in the right direction") lives on About only.
-- Tagline options (all draft; final choice is the owner's):
-  1. Automation that runs like clockwork. (working tagline from the brief; recommended)
-  2. We automate the boring stuff.
-  3. Boring work, handled.
-  4. Your repetitive work, running by itself.
-- Use one tagline in the header/hero. Do not mix several across pages.
+## 7. Calls to action
+- Header and general content: **Book a call**.
+- Expert support page and its service card: **Book an expert**. The header keeps **Book a call**.
+- Contact form: **Send message**. Both booking labels start the configured contact path; they do not promise payment, an appointment or immediate availability.
+- Until the booking URL exists, link to `/contact/`. Pass service context where possible and allow manual selection without JavaScript.
+- Do not call the first conversation free, an audit or a fixed-length session. Those details are not confirmed for the new services.
+- Repeat one relevant CTA at the end of content pages. Contact, result pages, Privacy and 404 use their own actions, without a closing sales band.
 
-## 7. The call to action
-- One primary CTA label is used site-wide: **Book a free audit call** (owner answer Q4).
-- Secondary action on Contact: **Send a message** (short form). The form submit button reads **Send message**.
-- Never use "Submit", "Click here", "Learn more" or "Get started" as stand-alone labels.
-- Supporting line near the CTA: "Free, about 30 minutes, no obligation." Only use if the owner confirms the length. [[PLACEHOLDER: audit call length]]
-- Repeat the CTA at the end of every page. Do not add competing CTAs (newsletter, download, chat).
-- Say what happens next: "We reply within 1 business day."
+## 8. Microcopy conventions
+- Labels remain visible; placeholders never replace them. Mark optional fields “(optional)”. The company field must be optional for individuals.
+- Ask for the problem in plain words: “What would you like help with?” Let the service choice include “Not sure”.
+- Use “Sending…” during submission. Show confirmation only after successful delivery.
+- Errors state the problem and the next step: “Enter an email address like name@example.com.” Avoid blame, codes and stack traces.
+- Say “Your text is still here” only when it is preserved on the enhanced form. The separate no-JS error page says it has not kept the text.
+- Success: “Thanks. We have your message and will reply within 1 business day.” This response time is owner-approved Q4, not a resolution deadline.
+- Hide unavailable email, booking and social links completely. Never ask a visitor to resolve a configuration issue.
+- Detailed validation mechanics remain in `microcopy.md`; the v3 deck supplies the new positioning, contact labels and page states for implementation.
 
-## 8. Microcopy conventions (details live in `microcopy.md`)
-### Buttons and links
-- Start with a verb. 2–4 words. Sentence case. Say the result: "Send message", "Book a free audit call", "Back to home".
-- Loading state keeps the verb: "Sending…". Disabled buttons need a visible reason nearby.
+## 9. SEO and accessible content
+- Each page has a unique `seo_title` of at most 60 characters and `meta_description` of at most 155. The deck uses descriptive titles without a brand suffix, so a rename does not break the limit.
+- Use one H1 per page and logical H2/H3 sections. Include utility-page metadata even when the page is `noindex`.
+- Use service names naturally. Do not add keyword lists or claims about being the best.
+- Alt text describes the actual content or purpose, preferably under 125 characters. Decorative images and repeated marquee copies use empty alt.
+- Inline visual tokens never replace headline words. Example captions remain visible; a screen reader must get the same explanation without motion.
 
-### Form labels and helper text
-- Labels are always visible text above the field, never placeholder-only.
-- Mark optional fields with "(optional)". Do not mark required fields with only a red asterisk.
-- Helper text explains why we ask: "We use this only to reply to you."
-- Ask for the minimum: name, a way to reply, a short description of the chore or project.
+## 10. Proof, examples and unknown facts
+- Approved facts come from the owner and PRD. Never invent testimonials, clients, logos, people, credentials, years, prices, results or statistics.
+- Use this website and its documented process as proof. Publish repository and article links only when approved and configured. Real stories require Q22 content and permission; otherwise render no stories section.
+- Label original screen mockups as examples. The AI demo stays **DRAFT · Scripted example**, with fictional input, a draft result and no message sent. Never imply a live integration or measured outcome.
+- Describe time saved through the task removed: “could remove the retyping”. Do not turn illustrative ranges into “typical” savings or recycle old package durations.
+- Confirmed founder names may appear; roles need Q6. Expert areas need Q18. Support format needs Q19. Prices need Q20; solution scope needs Q21. Tools and logo use need Q24.
+- Unknowns become `[[PLACEHOLDER: question and needed fact]]` in drafts, listed in the PR description for the PRD open questions. Resolve or remove them before launch.
 
-### Errors
-Formula: **what happened + how to fix it**. Say it near the field and in the error summary.
-- Good: "Enter an email address like name@example.com."
-- Bad: "Invalid input."
-- No blame ("You entered…"), no capital letters shouting, no technical codes or stack traces.
-- Server failures: say the message was not sent, keep the visitor's text, offer another way to reach us.
+## 11. Examples
+| Avoid | Use |
+|-------|-----|
+| Our world-class experts unlock your potential. | Get advice, troubleshooting and hands-on help from an expert individual. |
+| AI handles everything for you. | The AI drafts a reply. A person reviews it before sending. |
+| Guaranteed savings from day one. | Automating the copying step could remove the retyping. We discuss the checks it still needs. |
+| Book your instant expert session. | Tell us what you need help with. We discuss the request and arrange support with you. |
+| Trusted by hundreds of clients. | Show only approved real proof; omit the claim when none exists. |
+| Submit your requirements. | Tell us what you want to do and where you are stuck. |
+| Error 422: Invalid input. | Enter an email address like name@example.com. |
 
-### Success
-Say it worked and what happens next: "Thanks, {name}. We have your message and will reply within 1 business day."
+## 12. Self-check before a copy PR
+1. Does each page explain the customer's problem, intended outcome, approach and next step?
+2. Are all four services present, with expert individuals explicitly helping individuals and companies?
+3. Is there one H1 per page, logical heading order and unique metadata within 60/155 characters?
+4. Are brand/contact values tokens and all copy independent of the name?
+5. Are clients described by their needs, never by size or stage?
+6. Is every factual claim supported, every example labelled and every unknown listed in the PR?
+7. Are CTA labels correct for the context, without old offers or unconfirmed promises?
+8. Does every meaningful image have an alternative, and does each demo make sense without motion?
+9. Read aloud: would these words help someone understand what to do next?
 
-## 9. SEO titles and descriptions
-Write for people first. Each page has a unique title and description.
-
-| Field | Rule |
-|-------|------|
-| `seo_title` | ≤ 60 characters including brand. Pattern: `<Page or service benefit> | {{brand.name}}`. Put the main phrase first. |
-| `meta_description` | ≤ 155 characters. One sentence on the outcome, one on the next step. Active voice. No quote marks, no keyword lists. |
-| H1 | One per page. Says what the page is about in plain words; may differ from the title tag. |
-| H2/H3 | Logical order, no skipped levels, each one describes the section beneath it. |
-| Keywords | Use the words customers use ("automate invoicing", "small business website", "cloud setup") once naturally in title, H1 and first paragraph. No stuffing. |
-
-Examples (illustrative patterns, not final copy; prices are not stated):
-- Good title: `Automate repetitive work | {{brand.name}}`
-- Good description: "We take over copy-paste chores, report building and approval chasing, so your team can do real work. Book a free audit call."
-- Bad title: `Best World-Class Automation Solutions Company | Home`
-- Bad description: "Cutting-edge end-to-end tailored solutions for all your digital transformation needs."
-
-Titles in the sitemap must be unique, checked by CI.
-
-## 10. Proof and honesty rules
-Owner answers (Q5): no testimonials or client logos at launch. Honest proof that we may use: this website and its documented build process, public GitHub repositories, founders' Medium articles. Case studies come later.
-
-- Never write fake testimonials, client names, logos, case studies, years in business, team size, awards or statistics.
-- Time savings are examples or ranges framed as typical, never as a measured result of a named client. Example: "A weekly report that takes someone 2–3 hours by hand can often run by itself." Do not write "saves 80%".
-- Do not describe certifications, or the founders' credentials, until the owner supplies the wording. [[PLACEHOLDER: founders' certifications and bios (owner Q6)]]
-- Prices: use "from" prices only after the owner supplies the numbers. [[PLACEHOLDER: "from" prices for the four packages (owner Q2)]]
-- Packages and timelines in the brief (Workflow Automation Audit 2–3 days, Business Website 1–2 weeks, Automation Build 1–3 weeks, Cloud & DevOps setup for larger clients) may be quoted as typical timelines.
-- Lead offer: automation and cloud/DevOps are the headline; websites are the easy first sale. Do not present all services as equal.
-- Anything unknown becomes `[[PLACEHOLDER: what is needed]]` and goes into the PR's open-questions list.
-
-## 11. Do and don't examples
-| Don't | Do |
-|-------|----|
-| We deliver cutting-edge, end-to-end solutions that empower your digital transformation. | We take over the copy-paste work your team does every day and make it run by itself. |
-| Our world-class experts leverage AI to unlock efficiencies. | We add an AI step where it helps, for example reading an incoming invoice and filling in the spreadsheet. A person checks anything unclear. |
-| Contact us to learn more! | Book a free audit call. We will look at one slow process and tell you what we would automate. |
-| Pricing is tailored to your unique requirements. | Packages have a fixed price. Ongoing automation work can run on a monthly retainer. |
-| Trusted by hundreds of businesses worldwide. | [[PLACEHOLDER: only real, supplied proof]] (otherwise say nothing). |
-| Error 422: Invalid input in field "email". | Enter an email address like name@example.com. |
-| Oops! Something went wrong! | Your message was not sent. Your text is still here. Try again, or use the other contact option on this page. |
-| We are passionate about helping SMBs thrive. | Small teams lose hours to repeat work. We help you get them back. |
-
-## 12. Checklist before a copy PR
-1. Problem and outcome first, then how, then proof, then CTA.
-2. One H1; H2/H3 in order; `seo_title` ≤ 60, `meta_description` ≤ 155.
-3. No banned words (search the section 5 list).
-4. Every number is a range or example, and is not presented as a measured result.
-5. No invented facts; each gap is a `[[PLACEHOLDER: …]]` listed in the PR.
-6. Brand, domain, email appear only as tokens.
-7. The single primary CTA label is used exactly as written.
-8. Read aloud: would you say this to a business owner on a call?
-
-## 13. Open questions (for the PR description)
-- British or US spelling?
-- Audit call length for the supporting CTA line.
-- "From" prices for the four packages (Q2).
-- Founders' bios and certification wording (Q6).
-- Final tagline choice.
+## 13. Open questions
+The deck's §13 maps all remaining questions to PRD §12 and identifies carried-forward privacy and handover details. No new tagline, service-list or spelling decision is needed.
