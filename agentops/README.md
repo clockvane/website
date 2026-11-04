@@ -25,13 +25,13 @@ your plans have room left.
 | `eng-manager` | Sonnet · medium | Grooms the backlog, sequences sprints, opens gate PRs, retros | substitute reviewer |
 | `tech-lead` | **Opus** · high | ADR-001 stack, architecture, NFRs, standards | architecture docs, `arch-impact` PRs |
 | `ux-designer` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Creative direction, design system, live WebGL prototypes | `ui-review` PRs |
-| `content-writer` | Sonnet · medium | Voice & tone, copy deck per page, SEO copy | — |
+| `content-writer` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Voice & tone, copy deck per page, SEO copy | — |
 | `sde3` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Scaffold, design-system code, shared components, forms, hard bugs | — |
 | `sde2` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | Pages and sections from existing components and approved copy | — |
 | `qa-engineer` | Sonnet · medium | Test strategy, e2e / accessibility / Lighthouse suites | every code PR (runs the tests) |
 | `code-reviewer` | Sonnet · high, read-only | Independent staff-level review | every code PR |
 | `security-reviewer` | Sonnet · high, read-only in reviews | Threat model, headers/CSP, privacy | deps, pipelines, server code, forms |
-| `devops-lead` | GPT-6 Astra · high (Claude fallback: Sonnet · high) | ADR-002 hosting, CI/CD design, environments, releases, exit plan | pipeline and infra PRs |
+| `devops-lead` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | ADR-002 hosting, CI/CD design, environments, releases, exit plan | pipeline and infra PRs |
 | `devops-engineer` | Sonnet · medium | Workflows, Dockerfile, IaC, Lighthouse CI, Dependabot | — |
 
 Why SDE3 vs SDE2 still matters with agents: the SDE3 gets the pattern-setting and tricky work at
@@ -185,6 +185,7 @@ copies of the repo, **at the same time** as the Claude agents. Which ones is set
 | SDE 3 | Codex | `gpt-6-astra` (effort high) |
 | SDE 2 | Codex | `gpt-6-astra` (effort high) |
 | DevOps lead | Codex | `gpt-6-astra` (effort high) |
+| Content writer | Codex | `gpt-6-astra` (effort high) |
 | everyone else | Claude Code | as in `.claude/agents/*.md` |
 
 - **Same rules.** Codex reads `AGENTS.md` (which points to `CLAUDE.md`) and gets the role file and

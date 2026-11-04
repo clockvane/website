@@ -179,6 +179,11 @@
       "engine": "codex",
       "model": "gpt-6-astra",
       "effort": "high"
+    },
+    "content-writer": {
+      "engine": "codex",
+      "model": "gpt-6-astra",
+      "effort": "high"
     }
   }
 }
