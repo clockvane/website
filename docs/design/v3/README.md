@@ -4,7 +4,7 @@
 
 Recommendation: approve design system v3 as built in the prototype. There is one direction, as the change request asks, so there is no choice between concepts.
 
-- Live prototype: `/labs/v3/` and `/labs/v3/services/` on the PR preview. Open them on a phone and on a laptop.
+- Historical prototype: `/labs/v3/` and `/labs/v3/services/` on the Gate 2e PR preview. Issue #126 removes those throwaway public routes; use the retained evidence below and the isolated component fixture described in [page-components.md](../../engineering/page-components.md).
 - Specs: [design system](../design-system.md) · [tokens](../tokens.json) · [components](../components.md) · [motion](../motion.md) · [contrast](../contrast.md)
 - Research: [research.md](research.md)
 - Evidence: [evidence/](evidence/) holds phone and desktop screenshots and a short scroll recording.
@@ -20,15 +20,14 @@ Recommendation: approve design system v3 as built in the prototype. There is one
 | Tools strip | Left out | PRD Q24 is open: no confirmed tool names or permission to show logos |
 
 ## How the prototype is made
-It is throwaway and is removed when design system v3 lands in code. Source is in [prototype-src/](prototype-src/):
+The throwaway pages and their builder were removed in #126. The original screen definitions and renderer remain in [prototype-src/](prototype-src/) to regenerate the production image sources:
 
 ```
-node docs/design/v3/prototype-src/render-screens.mjs   # example screens to AVIF and WebP
-node docs/design/v3/prototype-src/build.mjs            # pages and tokens.css
-npx prettier --write public/labs/v3
+node docs/design/v3/prototype-src/render-screens.mjs   # PNG sources to src/assets/examples/
+npm run build                                       # Astro optimises referenced screens
 ```
 
-- The brand comes from `site.config.ts` when the pages are generated, so the wordmark has one source. The generated pages use the owner's temporary labs exception. After a rename, rerun `build.mjs`.
+- The production wordmark reads `site.config.ts`; the prototype's temporary labs exception is no longer used.
 - Design values come from `tokens.json` through the same `tokenProperties` function production uses.
 - Copy comes from `docs/content/copy-deck.md`.
 
@@ -37,7 +36,7 @@ npx prettier --write public/labs/v3
 - The overview page omits "Explore…" detail links, and home's detail links go to the overview's sections, because service detail pages are not built in this prototype.
 
 ## Follow-ups for the engineering ticket
-- Move production from `tokens-legacy.json` to `tokens.json`, delete the legacy file and remove the pointers in `src/styles/generate.mjs`, `src/pages/og.png.ts` and `tests/unit/lib/design/tokens.test.ts`.
+- Completed in #126: production uses `tokens.json`; the legacy token file and its references were removed.
 - Rewrite `wireframes.md`, `user-flows.md` and `verification.md`, which keep their superseded banners. `design-system.md` §Page layouts is the source until then.
-- Remove `public/labs/v3/` and `docs/design/v3/prototype-src/`.
-- Use the image pipeline in NFR §1.1 instead of pre-rendered files.
+- Completed in #126: removed `public/labs/` and the throwaway page builder; retained only the reusable original-screen source and renderer.
+- Completed in #126: images use the NFR §1.1 build-time pipeline instead of public pre-rendered files.
