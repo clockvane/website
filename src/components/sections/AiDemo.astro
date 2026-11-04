@@ -191,7 +191,9 @@ const { copy = aiDemo } = Astro.props;
     border-inline-end-color: transparent;
     animation: demo-spin 800ms var(--motion-ease-linear) infinite;
   }
-  .demo[data-state='paused'] .step.is-active .dot {
+  .demo[data-state='paused'] .step.is-active .dot,
+  .demo-stage[data-offscreen] .step.is-active .dot,
+  :global(html[data-hidden-tab]) .step.is-active .dot {
     animation-play-state: paused;
   }
   .step.is-done .dot {
@@ -217,6 +219,8 @@ const { copy = aiDemo } = Astro.props;
   .result.is-waiting {
     opacity: 0;
     transform: translateY(8px);
+    /* Preparing a replay must not fade readable text into a low-contrast state. */
+    transition: none;
   }
   .facts {
     display: flex;

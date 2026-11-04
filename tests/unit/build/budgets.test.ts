@@ -35,32 +35,48 @@ describe.skipIf(!existsSync(dist))('dist budgets', () => {
     const styles = assets(html, /<link[^>]+href="(\/[^"]+\.css)"/g);
     const sum = (list: string[]) => list.reduce((n, f) => n + gz(f), 0);
     expect(sum(scripts), 'P-4 script').toBeLessThanOrEqual(50 * KB);
-    for (const script of scripts.filter((f) => /motion/.test(f))) {
+    for (const script of scripts.filter((f) =>
+      /MotionScript|motion\./.test(f),
+    )) {
       expect(gz(script), 'P-4 motion controller').toBeLessThanOrEqual(5 * KB);
     }
     expect(sum(styles), 'P-5 CSS').toBeLessThanOrEqual(40 * KB);
 
     let eagerBytes = 0;
     let pictureBytes = 0;
-    for (const [picture] of html.matchAll(/<picture>.*?<\/picture>/gs)) {
+    const countedImages = new Set<string>();
+    for (const [picture] of html.matchAll(/<picture\b[^>]*>.*?<\/picture>/gs)) {
       const avif =
         /<source[^>]+srcset="([^"]+)"[^>]*type="image\/avif"|<source[^>]+type="image\/avif"[^>]+srcset="([^"]+)"/.exec(
           picture,
         );
       const set = (avif?.[1] ?? avif?.[2] ?? '').split(',');
       const largest = set.at(-1)?.trim().split(' ')[0] ?? '';
-      const bytes = largest ? statSync(join(dist, largest)).size : 0;
-      pictureBytes += bytes;
+      expect(largest, `P-7 AVIF source in ${page}`).toMatch(/\.avif$/);
+      const bytes = statSync(join(dist, largest)).size;
+      if (!countedImages.has(largest)) pictureBytes += bytes;
+      countedImages.add(largest);
       if (!picture.includes('loading="lazy"')) eagerBytes += bytes;
     }
     expect(eagerBytes, 'P-7 above the fold').toBeLessThanOrEqual(200 * KB);
     for (const [img] of html.matchAll(/<img\b[^>]*>/g)) {
       if (/\.svg/.test(img)) continue;
+      expect(img, `P-7 modern fallback in ${page}`).toMatch(
+        /src="[^"]+\.webp"/,
+      );
       for (const attr of ['alt=', 'width=', 'height=', 'srcset=', 'sizes=']) {
         expect(img, `P-7 ${page}`).toContain(attr);
       }
     }
+    if (/<img\b/.test(html) && !/\.svg/.test(html)) {
+      expect(pictureBytes, 'P-8 includes raster images').toBeGreaterThan(0);
+    }
     const fonts = files.filter((f) => f.endsWith('.woff2'));
+    expect(fonts.length, 'P-6 font files').toBeLessThanOrEqual(3);
+    expect(
+      fonts.reduce((n, f) => n + statSync(f).size, 0),
+      'P-6 fonts',
+    ).toBeLessThanOrEqual(120 * KB);
     const total =
       gzipSync(html).length +
       sum(scripts) +

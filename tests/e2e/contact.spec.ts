@@ -294,13 +294,14 @@ for (const width of [320, 1280])
           'noindex, follow',
         );
       for (const control of await page
-        .locator(
-          'a:visible:not(.cta), button:visible, input:visible, textarea:visible',
-        )
+        .locator('a:visible, button:visible, input:visible, textarea:visible')
         .all()) {
         const box = await control.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);
-        expect(box!.height).toBeGreaterThanOrEqual(44);
+        const minimum = await control.evaluate((el) =>
+          el.classList.contains('pill--small') ? 40 : 44,
+        );
+        expect(box!.height).toBeGreaterThanOrEqual(minimum);
       }
       await page.screenshot({
         path: `.agentops-scratch/61-${path.split('/')[2] || 'contact'}-${width}.png`,

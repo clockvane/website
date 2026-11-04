@@ -120,10 +120,13 @@ for (const width of [320, 1280]) {
         .analyze();
       expect(scan.violations).toEqual([]);
       for (const control of await page
-        .locator('a:visible:not(.cta), summary:visible')
+        .locator('a:visible, summary:visible')
         .all()) {
         const box = await control.boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
+        const minimum = await control.evaluate((el) =>
+          el.classList.contains('pill--small') ? 40 : 44,
+        );
+        expect(box!.height).toBeGreaterThanOrEqual(minimum);
         expect(
           box!.width,
           await control.evaluate((el) => el.outerHTML),

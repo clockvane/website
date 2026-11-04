@@ -110,6 +110,24 @@ test('images are optimised: AVIF, WebP fallback, srcset, dimensions, lazy', asyn
   await expect(img).toHaveAttribute('height', /\d+/);
 });
 
+test('demo spinner pauses off-screen and motion preference changes restore the finished draft', async ({
+  page,
+}) => {
+  await page.goto(path);
+  const stage = page.locator('[data-demo-stage]');
+  await stage.scrollIntoViewIfNeeded();
+  const spinner = page.locator('.step.is-active .dot');
+  await expect(spinner).toHaveCSS('animation-play-state', 'running');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(stage).toHaveAttribute('data-offscreen', '');
+  await expect(spinner).toHaveCSS('animation-play-state', 'paused');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('[data-demo-controls]')).toBeHidden();
+  await expect(page.locator('.is-done')).toHaveCount(4);
+  await expect(page.locator('[data-loop-copy]')).toHaveCount(0);
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+});
+
 for (const width of [320, 768, 1440]) {
   test(`no horizontal page overflow at ${width} px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
@@ -118,5 +136,20 @@ for (const width of [320, 768, 1440]) {
       () => document.documentElement.scrollWidth - innerWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Full-page capture does not load below-fold lazy images. Decode them for evidence only.
+    await page.locator('img').evaluateAll(async (images) => {
+      await Promise.all(
+        images.map(async (image) => {
+          if (!(image instanceof HTMLImageElement)) return;
+          image.loading = 'eager';
+          await image.decode();
+        }),
+      );
+    });
+    await page.screenshot({
+      path: `.agentops-scratch/126-components-${width}.png`,
+      fullPage: true,
+    });
   });
 }
