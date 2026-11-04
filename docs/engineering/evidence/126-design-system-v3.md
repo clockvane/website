@@ -22,6 +22,28 @@ The budget scan counts annotated Astro `<picture>` elements and distinct image U
 lazy images in whole-page weight, checks the actual `MotionScript` chunk, and checks font totals.
 The existing CSP tests remain intact. No dependencies or host integrations were added.
 
+## Reduced-motion flake (QA review of `38c0758`)
+
+`demo spinner pauses off-screen…` failed on `document.getAnimations().length` (35, expected 0).
+Reproduced in 3 of 5 runs and logged the survivors: all 35 were `CSSTransition`s with a 1 ms duration
+on the demo's steps, result and marquee tracks, started when the preference changed. No marquee or
+spinner `CSSAnimation` remained, and the count was 0 after 300 ms. They came from the global
+`transition-duration: 1ms` override, so reduced motion still briefly started transitions, against
+P-15. Nothing listens for `transitionend`. The override is now `transition: none`, and the test's
+immediate assertion is unchanged, with no polling or retry.
+
+| Command, after the fix | Result |
+| --- | --- |
+| `npx playwright test … -g "demo spinner pauses\|reduced motion: nothing" --repeat-each=15` | 30 of 30 pass |
+| `npm run test:components`, three runs, each after deleting the fixture build | 15 pass every run |
+| `npm run test:e2e` | 57 pass |
+| `npm run lint`, `npm run check` | pass; 0 errors, warnings or hints |
+| `npm run build`, then `npm test` | 8 pages; 154 pass |
+| `npm run test:dist` | 35 pass |
+
+Lighthouse was not rerun locally for this one-line change; it applies only under reduced motion,
+and the CI `lighthouse` job runs on the new commit.
+
 ## Mobile Lighthouse
 
 The repository's `tests/e2e/lighthouserc.cjs` ran three mobile audits per configured URL; all
