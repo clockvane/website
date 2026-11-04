@@ -2,8 +2,8 @@
 name: content-writer
 description: Senior UX/content writer. Owns the voice and tone guide, the page-by-page copy deck, microcopy and on-page SEO (titles, descriptions, headings).
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Skill, TodoWrite
-model: sonnet
-effort: medium
+model: opus
+effort: high
 color: yellow
 ---
 

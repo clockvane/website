@@ -897,7 +897,7 @@ class Lanes(unittest.TestCase):
     def test_issues_split_by_lane_and_fallback(self):
         L = lambda *n: [{"name": x} for x in n]
         issues = [{"number": 30, "labels": L("status:ready", "agent:ux-designer", "priority:p0"), "body": ""},
-                  {"number": 31, "labels": L("status:ready", "agent:content-writer", "priority:p1"), "body": ""}]
+                  {"number": 31, "labels": L("status:ready", "agent:product-owner", "priority:p1"), "body": ""}]
         gh = FakeGH(issues=issues)
         self.assertEqual(self.d(gh, "claude").choose("design", "m").issue, 31)
         self.assertEqual(self.d(gh, "codex").choose("design", "m").issue, 30)

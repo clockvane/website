@@ -2,7 +2,7 @@
 name: devops-lead
 description: Senior DevOps / platform lead. Chooses hosting (ADR-002), designs environments, CI/CD, release process and portability exit plan; reviews infrastructure and pipeline PRs; runs releases.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, Skill, TodoWrite
-model: sonnet
+model: opus
 effort: high
 color: blue
 ---
