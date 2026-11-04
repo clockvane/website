@@ -200,7 +200,7 @@ ${header()}
 <main id="main">
 <section class="hero">
 <p class="eyebrow">${tagline}</p>
-<h1>Get expert <span class="nb">support, ${token('expert')}</span> <span class="nb">AI automation ${token('automation')}</span> and <span class="nb">websites ${token('website')}</span> built around your needs.</h1>
+<h1>Get expert <span class="nb">support, ${token('expert')}</span> <br class="br-wide"><span class="nb">AI automation ${token('automation')}</span> and <span class="nb">websites ${token('website')}</span> <br class="br-wide">built around your needs.</h1>
 <p class="lead">Stuck on technical work or ready to build something? Expert individuals help individuals and companies, from advice to hands-on delivery.</p>
 <div class="cta-row">
 <a class="pill pill--primary" href="/contact/">Book a call</a>

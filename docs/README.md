@@ -9,7 +9,7 @@ documents are in [`templates/`](templates/).
 | Process | [Status and gate log](sdlc/STATUS.md) · [Workflow and RACI](sdlc/WORKFLOW.md) | eng-manager |
 | Decisions | [ADR-001 Stack](adr/ADR-001-stack.md) · [ADR-002 Hosting](adr/ADR-002-hosting.md) · [ADR-003 Repository structure](adr/ADR-003-repository-structure.md) · [ADR-004 Motion and effects](adr/ADR-004-motion-and-effects.md) · [ADR-005 Immersive 3D layer (withdrawn)](adr/ADR-005-immersive-layer.md) | tech-lead, devops-lead |
 | Architecture | [Architecture](architecture/architecture.md) · [Non-functional requirements](architecture/nfr.md) · [Engineering standards](engineering/standards.md) | tech-lead |
-| Design | [Sitemap](design/sitemap.md) · [User flows](design/user-flows.md) · [Wireframes](design/wireframes.md) · [Visual directions](design/visual-directions.md) · [Design system](design/design-system.md) · [Tokens](design/tokens.json) | ux-designer |
+| Design | [Sitemap](design/sitemap.md) · [User flows](design/user-flows.md) · [Wireframes](design/wireframes.md) · [Visual directions](design/visual-directions.md) · [Design system](design/design-system.md) · [Tokens](design/tokens.json) · [Design system v3 and prototype](design/v3/README.md) · [Research](design/v3/research.md) | ux-designer |
 | Content | [Voice and tone](content/voice-and-tone.md) · [Copy deck](content/copy-deck.md) · [Microcopy](content/microcopy.md) | content-writer |
 | Quality | [Test strategy](qa/test-strategy.md) | qa-engineer |
 | Security | [Threat model](security/threat-model.md) · [Security headers](security/headers.md) · [Privacy](security/privacy.md) | security-reviewer |

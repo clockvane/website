@@ -25,6 +25,7 @@
   ["color.light.focus","color.light.surface",3,"Focus ring on a stage or band"],
   ["color.light.success","color.light.canvas",3,"Done tick on cards"],
   ["color.service.automation","color.light.canvas",3,"Active step spinner, typing caret"],
+  ["color.service.automation","color.light.surface",3,"Typing caret on the demo prompt"],
   ["color.service.onService","color.service.expert",3,"Glyph on the expert support tile"],
   ["color.service.onService","color.service.automation",3,"Glyph on the AI automation tile"],
   ["color.service.onService","color.service.website",3,"Glyph on the website tile"],

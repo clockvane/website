@@ -195,13 +195,15 @@
         if (isIntersecting) {
           target.classList.add('is-in');
           seen.unobserve(target);
-          if (target === demo && startDemo) startDemo();
+          if (target.matches('.demo-stage') && startDemo) startDemo();
         }
       }
     },
     { threshold: 0.12 },
   );
-  document.querySelectorAll('.reveal').forEach((el) => seen.observe(el));
+  document
+    .querySelectorAll('.reveal, .demo-stage')
+    .forEach((el) => seen.observe(el));
   const onScreen = new IntersectionObserver((entries) => {
     for (const { target, isIntersecting } of entries) {
       target.toggleAttribute('data-offscreen', !isIntersecting);

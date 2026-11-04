@@ -432,6 +432,9 @@ summary::-webkit-details-marker {
     transform: scale(0.6);
   }
 }
+.br-wide {
+  display: none;
+}
 .hero--sub {
   padding-bottom: var(--space-8);
 }
@@ -1147,6 +1150,9 @@ html:not(.js-motion) .row-stage {
   }
   .hero {
     padding-block: var(--space-20) var(--space-16);
+  }
+  .br-wide {
+    display: inline;
   }
   .hero .lead {
     margin-top: var(--space-2);
