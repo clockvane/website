@@ -1,62 +1,69 @@
 # Personas
 
-Status: draft for Gate 1 · Owner: Product Owner · Date: 2026-10-22 · Ticket: #4
+Status: v3 · Owner: Product Owner · Date: 2026-11-04 · Ticket: #122
 
-**All personas are hypotheses.** They are derived from `BRIEF.md`, the competitor scan and general reasoning, not from interviews or analytics. They contain no statistics. The owner confirms or corrects them (PRD Q3); we revise after the first real enquiries.
+**All personas are hypotheses.** They are derived from `BRIEF.md` (change request 3) and general reasoning, not from interviews or analytics, and they contain no statistics. We revise them after the first real enquiries.
 
-**Update 2026-10-29 (ticket #78):** the owner's change request makes small-business owners (P1), operations/IT managers (P2) and startup founders/CTOs (P3) first-class audiences. The old primary/secondary/tertiary ranking is dropped until the owner decides (Q3). Each persona now has a "first 10 seconds" check and a "site must show" line; a fourth group, agency comparers (P4), is added. The site itself is our first proof of work for all of them.
+Personas are defined by what the person needs, never by the size or stage of a company. The order is not a ranking. The IDs P1-P4 were reissued in v3; older documents that use them with other meanings are out of date.
 
-## P1. Owner-operator of a small business (hypothesis)
-- **First 10 seconds:** will this save me time, can I trust them, is it easy to start?
-- **Site must show:** clear outcomes, a short path to the free audit call, and a site so polished it answers "can they build mine?"
-- **Who:** runs a small business and is also its admin team. Not technical. [[PLACEHOLDER: typical size, industry, region (Q3)]]
-- **Goals:** get hours back from repetitive work (copying data between tools, chasing approvals, manual reports); get a website or simple app that works.
-- **Pains:** cannot judge a developer's quality; fears jargon, hidden costs and being sold a big project; has little time to shop around.
-- **Objections:** "Is this firm real and reliable?" "What will it cost?" "Will I be locked in?" "Will it break when you leave?"
-- **How they find us:** referral or word of mouth; web search for a specific chore ("automate invoicing"); directory listings. [[PLACEHOLDER: owner's real lead sources]]
-- **How they evaluate:** read the home page and one service page; look for their own chore named plainly; look for a person, a clear next step and a cost stance; skim for proof.
-- **What the site must do:** name concrete chores, explain the first step and how scoping and pricing work, offer one low-effort contact route.
+## P1. Individual who needs an expert (hypothesis)
+- **Service:** Expert support. **Primary CTA:** Book an expert.
+- **Who:** a person acting on their own behalf with technical work in hand: for example someone stuck on a problem, building something of their own, or wanting a second opinion before a decision.
+- **First 10 seconds:** can a real expert help me with this, and how do I start?
+- **Goals:** get past the problem; understand what to do next; talk to someone who has done it before.
+- **Pains:** forums and generic answers don't fit their case; can't judge who is able to help; expects providers to turn individuals away.
+- **Objections:** "Who will actually help me?" "What will it cost?" "Is my problem worth your time?" "Is my code or data safe with you?"
+- **How they find us:** web search for a specific problem; recommendation; our articles. [[PLACEHOLDER: real lead sources]]
+- **How they evaluate:** look for their topic among the areas covered, a clear session format and a cost stance.
+- **Site must show:** plainly that expert individuals help individuals as well as companies; the areas covered [[PLACEHOLDER: areas of expertise, Q18]]; how a session works [[PLACEHOLDER: Q19]]; what it costs [[PLACEHOLDER: Q20]].
 
-## P2. Operations or IT manager at a mid-sized company (hypothesis)
-- **First 10 seconds:** risk, security, return on spend.
-- **Site must show:** how the work runs, how data stays safe, how costs come down (including AI cost optimization, scope Q13), shown visually and never with invented numbers.
-- **Who:** responsible for systems, integrations or delivery pipelines; has some technical knowledge and may need to justify a vendor internally.
-- **Goals:** integrate systems, move to cloud, fix CI/CD, add AI to a process without risk.
-- **Pains:** vague capability lists; vendors who can't explain security or reliability; fear of vendor-created maintenance burden.
-- **Objections:** "Does this firm have hands-on cloud/DevOps depth?" "How do you handle security, access and handover?" "Can I show my boss evidence?"
-- **How they find us:** search for a specific technical need; peer recommendation; directories. [[PLACEHOLDER: confirm]]
-- **How they evaluate:** look for specific scope, named expertise, a defined process, security stance; may read service detail closely and compare 2-3 vendors.
-- **What the site must do:** give precise service scope, a documented way of working, honest statements of experience (only what the owner supplies) and a clear route to a technical conversation.
+## P2. Company that needs AI automation (hypothesis)
+- **Service:** AI automation. **Primary CTA:** Book a call.
+- **Who:** the person answerable for how work gets done in a company or team, for example in operations, IT or a business function. May need to justify the choice to others.
+- **First 10 seconds:** do they understand real workflows, and is this safe?
+- **Goals:** have AI agents and automations do reliable work inside existing workflows; know where people stay in control.
+- **Pains:** AI hype with nothing concrete; demos that don't resemble real work; uncertainty about data and errors.
+- **Objections:** "What happens when it gets something wrong?" "Where does our data go?" "Who maintains it afterwards?"
+- **How they find us:** search for a specific workflow need; peer recommendation. [[PLACEHOLDER: real lead sources]]
+- **How they evaluate:** look at the AI demo and example screens, then how an engagement runs.
+- **Site must show:** the AI demo and an automation run, labelled as examples; how a project runs; a stance on data and human checks; a short path to a call. No invented results.
 
-## P3. Startup founder or CTO (hypothesis)
-- **First 10 seconds:** technical depth, modern engineering, speed.
-- **Site must show:** precision in every detail, technical depth one click away, a site that loads instantly (their own measured load time is a welcome detail, never an invented one).
-- **Who:** founder with an idea or early product who needs an MVP, web app or cloud set-up built by someone senior.
-- **Goals:** ship a first version quickly with sensible technical choices; have direct access to the engineer doing the work.
-- **Pains:** juniors hidden behind account managers; long sales processes; unclear engagement models.
-- **Objections:** "Is this a real engineering team or one person?" "Can they scale with me?" "Who owns the code?"
-- **How they find us:** search, founder communities, referrals. [[PLACEHOLDER: confirm]]
-- **How they evaluate:** look for specific work, engineering credibility and engagement options; judge by site quality itself (speed, accessibility, polish).
-- **What the site must do:** be fast and well-made, state engagement models plainly, and be honest about team size [[PLACEHOLDER: team size and ownership terms]].
+## P3. Company that needs a website (hypothesis)
+- **Service:** Website creation. **Primary CTA:** Book a call.
+- **Who:** the person responsible for a company's web presence or a web app, whether in marketing, leadership or a product team. May not be technical.
+- **First 10 seconds:** can they build something this good for us?
+- **Goals:** get a website or web app that represents the company well, loads fast and is accessible.
+- **Pains:** templated results; hidden costs; projects that drift with no clear steps.
+- **Objections:** "What is included?" "What will it cost?" "Can we change it ourselves afterwards?" "Who owns it?"
+- **How they find us:** search; recommendation; seeing our site or public work. [[PLACEHOLDER: real lead sources]]
+- **How they evaluate:** judge this site itself for look, speed and precision, then read what is included and how a project runs.
+- **Site must show:** this site as honest evidence; example screens labelled as examples; what the client gets; a pricing stance [[PLACEHOLDER: "from" price, Q20]].
 
-## P4. Anyone comparing agencies (hypothesis)
-- **Who:** any of P1-P3 with two or three firms shortlisted.
-- **First 10 seconds:** "Is this a template?"
-- **Site must show:** something they have not seen on other agency sites, in plain language, with one clear next step.
+## P4. Company that needs a solution or expert help (hypothesis)
+- **Service:** Solutions for companies; Expert support. **Primary CTA:** Book a call, or Book an expert on the Expert support page.
+- **Who:** a technical or business lead with a specific problem that a standard product doesn't solve, or a team that needs an experienced specialist for a while.
+- **First 10 seconds:** do they have the depth, and will they understand our case?
+- **Goals:** solve the problem with something made for their case, or get expert help without a long sourcing process.
+- **Pains:** vague capability lists; long sales processes; not meeting the people who will do the work.
+- **Objections:** "Who does the work?" "How do you handle security, access and handover?" "How do you scope and price this?" "Who owns the result?"
+- **How they find us:** search for a technical need; peer recommendation; our public repositories and articles. [[PLACEHOLDER: real lead sources]]
+- **How they evaluate:** read scope and expertise closely, compare providers, and judge engineering quality from the site and public work.
+- **Site must show:** scope in concrete terms [[PLACEHOLDER: scope of solutions, Q21]]; areas of expertise [[PLACEHOLDER: Q18]]; a documented way of working; honest statements of experience, only what the owner supplies [[PLACEHOLDER: real stories or proof, Q22]].
 
 ## Internal user: Owner / future team
-Not a buyer. Needs to edit content, contact details and brand without engineers (single config file, FR-4) and to triage enquiries. See PRD section 3.
+Not a buyer. Needs to edit content, contact details and brand without engineers (single config file, FR-4) and to triage enquiries by service (FR-9). See PRD section 3.
 
 ## Cross-persona needs
-1. Plain language and no unverifiable claims.
-2. One primary call to action, repeated consistently (PRD section 6).
-3. A visible human behind the firm [[PLACEHOLDER: owner's name, photo, bio permission (Q1)]].
-4. A cost and process stance, even if no prices are shown.
+1. Plain language in a professional tone, and no unverifiable claims.
+2. A clear next step, labelled consistently (PRD section 6).
+3. Visible people behind the company: the founders' names (Q6) and expert individuals who can be reached.
+4. A cost and process stance.
+5. An answer to "is this a template?" Anyone comparing providers asks it, and the site itself is the answer.
 
 ## Validation plan
-- Owner reviews personas at Gate 1 and ranks them.
-- After launch, add an optional "how did you hear about us" field and tag enquiries by persona; revisit after about 3 months or 10 enquiries, whichever comes later.
+- The owner corrects these through PRD open questions and at gates.
+- After launch, tag enquiries by service (FR-9) and persona; revisit after about 3 months or 10 enquiries, whichever comes later.
 
 ## Open questions
-- Which persona is truly primary? Which industries and region? (Q3)
-- Who actually bought or asked before: any real examples to anonymise? [[PLACEHOLDER]]
+- Who has actually asked for help before: any real examples to anonymise? [[PLACEHOLDER: real examples, Q22]]
+- Tracked in PRD section 12: Q18 to Q22.
