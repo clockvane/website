@@ -1,7 +1,7 @@
 /** Approved shared blocks from copy-deck.md; unconfirmed supporting copy omitted. */
 export const closingCta = {
-  heading: 'Tell us about one slow process',
-  body: 'Book a free audit call. We will look at one slow process and tell you what we would automate. We reply within 1 business day.',
+  heading: 'What would you like to get done?',
+  body: 'Tell us where you are stuck or what you want to build. We will help you work out the next step.',
 };
 export const helpChoose = {
   heading: 'Not sure which one you need?',

@@ -1,7 +1,7 @@
 # Motion — design system v3
 
 Status: for approval at Gate 2e · Owner: UX/UI Designer · Ticket: #125
-Architecture and limits: [ADR-004](../adr/ADR-004-motion-and-effects.md). Live: `public/labs/v3/v3.css` and `v3.js`.
+Architecture and limits: [ADR-004](../adr/ADR-004-motion-and-effects.md). Live: `src/components/` and `src/scripts/motion.ts`.
 
 Motion is smooth and subtle. It supports the product screens and never carries information by itself. CSS first, with one small vanilla controller. Only `transform` and `opacity` move, apart from colour on small controls.
 

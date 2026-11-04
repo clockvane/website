@@ -78,7 +78,7 @@ import ContactResult from './ContactResult.astro';
         />
         <input name="started" type="hidden" value="" />
       </div>
-      <button class="button standalone" type="submit">{copy.send}</button>
+      <button class="pill pill--primary" type="submit">{copy.send}</button>
       <p class="hint">
         {copy.privacy}
         <a class="standalone" href="/privacy/">{copy.privacyLink}</a>
@@ -108,55 +108,55 @@ import ContactResult from './ContactResult.astro';
   }
   .hint {
     font-size: var(--font-size-small);
-    margin-block-start: var(--space-0);
+    margin-block-start: 0;
   }
   input,
   textarea {
     inline-size: 100%;
     min-inline-size: 0;
-    min-block-size: var(--size-control);
+    min-block-size: var(--layout-tap);
     padding: var(--space-3);
-    border: var(--stroke-border) solid var(--color-dark-border);
-    border-radius: var(--radius-small);
-    background: var(--color-dark-background);
-    color: var(--color-dark-text);
+    border: 1px solid var(--color-light-control-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-light-canvas);
+    color: var(--color-light-text);
     font: inherit;
   }
   textarea {
-    min-block-size: var(--size-textarea);
+    min-block-size: var(--space-40);
     resize: vertical;
   }
   input:hover,
   textarea:hover,
   input:active,
   textarea:active {
-    border-color: var(--color-dark-text);
+    border-color: var(--color-light-text);
   }
   input:read-only,
   textarea:read-only {
-    background: var(--color-dark-disabled-fill);
-    color: var(--color-dark-disabled-text);
+    background: var(--color-light-disabled-fill);
+    color: var(--color-light-disabled-text);
   }
   input[aria-invalid='true'],
   textarea[aria-invalid='true'] {
-    border-color: var(--color-dark-error);
+    border-color: var(--color-light-error);
   }
   .field-error,
   .feedback {
-    color: var(--color-dark-error);
+    color: var(--color-light-error);
   }
   .feedback {
     margin-block: var(--space-6);
     padding: var(--space-6);
-    border: var(--stroke-border) solid var(--color-dark-error);
-    border-radius: var(--radius-small);
+    border: 1px solid var(--color-light-error);
+    border-radius: var(--radius-sm);
   }
   .feedback ul {
     padding-inline-start: var(--space-6);
   }
   .feedback a {
     display: inline-flex;
-    min-block-size: var(--size-target);
+    min-block-size: var(--layout-tap);
     align-items: center;
   }
   .status:empty {

@@ -5,31 +5,41 @@
   font-weight: 100 900;
   font-display: swap;
 }
-:root {
-  color-scheme: dark;
+/* Metric overrides keep the swap from Arial free of layout shift. */
+@font-face {
+  font-family: 'Public Sans Fallback';
+  src: local('Arial');
+  size-adjust: 105%;
+  ascent-override: 92%;
+  descent-override: 22%;
+  line-gap-override: 0%;
 }
-* {
+:root {
+  color-scheme: light;
+}
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 html {
-  scroll-padding-block-start: var(--layout-anchor-offset);
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-block-start: var(--space-20);
 }
 body {
   min-block-size: 100svh;
   display: flex;
   flex-direction: column;
-  container: page / inline-size;
-  margin: var(--space-0);
-  background: var(--color-dark-background);
-  color: var(--color-dark-text);
-  font-family: var(--font-family-body);
+  margin: 0;
+  background: var(--color-light-canvas);
+  color: var(--color-light-text);
+  font-family: 'Public Sans', 'Public Sans Fallback', var(--font-family-sans);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: var(--font-line-height-body);
-  letter-spacing: var(--font-tracking);
   font-synthesis: none;
-  font-optical-sizing: none;
   overflow-wrap: anywhere;
+  overflow-x: clip;
 }
 main {
   flex: 1;
@@ -38,123 +48,172 @@ h1,
 h2,
 h3,
 p,
-ul {
-  margin: var(--space-0);
+ul,
+ol,
+dl,
+dd,
+figure {
+  margin: 0;
+  padding: 0;
 }
 h1,
-h2,
-h3 {
-  font-family: var(--font-family-heading);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--font-line-height-heading);
-  letter-spacing: calc(var(--font-tracking-ratio-heading) * 1em);
+h2 {
+  font-weight: var(--font-weight-display);
+  text-wrap: balance;
 }
 h1 {
-  font-size: var(--font-size-h1-mobile);
-  font-weight: var(--font-weight-display);
+  font-size: var(--font-size-hero);
+  line-height: var(--font-line-height-hero);
+  letter-spacing: var(--font-tracking-display);
 }
 h2 {
-  font-size: clamp(
-    var(--font-size-h2-mobile),
-    3.5vw,
-    var(--font-size-h2-desktop)
-  );
+  font-size: var(--font-size-h2);
+  line-height: var(--font-line-height-heading);
+  letter-spacing: var(--font-tracking-heading);
 }
 h3 {
   font-size: var(--font-size-h3);
-  line-height: var(--font-line-height-ui);
-  letter-spacing: var(--font-tracking);
-}
-/* Optional category and row-number labels; never essential instructions. */
-.label {
-  font-family: var(--font-family-label);
-  font-size: var(--font-size-label);
-  letter-spacing: calc(var(--font-tracking-ratio-label) * 1em);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
+  letter-spacing: var(--font-tracking-heading);
 }
 p + p,
 h1 + p,
 h2 + p {
   margin-block-start: var(--space-4);
 }
+img {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+}
 a {
-  color: var(--color-dark-link);
+  color: var(--color-light-link);
   text-decoration: underline;
-  text-underline-offset: var(--space-1);
-  text-decoration-thickness: var(--stroke-border);
+  text-underline-offset: 0.2em;
 }
 a:hover,
 a:active {
-  color: var(--color-dark-link-hover);
-  text-decoration-thickness: var(--stroke-focus);
-}
-a[aria-current='page'] {
-  text-decoration-thickness: var(--stroke-focus);
+  color: var(--color-light-link-hover);
 }
 :focus-visible,
 [tabindex='-1']:focus {
-  outline: var(--stroke-focus) solid var(--color-dark-focus);
-  outline-offset: var(--stroke-focus-gap);
+  outline: 2px solid var(--color-light-focus);
+  outline-offset: 2px;
 }
 /* Keep the skip destination's indicator inside the viewport. */
 main:focus {
   outline: none;
 }
 main:focus h1 {
-  outline: var(--stroke-focus) solid var(--color-dark-focus);
-  outline-offset: var(--stroke-focus-gap);
+  outline: 2px solid var(--color-light-focus);
+  outline-offset: 2px;
 }
 [id] {
-  scroll-margin-block-start: var(--layout-anchor-offset);
+  scroll-margin-block-start: var(--space-20);
+}
+[hidden] {
+  display: none !important;
+}
+.lead {
+  color: var(--color-light-text-muted);
+  font-size: var(--font-size-lead);
+  line-height: var(--font-line-height-snug);
+  text-wrap: pretty;
 }
 .standalone {
   display: inline-flex;
   align-items: center;
-  min-block-size: var(--size-target);
-  min-inline-size: var(--size-target);
-  font-size: var(--font-size-small);
+  min-block-size: var(--layout-tap);
+  min-inline-size: var(--layout-tap);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--font-line-height-ui);
 }
-.button {
+.pill {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--layout-tap);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--font-line-height-snug);
   text-align: center;
-  inline-size: 100%;
-  min-block-size: var(--size-control);
-  padding: var(--space-3) var(--space-6);
-  border: var(--stroke-border) solid var(--color-dark-action);
-  border-radius: var(--radius-small);
-  color: var(--color-dark-on-action);
-  background: var(--color-dark-action);
   text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-base) var(--motion-ease-standard);
 }
-.button:hover {
-  color: var(--color-dark-on-action);
-  background: var(--color-dark-action-hover);
-  border-color: var(--color-dark-action-hover);
+.pill:active {
+  transform: scale(0.98);
 }
-.button:active {
-  color: var(--color-dark-on-action);
-  background: var(--color-dark-action-active);
-  border-color: var(--color-dark-action-active);
+.pill--primary,
+.pill--primary:hover,
+.pill--primary:active {
+  background: var(--color-light-action);
+  color: var(--color-light-on-action);
+}
+.pill--primary:hover {
+  background: var(--color-light-action-hover);
+}
+.pill--primary:active {
+  background: var(--color-light-action-active);
+}
+.pill--secondary,
+.pill--secondary:hover,
+.pill--secondary:active {
+  background: var(--color-light-canvas);
+  border-color: var(--color-light-control-border);
+  color: var(--color-light-text);
+}
+.pill--secondary:hover {
+  background: var(--color-light-secondary-hover);
+}
+.pill--secondary:active {
+  background: var(--color-light-secondary-active);
+}
+.pill--small {
+  min-block-size: var(--space-10);
+  padding-inline: var(--space-4);
+  font-size: var(--font-size-small);
+}
+.pill[aria-disabled='true'] {
+  background: var(--color-light-disabled-fill);
+  border-color: var(--color-light-control-border);
+  color: var(--color-light-disabled-text);
+  cursor: not-allowed;
+}
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
 }
 .nav-list {
   list-style: none;
-  padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
 }
-.desktop-nav,
-.compact-cta {
-  display: none;
+/* Scroll reveal exists only under .js-motion, so the page is complete without it. */
+.js-motion .reveal {
+  transition:
+    opacity var(--motion-duration-reveal) var(--motion-ease-standard),
+    transform var(--motion-duration-reveal) var(--motion-ease-standard);
+}
+.js-motion .reveal:not(.is-in) {
+  opacity: 0;
+  transform: translateY(16px);
 }
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation: none;
-    transition: none;
-    scroll-behavior: auto;
+    animation: none !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
 }
 @media (forced-colors: active) {
@@ -164,16 +223,11 @@ main:focus h1 {
     outline-color: Highlight;
   }
 }
-/* Motion lifecycle (ADR-004): the finished state is the default; only the
-   controller's playing/paused states animate decorative marks. */
-[data-scene][data-state='paused'] * {
-  animation-play-state: paused;
-}
 @media (prefers-reduced-motion: no-preference) {
   @view-transition {
     navigation: auto;
   }
   ::view-transition-group(root) {
-    animation-duration: var(--motion-page);
+    animation-duration: var(--motion-duration-base);
   }
 }

@@ -1,159 +1,232 @@
 ---
 import { siteConfig } from '../../site.config';
-import { company, primaryCta, services } from '../content/navigation';
-import NavLinks from './ui/NavLinks.astro';
+import ServiceToken from './ui/ServiceToken.astro';
+import { allServices, company, primaryCta } from '../content/navigation';
+import { services } from '../content/services';
 interface Props {
   currentPath: string;
 }
 const { currentPath } = Astro.props;
+const current = (href: string) => (currentPath === href ? 'page' : undefined);
 ---
 
 <header class="site-header">
   <div class="container header-row">
     <a
-      class="brand standalone"
+      class="wordmark"
       href="/"
       aria-label={`${siteConfig.brand} home`}
-      aria-current={currentPath === '/' ? 'page' : undefined}
-      >{siteConfig.brand}</a
+      aria-current={current('/')}>{siteConfig.brand}</a
     >
-    <nav class="mobile-nav" aria-label="Main, compact">
-      <details>
-        <summary
-          ><span class="closed-label">Menu</span><span class="open-label"
-            >Close</span
-          ></summary
-        >
-        <div class="disclosure-panel">
-          <NavLinks
-            links={[{ href: '/services/', label: 'Services' }]}
-            {currentPath}
-          />
-          <NavLinks links={services} {currentPath} />
-          <NavLinks links={company} {currentPath} />
-          <a
-            class="button standalone"
-            href={primaryCta.href}
-            aria-current={currentPath === primaryCta.href ? 'page' : undefined}
-            >{primaryCta.label}</a
+    <nav class="nav-wide" aria-label="Main">
+      <details class="disc" data-disc>
+        <summary>Services</summary>
+        <div class="disc-panel">
+          <a href={allServices.href} aria-current={current(allServices.href)}
+            >{allServices.label}</a
           >
-        </div>
-      </details>
-    </nav>
-    <a class="button standalone compact-cta" href={primaryCta.href}
-      >{primaryCta.label}</a
-    >
-    <nav class="desktop-nav" aria-label="Main, desktop">
-      <ul class="nav-list">
-        <li>
-          <a
-            class="standalone"
-            href="/services/"
-            aria-current={currentPath === '/services/' ? 'page' : undefined}
-            >Services</a
-          >
-        </li>
-        <li>
-          <details>
-            <summary
-              ><span class="closed-label">Show services</span><span
-                class="open-label">Hide services</span
-              ></summary
-            ><div class="disclosure-panel">
-              <NavLinks links={services} {currentPath} />
-            </div>
-          </details>
-        </li>
-        {
-          company.map(({ href, label }) => (
-            <li>
-              <a
-                class="standalone"
-                href={href}
-                aria-current={currentPath === href ? 'page' : undefined}
-              >
+          {
+            services.map(({ key, href, label }) => (
+              <a {href} aria-current={current(href)}>
+                <ServiceToken service={key} size="sm" />
                 {label}
               </a>
-            </li>
+            ))
+          }
+        </div>
+      </details>
+      {
+        company.map(({ href, label }) => (
+          <a class="nav-link" {href} aria-current={current(href)}>
+            {label}
+          </a>
+        ))
+      }
+    </nav>
+    <a
+      class="pill pill--primary pill--small cta"
+      href={primaryCta.href}
+      aria-current={current(primaryCta.href)}>{primaryCta.label}</a
+    >
+    <details class="menu" data-disc>
+      <summary
+        ><span class="menu-icon" aria-hidden="true"></span><span
+          class="visually-hidden">Menu</span
+        ></summary
+      >
+      <nav class="menu-panel" aria-label="Menu">
+        <a href={allServices.href} aria-current={current(allServices.href)}
+          >{allServices.label}</a
+        >
+        {
+          services.map(({ href, label }) => (
+            <a class="sub" {href} aria-current={current(href)}>
+              {label}
+            </a>
           ))
         }
-        <li>
-          <a
-            class="button standalone"
-            href={primaryCta.href}
-            aria-current={currentPath === primaryCta.href ? 'page' : undefined}
-            >{primaryCta.label}</a
-          >
-        </li>
-      </ul>
-    </nav>
+        {
+          company.map(({ href, label }) => (
+            <a {href} aria-current={current(href)}>
+              {label}
+            </a>
+          ))
+        }
+      </nav>
+    </details>
   </div>
 </header>
 
 <style>
   .site-header {
-    background: var(--color-dark-background);
-    border-block-end: var(--stroke-border) solid var(--color-dark-border);
-    z-index: var(--elevation-header);
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 20;
+    background: var(--color-light-canvas);
+    box-shadow: 0 1px 0 var(--color-light-hairline);
   }
   .header-row {
     display: flex;
     align-items: center;
+    /* Wraps instead of overflowing with enlarged text or the fallback font at 320 px. */
     flex-wrap: wrap;
-    gap: var(--space-4);
-    min-block-size: var(--layout-header);
-    padding-block: var(--space-2);
+    gap: var(--space-2);
+    min-block-size: var(--space-16);
   }
-  .brand {
-    font-family: var(--font-family-heading);
-    font-size: var(--font-size-h3);
+  .site-header a {
+    color: var(--color-light-text);
+    text-decoration: none;
   }
-  .compact-cta {
-    inline-size: auto;
-  }
-  .button {
-    min-block-size: var(--size-target);
-    padding: var(--space-2) var(--space-4);
-  }
-  .mobile-nav {
+  .site-header a.cta {
+    color: var(--color-light-on-action);
     margin-inline-start: auto;
   }
+  .site-header a[aria-current='page']:not(.cta, .wordmark) {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .wordmark {
+    padding-block: var(--space-2);
+    font-size: var(--font-size-lead);
+    font-weight: var(--font-weight-display);
+    letter-spacing: var(--font-tracking-heading);
+  }
   summary {
-    display: list-item;
+    list-style: none;
     cursor: pointer;
-    min-block-size: var(--size-target);
-    min-inline-size: var(--size-target);
-    padding: var(--space-2) var(--space-4);
-    border: var(--stroke-border) solid var(--color-dark-border);
-    border-radius: var(--radius-small);
-    background: var(--color-dark-background);
-    color: var(--color-dark-text);
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--font-line-height-ui);
   }
-  summary:hover,
-  details[open] > summary {
-    background: var(--color-dark-surface);
-  }
-  summary:active,
-  details[open] > summary {
-    border-color: var(--color-dark-text);
-  }
-  .open-label,
-  details[open] > summary .closed-label {
+  summary::-webkit-details-marker {
     display: none;
   }
-  details[open] > summary .open-label {
-    display: inline;
+  .nav-wide {
+    display: none;
+    align-items: center;
+    gap: var(--space-1);
+    margin-inline-start: var(--space-6);
   }
-  .mobile-nav:has(details[open]) {
-    inline-size: 100%;
+  .nav-link,
+  .disc summary {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--layout-tap);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-pill);
+    font-weight: var(--font-weight-medium);
+    transition: background-color var(--motion-duration-fast)
+      var(--motion-ease-standard);
   }
-  .disclosure-panel {
-    padding: var(--space-4);
-    border: var(--stroke-border) solid var(--color-dark-border);
-    margin-block-start: var(--space-2);
-    max-inline-size: var(--layout-form);
+  .nav-link:hover,
+  .disc summary:hover {
+    background: var(--color-light-surface);
+  }
+  .disc {
+    position: relative;
+  }
+  .disc summary::after {
+    content: '';
+    inline-size: 0.45em;
+    block-size: 0.45em;
+    margin-inline-start: var(--space-2);
+    border-inline-end: 1.5px solid currentColor;
+    border-block-end: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+  .disc-panel {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-2));
+    inset-inline-start: 0;
+    inline-size: 18rem;
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--color-light-card);
+    box-shadow:
+      0 0 0 1px var(--color-light-hairline),
+      var(--shadow-lift);
+  }
+  .disc-panel a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--layout-tap);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+  }
+  .disc-panel a:hover {
+    background: var(--color-light-surface);
+  }
+  .menu summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--layout-tap);
+    block-size: var(--layout-tap);
+    border-radius: var(--radius-pill);
+  }
+  .menu-icon,
+  .menu-icon::before {
+    display: block;
+    inline-size: 1.25rem;
+    block-size: 0.125rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-light-text);
+  }
+  .menu-icon {
+    transform: translateY(-3px);
+  }
+  .menu-icon::before {
+    content: '';
+    transform: translateY(7px);
+  }
+  .menu-panel {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 100%;
+    /* Stays reachable at 320 px and 200% zoom, where it can outgrow the viewport. */
+    max-block-size: calc(100svh - var(--space-16));
+    overflow-y: auto;
+    padding: var(--space-2) var(--layout-gutter) var(--space-4);
+    background: var(--color-light-canvas);
+    box-shadow:
+      0 1px 0 var(--color-light-hairline),
+      var(--shadow-lift);
+  }
+  .menu-panel a {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--layout-tap);
+    font-weight: var(--font-weight-semibold);
+  }
+  .menu-panel .sub {
+    padding-inline-start: var(--space-4);
+    font-weight: var(--font-weight-regular);
+  }
+  @media (min-width: 64rem) {
+    .nav-wide {
+      display: flex;
+    }
+    .menu {
+      display: none;
+    }
   }
 </style>

@@ -37,7 +37,7 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
     github: '[[PLACEHOLDER: GitHub organisation URL]]',
   },
   analyticsId: '[[PLACEHOLDER: analytics ID, PRD Q10]]',
-  primaryCta: { label: 'Book a free audit call', href: '/contact/' },
+  primaryCta: { label: 'Book a call', href: '/contact/' },
   contact: { endpoint: 'https://example.invalid/enquiry' },
 });
 

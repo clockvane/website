@@ -2,7 +2,7 @@
 
 Status: for approval at Gate 2e · Owner: UX/UI Designer · Ticket: #125
 Source: [owner change request 3](../product/BRIEF.md) · [research](v3/research.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) · [NFR](../architecture/nfr.md) · [copy deck](../content/copy-deck.md)
-Live: `public/labs/v3/` · Files: [tokens.json](tokens.json) · [components.md](components.md) · [motion.md](motion.md) · [contrast.md](contrast.md)
+Live: the shared components in `src/components/` · Files: [tokens.json](tokens.json) · [components.md](components.md) · [motion.md](motion.md) · [contrast.md](contrast.md)
 
 ## Principles
 1. **The product leads.** Screens carry the page. Text says one thing, then shows it.

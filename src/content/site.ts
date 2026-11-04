@@ -1,7 +1,9 @@
 import { siteConfig } from '../../site.config';
 
-/** Copy-deck.md home SEO; footer line is a change request 3 DRAFT until copy deck v3. */
-export const footerLine = `${siteConfig.tagline} Expert support, AI automation, website creation and solutions for companies. India · working with clients worldwide.`;
+/** Copy deck §0. */
+export const footerLine =
+  'Expert support, AI automation, websites and technical solutions, in one place.';
+export const footerLocation = 'India · working with clients worldwide';
 export const homeSeo = {
   title: `Automate repetitive business work | ${siteConfig.brand}`,
   description:

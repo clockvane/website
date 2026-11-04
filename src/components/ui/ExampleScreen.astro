@@ -1,0 +1,73 @@
+---
+import { Picture } from 'astro:assets';
+import { example, type ExampleId } from '../../content/examples';
+interface Props {
+  id: ExampleId;
+  /** The slot's real width, per NFR §1.1. */
+  sizes: string;
+  /** Only for images in the first screen. */
+  eager?: boolean;
+  /** At most one image on a page, and only when it is the LCP element. */
+  priority?: boolean;
+  /** Hover lift for static instances; never in a moving track. */
+  lift?: boolean;
+}
+const {
+  id,
+  sizes,
+  eager = false,
+  priority = false,
+  lift = false,
+} = Astro.props;
+const { src, alt, label } = example(id);
+---
+
+<figure class:list={['shot', { 'shot--lift': lift }]}>
+  <Picture
+    {src}
+    {alt}
+    {sizes}
+    formats={['avif']}
+    fallbackFormat="webp"
+    widths={[320, 480, 640, 960]}
+    loading={eager ? 'eager' : 'lazy'}
+    decoding="async"
+    {...priority ? { fetchpriority: 'high' as const } : {}}
+  />
+  <figcaption>{label}</figcaption>
+</figure>
+
+<style>
+  .shot {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: var(--color-light-card);
+    box-shadow: var(--shadow-card);
+    transition:
+      transform var(--motion-duration-base) var(--motion-ease-standard),
+      box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+  }
+  .shot :global(img) {
+    inline-size: 100%;
+  }
+  figcaption {
+    position: absolute;
+    inset-inline-start: var(--space-2);
+    inset-block-end: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-light-card);
+    box-shadow: 0 0 0 1px var(--color-light-hairline);
+    color: var(--color-light-text);
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--font-line-height-snug);
+  }
+  @media (hover: hover) {
+    .shot--lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lift);
+    }
+  }
+</style>

@@ -5,6 +5,7 @@
  */
 const entries = [
   {
+    key: 'expert',
     slug: 'expert-support',
     label: 'Expert support',
     linkLabel: 'Read about expert support',
@@ -18,6 +19,7 @@ const entries = [
     ],
   },
   {
+    key: 'automation',
     slug: 'ai-automation',
     label: 'AI automation',
     linkLabel: 'Read about AI automation',
@@ -28,6 +30,7 @@ const entries = [
     ],
   },
   {
+    key: 'website',
     slug: 'website-creation',
     label: 'Website creation',
     linkLabel: 'Read about website creation',
@@ -35,6 +38,7 @@ const entries = [
     work: ['Website design and build', 'Web apps'],
   },
   {
+    key: 'solutions',
     slug: 'solutions-for-companies',
     label: 'Solutions for companies',
     linkLabel: 'Read about solutions for companies',
@@ -47,6 +51,7 @@ const entries = [
 ] as const;
 
 export type ServiceSlug = (typeof entries)[number]['slug'];
+export type ServiceKey = (typeof entries)[number]['key'];
 export const services = entries.map((service) => ({
   ...service,
   href: `/services/${service.slug}/`,

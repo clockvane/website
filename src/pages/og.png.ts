@@ -1,10 +1,15 @@
 import sharp from 'sharp';
 import { Buffer } from 'node:buffer';
-import tokens from '../../docs/design/tokens-legacy.json';
+import tokens from '../../docs/design/tokens.json';
 
 /** Original workflow motif, rasterized at build time for social-card compatibility. */
 export async function GET(): Promise<Response> {
-  const { paper, ink, brass, paperDeep } = tokens.palette;
+  const {
+    canvas: paper,
+    text: ink,
+    link: brass,
+    surface: paperDeep,
+  } = tokens.color.light;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
     <rect width="1200" height="630" fill="${paper.$value.hex}"/>
     <path d="M240 315H960" stroke="${brass.$value.hex}" stroke-width="8"/>

@@ -1,0 +1,126 @@
+---
+import type { ServiceKey } from '../../content/services';
+interface Props {
+  service: ServiceKey;
+  /** inline follows the text; sm = 24 px; lg = 44 px; closing = 37 px. */
+  size?: 'inline' | 'sm' | 'lg' | 'closing';
+}
+const { service, size = 'inline' } = Astro.props;
+---
+
+<span class:list={['tok', `tok--${service}`, `tok--${size}`]} aria-hidden="true"
+  ><svg viewBox="0 0 24 24" focusable="false">
+    {
+      service === 'expert' && (
+        <>
+          <path
+            class="fill"
+            d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"
+          />
+          <path
+            class="cut"
+            stroke-width="2.4"
+            d="M8.5 9.5h.01M12 9.5h.01M15.5 9.5h.01"
+          />
+        </>
+      )
+    }
+    {
+      service === 'automation' && (
+        <path
+          class="fill"
+          d="M12 2.5 14.2 9.8 21.5 12l-7.3 2.2L12 21.500l-2.200-7.300L2.500 12l7.300-2.200z"
+        />
+      )
+    }
+    {
+      service === 'website' && (
+        <>
+          <rect class="fill" x="3" y="4.5" width="18" height="15" rx="2.8" />
+          <path
+            class="cut"
+            stroke-width="1.8"
+            d="M3 9.5h18M6 7h.01M8.5 7h.01"
+          />
+        </>
+      )
+    }
+    {
+      service === 'solutions' && (
+        <>
+          <rect class="fill" x="3.5" y="3.5" width="7.5" height="7.5" rx="2" />
+          <rect
+            class="fill"
+            x="13"
+            y="3.5"
+            width="7.5"
+            height="7.5"
+            rx="3.75"
+          />
+          <rect
+            class="fill"
+            x="3.5"
+            y="13"
+            width="7.5"
+            height="7.5"
+            rx="3.75"
+          />
+          <rect class="fill" x="13" y="13" width="7.5" height="7.5" rx="2" />
+        </>
+      )
+    }
+  </svg></span
+>
+
+<style>
+  .tok {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    inline-size: 0.92em;
+    block-size: 0.92em;
+    border-radius: 26%;
+    background: var(--tok-fill);
+    color: var(--color-service-on-service);
+    vertical-align: -0.1em;
+  }
+  svg {
+    display: block;
+    inline-size: 62%;
+    block-size: 62%;
+  }
+  .fill {
+    fill: currentColor;
+  }
+  .cut {
+    fill: none;
+    stroke: var(--tok-fill);
+    stroke-linecap: round;
+  }
+  .tok--expert {
+    --tok-fill: var(--color-service-expert);
+  }
+  .tok--automation {
+    --tok-fill: var(--color-service-automation);
+  }
+  .tok--website {
+    --tok-fill: var(--color-service-website);
+  }
+  .tok--solutions {
+    --tok-fill: var(--color-service-solutions);
+  }
+  .tok--sm {
+    inline-size: var(--space-6);
+    block-size: var(--space-6);
+    vertical-align: middle;
+  }
+  .tok--lg {
+    inline-size: var(--layout-tap);
+    block-size: var(--layout-tap);
+  }
+  .tok--closing {
+    inline-size: calc(var(--space-10) * 0.92);
+    block-size: calc(var(--space-10) * 0.92);
+  }
+</style>

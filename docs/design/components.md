@@ -1,7 +1,7 @@
 # Components — design system v3
 
 Status: for approval at Gate 2e · Owner: UX/UI Designer · Ticket: #125
-Tokens: [tokens.json](tokens.json) · Contrast: [contrast.md](contrast.md) · Motion: [motion.md](motion.md) · Live: `public/labs/v3/`
+Tokens: [tokens.json](tokens.json) · Contrast: [contrast.md](contrast.md) · Motion: [motion.md](motion.md) · Live: the shared components in `src/components/`
 
 All controls share these rules: a 2 px `color.light.focus` outline with a 2 px offset on `:focus-visible` (`color.dark.focus` in the footer), real `<a>` or `<button>` elements, and no change in size on hover.
 

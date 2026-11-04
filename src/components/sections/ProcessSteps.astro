@@ -31,24 +31,24 @@ const { steps, variant = 'timeline' } = Astro.props;
 <style>
   .process {
     list-style: none;
-    padding: var(--space-0);
-    margin: var(--space-0);
+    padding: 0;
+    margin: 0;
     display: grid;
     gap: var(--space-6);
   }
   li {
-    border-inline-start: var(--stroke-border) solid var(--color-dark-border);
+    border-inline-start: 1px solid var(--color-light-control-border);
     padding-inline-start: var(--space-6);
     min-inline-size: 0;
   }
   .number {
     display: inline-grid;
     place-items: center;
-    min-inline-size: var(--size-target);
-    min-block-size: var(--size-target);
-    border: var(--stroke-border) solid var(--color-dark-border);
-    background: var(--color-dark-background);
-    color: var(--color-dark-muted);
+    min-inline-size: var(--layout-tap);
+    min-block-size: var(--layout-tap);
+    border: 1px solid var(--color-light-control-border);
+    background: var(--color-light-canvas);
+    color: var(--color-light-text-muted);
     margin-block-end: var(--space-4);
     font-size: var(--font-size-small);
   }
