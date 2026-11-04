@@ -1,84 +1,85 @@
-# Dispatch field components — v2
+# Components — design system v3
 
-> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+Status: for approval at Gate 2e · Owner: UX/UI Designer · Ticket: #125
+Tokens: [tokens.json](tokens.json) · Contrast: [contrast.md](contrast.md) · Motion: [motion.md](motion.md) · Live: `public/labs/v3/`
 
-Issue #86 · Implements the owner's Concept C selection on [PR #85](https://github.com/clockvane/website/pull/85#issuecomment-6507923611). This is the production specification; the selected prototype is a historical snapshot. [Tokens](tokens.json) · [wireframes](wireframes.md) · [motion](motion.md) · [computed contrast](contrast.md). These replace Workshop ledger rules, including its light-only forms and CSS stroke-draw animation.
+All controls share these rules: a 2 px `color.light.focus` outline with a 2 px offset on `:focus-visible` (`color.dark.focus` in the footer), real `<a>` or `<button>` elements, and no change in size on hover.
 
-## Color and focus contract
+## Pill button
+| | Primary | Secondary |
+|---|---------|-----------|
+| Default | Fill `light.action`, label `light.onAction` | Fill `light.canvas`, 1 px `light.controlBorder`, label `light.text` |
+| Hover | Fill `light.actionHover` | Fill `light.secondaryHover` |
+| Active | Fill `light.actionActive`, scale 0.98 | Fill `light.secondaryActive`, scale 0.98 |
+| Focus | Ring | Ring |
+| Disabled | Fill `light.disabledFill`, 1 px `light.controlBorder`, label `light.disabledText`, `aria-disabled` | Same |
+| Loading | Label reads "Sending…", 16 px spinner ring in `light.controlBorder`, `aria-busy`, stays the same width | Same |
+| Error | Pills have no error state; the message sits beside the field in `light.error` | |
 
-Dark-first and **dark-only at launch**: canvas `palette.canvas`, opaque panels `palette.panel`. No light theme is offered because the selected direction and its evidence cover dark surfaces; maintaining a second visual system would add unapproved scope. OS light preference keeps this theme; forced colors use system colors. `color.dark.*` supplies every semantic role. Historical `color.light.*` and `color.inverse.*` alias it for existing consumers; they do not create light panels or bright footer bands. Do not mix legacy palette names with semantic roles.
+- **Sizes:** default 44 px high, 20 px side padding, 16 px, weight 600. Small 40 px high, 16 px side padding, 14 px, for the header, toolbars and demo controls.
+- **On the dark band:** fill `dark.action`, label `dark.onAction`, hover `dark.actionHover`; outline `dark.controlBorder`.
+- **Icon:** optional trailing arrow, 1.25em, `aria-hidden`; moves 3 px on hover.
+- **Wrap:** in a `cta-row`, which centres and wraps; on phones they wrap to two lines rather than shrink.
 
-Text/heading = `text`; secondary prose, hints and disabled labels = `muted`; borders/icons/grid = `border`; links, path core, focus and success symbol = `link`/`focus`/`success`; errors = `error`. All fills, labels, outlines and meaningful graphics are opaque. No opacity dimming for disabled controls, translucent panels, or animated text. Never put text, icons, focus rings or controls on glow: clip the decorative halo to a separate route lane, excluding opaque node/label boxes. The route's opaque ice core supplies meaning. `elevation.glow` is static; panel shadows use `elevation.flat`. Canvas/panel contrast does not delineate a control: use the border token.
+## Text link
+`light.link` with an underline at all times, hover `light.linkHover`, minimum height 44 px when it stands alone. In the footer: `dark.link` with no underline at rest, `dark.linkHover` and an underline on hover. The underline isn't needed at rest there because the group is a list of links.
 
-**F (all controls):** immediate `stroke.focus` (3px) solid `focus` outline, `stroke.focusGap` (5px) offset; the gap exposes the containing canvas or panel. Reserve `space.2` clearance around targets; never clip rings. Use `:focus-visible`, also `:focus` on programmatically focused summaries/results. Outline persists in hover, active and error states. No controls on bright button fills other than that button's own canvas-colored label/icon. Forced colors: Canvas/CanvasText, ButtonFace/ButtonText and Highlight; preserve native inputs and visible borders. Use `layout.anchorOffset` for scroll padding/margins if sticky navigation is enabled; default v2 header is static.
+## Header
+Sticky at `top: 0`, height 64 px, canvas fill, 1 px `light.hairline` below.
+- **Wordmark:** plain text from config, 20 px, weight 680. Link to home.
+- **Below 64rem:** wordmark, small primary pill and menu button. The menu is a `<details>` with a real `<summary>`, labelled "Menu", opening a panel of 44 px links. Works without JavaScript. Escape closes it and returns focus; a click elsewhere closes it.
+- **From 64rem:** adds nav links (44 px, pill hover in `light.surface`) and the Services disclosure, with the same behaviour as the menu. Panel: `lg` radius, hairline ring, `shadow.lift`, with a token beside each service.
 
-All pairs, including reversed primary label/fill and icon/fill pairs, are enumerated in [contrast.md](contrast.md). Hover/active color swaps are instant: no interpolation through untested pairs. Body text needs 4.5:1; UI/focus/meaningful graphics need 3:1; every specified pair exceeds 4.5:1. Success/error always include text and a distinct symbol, never color alone.
+## Service token
+A rounded square in a service colour with a white glyph (`service.onService`, 5.09:1 or better).
+- **Sizes:** inline 0.92em of the surrounding text, small 24 px (tabs, disclosure), large 44 px (service heading), closing row 37 px. Radius 26%.
+- **Glyphs:** speech bubble (expert support), four-point spark (AI automation), browser window (website creation), four blocks (solutions). Never faces, gears or clocks.
+- **Accessibility:** always `aria-hidden`; the words beside it carry the meaning, and the sentence is complete without it.
+- **Motion:** in the hero only, scale 0.6 to 1 and fade, 500 ms, staggered 80 ms.
 
-## Interactive primitives
+## Example screen (`shot`)
+`<figure>` with `<picture>` and a `<figcaption>` label.
+- **Image:** AVIF with WebP fallback, `srcset` at 320, 640 and 960 w, `sizes`, `width`, `height`, `alt`, lazy, async decoding. Pre-rendered at twice the display size so text stays crisp.
+- **Card:** `lg` radius, `shadow.card`, white behind the image.
+- **Label:** pill at bottom left: `light.card` fill, `light.text`, 12 px weight 600, hairline ring. Reads "Example website", "Example support request", "DRAFT · Scripted example" and so on (copy deck §3.5). Always HTML, on every copy.
+- **States:** static instances lift by 4 px with `shadow.lift` on hover, where the device has hover. Screens in a moving track don't, and are never interactive. No focus state, since they aren't controls. If an image fails, the white card and the label remain, and the browser shows the alt text.
+- **Loading:** the card holds its space through `width` and `height`, so there is no layout shift.
 
-Here and below, roles are `color.dark.*`. Primary labels/icons stay `onAction` in every enabled state. All enabled primitives use F. States are exhaustive; N/A means no such interaction is provided.
+## Marquee
+- **Columns:** a fixed-height stage (`light.surface`, `xxl` radius) of 3, 4 or 5 columns. Tops and bottoms fade into the surface. Alternate columns move in opposite directions.
+- **Row:** full-bleed track of wide screens, maximum 120rem so the loop never shows a gap.
+- **Toolbar before each marquee, in DOM order:** note "All screens are examples we designed, not client work." and a small secondary "Pause examples" button, which reads "Resume examples" when paused. All buttons share one state.
+- **Pauses on:** the button (it stays paused until pressed again), hover, keyboard focus inside, off-screen, hidden tab.
+- **Stopped layout (no JavaScript, reduced motion, save-data):** no loop copies, no fades, no pause button; the stage scrolls by itself, and it is focusable so keyboard users can scroll it.
+- **Accessibility:** `role="group"` with a label and `aria-describedby` to the note. Copies are added by script, are `aria-hidden` with `alt=""`.
 
-| Primitive | Default | Hover | Active / current / open | Disabled | Loading | Error |
-|---|---|---|---|---|---|---|
-| Primary button / CTA anchor | `action` fill/border, `onAction` text/icon | `actionHover` fill/border | `actionActive` fill/border; no required movement | `disabledFill`, `disabledText`, dashed `border`; native disabled button, no opacity | Same default colors; sending label; `aria-disabled` and duplicate-submit guard, retain focus | Return to enabled default; associated error banner, not red CTA |
-| Secondary / replay / disclosure | `surface` fill, `text`, `border` | `link` text/border | `linkActive` text/border; disclosure marker changes direction immediately | `disabledFill`, `disabledText`, dashed `border` | Same default; text status only when an actual async action exists | Associated message; replay falls back to complete static illustration |
-| Text link | `link`, underline | `linkHover`, thicker underline | `linkActive`; current nav also `aria-current=page` and persistent underline | No disabled anchors; omit unavailable destination or use plain explanatory text | N/A: native navigation | N/A: destination owns error state |
-| Text field / textarea | `surface` fill, `text`, `border`; hint/placeholder `muted` | `text` border | `text` border plus F while focused | `disabledFill`, `disabledText`, dashed `border`; read-only uses solid border | Read-only during send, values selectable | `error` border, error text + symbol; F retained |
+## Tabs (one place)
+- **Tab:** pill 44 px with a small token and a label. Default as the secondary pill, hover `light.secondaryHover`, active `light.secondaryActive`, selected `light.action` with `light.onAction`.
+- **Keyboard:** roving `tabindex`; Left, Right, Home, End move and select.
+- **Without JavaScript:** the tablist is `hidden` and all four panels stack, each with its own h3. The script adds `role="tabpanel"`, so the roles exist only when they work.
+- **Panel:** `light.surface`, `xl` then `xxl` radius, 20 px then 32 px padding. Head: h3, summary, "For" line, primary and secondary pills. Then 2 thumbnails on phones, 3 from 48rem.
+- **Jump pills** on the overview look the same but are plain links in a named `nav`.
 
-Small actions/nav/replay: `size.target` minimum 44×44px, padding `space.2`/`space.4`. Standard controls/buttons: `size.control` 48px minimum height, padding `space.3`/`space.6`; hero CTA `size.largeControl` 56px minimum. Textarea: `size.textarea` 160px minimum, vertical resize. All use `radius.small` 4px and `stroke.border` 1px. Heights are minima; labels wrap. Standalone glyphs use `size.icon` 20px and inherit label color. Mobile CTA full width, from `compactCta` intrinsic and wrapping. Anchors styled as buttons remain anchors; replay/submit remain buttons. Disclosure uses native details/summary, not ARIA menu roles.
+## AI demo
+- **Copy column:** "DRAFT · Scripted example" tag, h2, lead, the explanation that it isn't live, controls.
+- **Stage:** `light.surface` with a white card: example input, typed prompt (`light.surface` box), four steps, result box (`light.controlBorder` inset line), then the closing line.
+- **Step states:** waiting: 20 px ring in `light.controlBorder`, `light.textMuted`. Active: ring spins, `service.automation` with a gap, `light.text`. Done: tick in `light.success`, `light.text`.
+- **Result states:** waiting: `opacity: 0`, 8 px lower, space held, so nothing shifts. Shown: fades up over 500 ms.
+- **Controls:** one primary toggle, "Pause example" or "Play example", hidden when finished, and a secondary "Replay example". Accessible names add "AI reply example", keeping the visible words first (WCAG 2.5.3). Escape pauses.
+- **Without playback:** without JavaScript or with reduced motion, the finished state shows and the controls stay hidden. All script text stays in the DOM during playback, including the untyped part of the prompt, so assistive technology reads it in full; a text alternative and one polite status message at the end complete it.
+- **Never shows** live status, run times, savings, scores or client identities.
 
-## Type and layout
+## Story placeholder
+1 px dashed `light.controlBorder`, `xl` radius, 20 px padding, "Placeholder" tag (`light.placeholderFill`, `light.placeholderText`), h3 and body with the literal `[[PLACEHOLDER: …]]` text. Prototype only. The live site omits the section until approved stories exist.
 
-One self-hosted Public Sans variable WOFF2 (existing file, **26,832 B**, OFL), 400 body / 600 headings / 650 display and primary actions; `font-display: swap`, preload that file only. System monospace labels require no font download. Remove the obsolete Newsreader preload/font declaration in #88. Font limit: ≤3 files / 120,000 B; design uses 1 file. Font fallback is Arial/sans-serif, with reflow/CLS checked at implementation.
+## Closing band
+`light.surface`, `xl` then `xxl` radius, centred, row of four tokens, h2, lead, one primary pill. Used on Home, Services, How we work and About.
 
-| Role | Size and weight | Line height / tracking |
-|---|---|---|
-| Home h1 | Public Sans 650; `clamp(h1Mobile=2.75rem, 6.5vw, heroWide=6.5rem)`; 44px at 320/390, about 50px at 768, 66.56px at 1024, 93.6px at 1440; cap 104px on wider screens | `hero` 1.04 / `trackingRatio.hero` × 1em |
-| Inner h1 | 650; `h1Mobile` 2.75rem, `h1Tablet` 3.125rem from tablet, `pageTitle` 3.5rem from desktop | `heading` 1.12 / heading ratio × 1em |
-| h2 | 600; `h2Mobile` 2rem, fluid to `h2Desktop` 3.5rem using 3.5vw | `heading` 1.12 / heading ratio × 1em |
-| h3 | 600, `h3` 1.375rem | `ui` 1.5 / body tracking 0 |
-| Body / labels / controls / SVG labels | 400 / 600 for controls; `body` / `small` 1rem | `body` 1.6 (controls `ui` 1.5) / 0 |
-| Lede | 400, `lede` 1.125rem | `body` 1.6 / 0 |
-| Optional row numbers/category labels | System monospace, `label` .8125rem; never essential instructions, errors or SVG text | `body` 1.6 / label ratio × 1em |
+## Footer
+`dark.canvas` with rounded top corners. Wordmark, tagline, footer line, Services and Company groups (`<nav>` with a labelled heading), 44 px links. Base line: copyright and location in `dark.textMuted`, above a `dark.hairline` divider. No large wordmark: the design must not lean on the name.
 
-Retain user root size; semantic heading levels are independent of size. Type ratios are numbers used with `calc(var(...) * 1em)`. No forced line breaks to fit one viewport. Body measure ≤`layout.measure` 65ch; hero copy ≤`heroCopy` 65rem, lede ≤`heroLede` 42rem; form/result ≤35/40rem. At 320px, 200% text and 400% zoom use wrapping actions, `minmax(0,1fr)`, `min-inline-size:0`, and overflow-wrap for URLs. No overflow hiding to conceal reflow failures.
-
-Spacing scale remains quarter-rem-based. Paragraphs and heading→lede `space.4`; list items `space.3`; content→actions `space.6`; form groups `space.6`. Container ≤`layout.content` 80rem. Gutters: `space.6` below 480px, `space.8` above; sections: `space.12` below 768px, `space.20` above. Hero→field gap `space.8`; row padding `space.6` below 1024px / `space.8` above. Cards use `space.6`. Two-column row gap `space.20` when it fits at tablet; collapse to `space.8` if enlarged text needs it. Wide rhythm may use `space.28` only between major chapters. Breakpoints are rem tokens: compactCta 30, tablet 48, desktop 64, wide 90; 320/390 are validation widths, not extra device-specific queries.
-
-## Inventory and accessibility
-
-**Static** below means container hover/focus/active/disabled/loading/error are all N/A. Its interactive children inherit the complete primitive table and F; do not make panels focusable. Minimum target is 44×44px at all widths; give prose/breadcrumb links their own wrapping target line where needed. Each page has a skip link, labelled nav landmarks, main, footer and one h1. No positive tabindex or CSS reordering of focusable controls.
-
-| Component | Size, layout and content | States and accessibility |
-|---|---|---|
-| Skip link | Primary colors, `space.4` padding; first target, `elevation.skipLink`; links to main with tabindex -1 | Offscreen only until focus; F visible above header; native navigation; disabled/loading/error N/A |
-| Header | Static opaque canvas; `layout.header` 5rem minimum, bottom border; config brand. Under desktop: native Menu disclosure; below 480 CTA inside only, 480–1023 compact CTA outside too. Desktop: inline nav + Services link and separate disclosure of six services | Links/disclosures use primitives/F; current underline; in-flow panel, no overlay or animated height. Inactive responsive variant display:none with unique IDs. Native keyboard and no-JS menu; no page-wide Escape listener. Long labels wrap; never cover content |
-| Footer | Canvas + border, `space.12` block padding; stacked below desktop, three columns above; `site.footer-line`, Services/Company navs, config contacts/socials | Static; links/F. No CTA duplicate. Omit unset contacts/socials; social icons named. Six services from shared content, no invented availability/status chips |
-| Page header | Copy `<page>.intro`; left aligned inner h1/lede; service breadcrumb above; action below with `space.6` gap | Static; breadcrumb nav/ol; current item plain text + aria-current; links/F. No skeleton, reveal or autofocus |
-| CTA band | Opaque panel bounded by rules; h2 + sentence + primary, `closing-cta`; single column below desktop, text 8/action 4 columns above | Static; CTA states/F. Overview merges `services.help-choose` into this one band. Omit on contact, result routes, privacy, 404 |
-| Service row | Six ruled canvas rows, number/name/summary/for/link plus opaque panel illustration; h3 Home / h2 overview. Stack at 320/390; equal columns from tablet. Copy first in DOM; even row visual sits left only when it is decorative and noninteractive | Static; explicit detail link/F, no stretched row link. Replay stays with copy in DOM/tab order. No status counters or fabricated results. Full breakpoint contract in wireframes |
-| Card | Panel fill + border, small radius, `space.6` padding; related service / next steps / engagement model | Static; no hover lift. Only explicit link uses primitives/F. Empty optional card omitted; no generic loading/error skeleton |
-| Process / timeline | Semantic ol, numbered h3/text/output; `space.6` gap, border-colored connectors and panel nodes. Home vertical → 2×2 tablet → four columns desktop; How we work remains vertical | Static text; decorative node emphasis per motion.md. Links/F if supplied. Chronology preserved; every output visible with no JS; no made-up timings or progress percentages |
-| Workflow / dispatch field | Original SVG perspective field, panel nodes, border paths, ice route, canvas-colored ink on ice chips only; `stroke.diagram` 1.5px, hero ≤58rem. HTML caption and example label; no network imagery | Static diagram baseline; decorative SVG aria-hidden when caption plus accessible HTML description convey all steps. Otherwise role=img with unique title/desc IDs. Labels ≥1rem at rendered size; mobile re-layout, never tiny scaled labels. Replay primitive/F; see motion.md for playing, paused, unavailable and error states |
-| Result panel | Panel or canvas with boundary if panel; ≤`layout.result`, h1/body/actions, `space.6` padding. Thanks/error copy from deck; inline success uses h2 under existing h1 | Static page load starts at top. Inline success heading receives F. No loading state for static route; failure is named text + error symbol and recovery link. Never imply saved text after native POST redirect |
-| Contact fields / messages | Form ≤`layout.form`; label, hint, input, error in DOM order. Name/reply/message/company order from microcopy; `space.2` label/hint gaps. Next-steps card follows form, never sticky | Field primitives/F; native labels, required/optional words, autocomplete, shared-schema limits; no placeholder-only labels. Disabled fields absent from tab order, read-only selectable. Error IDs appended to hint aria-describedby; aria-invalid only after validation. Honeypot absent from layout, AT and tab order |
-| 404 | Full shell, ≤`layout.result`; `errors.404` / microcopy, Home/Services/Contact links, no CTA band, no diagram | Static; link states/F; root-absolute links/assets, noindex; no autofocus, timed redirect or fake search |
-
-## Contact journey states
-
-| State | Presentation and behavior | Focus / announcement |
-|---|---|---|
-| Initial / filling | Labels and hints visible; no initial validation or skeleton | Natural order; touched-field validation on blur never moves focus |
-| Validation failure | Panel error summary, error border/text/icon and list of field links; inline messages; keep values | Focus summary tabindex -1, labelled h2, F, no role=alert; field links focus their inputs |
-| Sending | Default primary with “Sending…”; form aria-busy, fields read-only, submit aria-disabled with duplicate-submit guard | Keep focus on submit; one polite live region outside busy form uses microcopy sending message; no spinner |
-| Offline / delivery / rate failure | Error banner, preserved values in JS path; reset busy/read-only and retry enabled. Config-only fallback link | Focus labelled banner tabindex -1 with F; no duplicate alert announcement |
-| Success | Replace form with deck confirmation; original page h1 retained, result h2; no repeat submit | Focus result h2 with F, no duplicate live announcement |
-| No JS / script failure | Native required/length validation and POST to config endpoint; server independently validates, uses thanks/error routes | Browser manages validation/navigation. Native error route explicitly says text was not kept; no promise of retention |
-
-All error/status strings come from [microcopy](../content/microcopy.md); page copy from the [deck](../content/copy-deck.md). Booking/contact destinations and brand values remain config references. No new copy, testimonials, durations, savings or response promises are authored here. Existing unconfirmed copy stays flagged until its owning content ticket resolves it.
-
-## Implementation handoff (#88)
-
-No token path is removed or renamed. Added canonical palette keys, `color.dark.*`, system label family, display weight, hero/label sizes, tracking ratios, hero layout widths, wide breakpoint, border aliases, static glow and motion tokens. All retain types the current generator serializes; borders use separate dimension/color primitives rather than an unsupported composite border type. Legacy palette mirrors: paper→canvas, paperDeep→panel, ink→text, inkSoft→muted, brass→ice, navy→iceHover, brassLight→ice. These remain concrete color objects because the existing OG image reads their hex values directly; the unit check asserts they equal canonical values. Existing error key now contains the dark-safe error color.
-
-Token generation therefore changes current rendered colors and type now, even though #86 edits no source component. This is an intermediate restyle, not the completed C layout. #88 must adopt `color.dark`, set color-scheme:dark, apply display weight/fluid hero sizing, remove Newsreader, change header/layout rules and update SVG node fills/ink roles. Never treat a legacy palette name as its former hue. Keep aliases until all consumers migrate; no runtime theme switch or new JS is needed. Validate all new states in the component gallery, 320/390/768/1024/1440, 200% text, 400% zoom, forced colors, keyboard, axe, no-JS, reduced motion and Save-Data before claiming production v2 complete.
+## Form fields (specified for the engineering ticket; not in this prototype)
+Label above in `light.text` 14 px weight 600, helper in `light.textMuted`. Field: 44 px minimum, `md` radius, `light.canvas`, 1 px `light.controlBorder`.
+- **Hover:** border `light.text`. **Focus:** ring. **Disabled:** `light.disabledFill`, `light.disabledText`.
+- **Error:** message in `light.error` under the field, linked with `aria-describedby` and `aria-invalid`; never colour alone, since the message says what to fix.
+- **Loading and success:** per copy deck §6 and §7 and [microcopy](../content/microcopy.md).

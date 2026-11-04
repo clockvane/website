@@ -1,53 +1,46 @@
-# Dispatch field motion — v2
+# Motion — design system v3
 
-> ⚠️ **Superseded by change request 3** ([`docs/product/BRIEF.md`](../product/BRIEF.md), 2026-11-03): a name-independent, Mobbin-style site with new services. This document describes a dropped direction and will be rewritten for change request 3. Don't build from it.
+Status: for approval at Gate 2e · Owner: UX/UI Designer · Ticket: #125
+Architecture and limits: [ADR-004](../adr/ADR-004-motion-and-effects.md). Live: `public/labs/v3/v3.css` and `v3.js`.
 
-Issue #86 · [ADR-004](../adr/ADR-004-motion-and-effects.md) governs implementation. Original SVG + CSS explain examples, not a live monitoring product. No Canvas/WebGL renderer is needed; the allowed renderer budget is left unused. No animation library, framework, video, particle loop, pointer tracking or scroll-jacking. Copy and accessible descriptions: deck `home.field`, `home.services`, and §3.7 service animations.
+Motion is smooth and subtle. It supports the product screens and never carries information by itself. CSS first, with one small vanilla controller. Only `transform` and `opacity` move, apart from colour on small controls.
 
-## Shared lifecycle (applies to every sequence below)
+## Tokens
+| Token | Value | Use |
+|-------|-------|-----|
+| `motion.duration.fast` | 150 ms | Button and tab colour |
+| `motion.duration.base` | 240 ms | Hover lift, arrow |
+| `motion.duration.slow` | 500 ms | Hero tokens, demo result |
+| `motion.duration.reveal` | 600 ms | Scroll reveal |
+| `motion.duration.columnSlow` | 90 s | One loop of columns 1, 3 and 5 |
+| `motion.duration.columnFast` | 70 s | One loop of columns 2 and 4 |
+| `motion.duration.row` | 80 s | One loop of the row |
+| `motion.ease.standard` | cubic-bezier(0.2, 0, 0, 1) | Everything that starts and stops |
+| `motion.ease.out` | cubic-bezier(0, 0, 0.2, 1) | Reserved for entrances in production |
+| `motion.ease.linear` | cubic-bezier(0, 0, 1, 1) | Marquees, spinner |
 
-Base HTML/CSS displays complete, opaque labels, caption and finished route. Only decorative moving marks may start hidden, and only under `.js-motion` plus that scene's playing state. Register scenes with ADR-004's single controller; components add no observers/loops. Start once when ≥35% of the illustration is in view and the document is visible, after initial content paint; replay requires an explicit real button. Unobserve completed one-shots unless replay needs observation; an active replay must still pause offscreen.
+## Inventory
+| Element | What happens | Trigger | Stops by | Reduced motion and no JavaScript |
+|---------|--------------|---------|----------|----------------------------------|
+| Hero tokens | Scale 0.6 to 1 and fade, 80 ms stagger | Page load, CSS only | Finishes in under 1 s | Reduced: no animation. No JavaScript: plays, because it needs none |
+| Columns | `translateY` loop, opposite directions | `.js-motion` | Pause button, hover, focus inside, off-screen, hidden tab | Stopped; the stage scrolls by itself |
+| Row | `translateX` loop | `.js-motion` | Same | Stopped; the row scrolls by itself |
+| Reveal | Fade and rise 16 px, once | IntersectionObserver at 12%, under `.js-motion` | Finishes | Final state |
+| AI demo | Prompt types (2.4 s), four steps (0.75 s each), result fades | Demo card scrolled into view, once; Replay | Pause control, Escape, finishes after about 5.7 s | Finished draft |
+| Hover lift | Rise 4 px with a larger shadow | Hover on static screens, `hover: hover` only | Pointer leaves | About instant |
+| Button press | Scale 0.98 | `:active` | Release | About instant |
 
-IntersectionObserver pauses at <35% visibility; visibilitychange pauses in hidden tabs. Resume the same progress when visible, do not restart on scroll. At completion remove playing/will-change and retain the designed final state. No sequence, including its stagger, exceeds 2.4s; no automatic replay. Scope Escape to a playing or paused scene with focus inside it; Escape restores the static final state and leaves focus on its control. Never cancel navigation/form Escape handling with a global listener. Replay uses the secondary primitive with aria-disabled=true and guarded activation while playing or paused, never native disabled during a run: retain its focus so Escape remains available. Completion/Escape removes aria-disabled and enables replay again.
+## Rules kept from ADR-004
+- **No JavaScript, no hidden content.** Hidden-until-revealed states exist only under `.js-motion`.
+- **Reduced motion, `prefers-reduced-data` and save-data.** The controller doesn't add `.js-motion` and the demo stays finished. CSS also removes all animation under `prefers-reduced-motion`.
+- **WCAG 2.2.2.** Every loop has a real pause button before it in DOM order, and once paused it stays paused until pressed. The demo has its own Pause control.
+- **Loop copies.** Added by the controller, `aria-hidden`, `alt=""`, nothing focusable, same image URLs so there are no extra requests. The HTML has no duplicates.
+- **CLS.** Stage heights are fixed and images carry `width` and `height`. The demo's untyped text and result box hold their space. Measured CLS: see the Gate 2e PR.
+- **No flashing, no scroll-jacking, no autoplay video, no `scroll` listeners.** The spinner is the only fast loop, and it is a small ring.
+- **CSP.** External CSS and JS only, with no `style` attributes in the pages. The controller adds no inline style.
 
-With reduced motion, Save-Data, supported reduced-data preference, or ADR low-power hints: no sequence runs, replay controls are hidden, all scenes show their final frame and caption. React immediately to preference changes and restore the static state. Reduced motion also disables page transitions and transform feedback; this design uses instant feedback in these modes. With no JS/controller error/observer unavailable: same complete static illustration, no replay controls exposed; navigation and form still work. No WebGL dependency exists, so disabled/lost WebGL cannot affect the illustration. CSS still has a prefers-reduced-motion guard if controller policy fails. Never hide actual headings, descriptions, link targets or form fields.
+## Speed
+Column loops move at about 10 px/s at desktop size, slow enough to read a label as it passes. Don't go faster: at twice the speed the screens read as decoration, not product.
 
-Animate **only transform and opacity**, even where ADR-004 permits more. No stroke-dashoffset, animated gradient, blur, shadow or layout. Glow is static and clipped to a label-free lane; opaque route core remains visible. Moving marks and opacity effects are decorative duplicates of always-readable content. No transient color-only meaning, flashing, invented live metrics or client results. SVG text never moves or fades. No aria-live updates for decorative demonstrations; the persistent HTML description contains the full explanation.
-
-## Sequence scorecards
-
-All rows use the shared trigger, pause, replay and reduced-motion/data/no-JS contract above. Durations include all delays. `motion.diagram` = 1800ms, `motion.dispatch` = 2400ms, `motion.stagger` = 180ms included within the total (shorten delayed animations accordingly). Distances below are SVG illustration geometry, not page layout or typography tokens. At narrow widths use a compact/vertical route with full-size labels, never translate across label boxes.
-
-| Scene / pages | What it explains and moving layers | Timing / easing | Final frame in every fallback | Additional gzip budget (JS / CSS) |
-|---|---|---|---|---|
-| Hero dispatch / Home only | Shop → Spreadsheet → Invoice tool. One narrow task marker follows the perspective route through a lane below the labels; opaque route remains throughout. Small vane rotates toward the destination, no field/camera movement | 2400ms total, easeInOut; marker translate + opacity, vane rotate; no stagger beyond total | Three connected tools, static illuminated route and marker at destination; `home.field` caption and example label | 0 / 1200 B |
-| Business process automation / Home, overview, its detail | A single order token crosses connected tools; shows removal of retyping, not throughput | 1800ms total, easeOut; translate along route, optional opacity on decorative token only | Connected shop/sheet/invoice, completed route; labels and caption always readable | 0 / 500 B |
-| AI automation / Home, overview, its detail | Decorative document lines resolve into structured-field marks, with an explicit human-check branch; unclear input is not silently accepted | 1800ms total, easeOut; translateY and opacity on marks, stationary labels | Document → fields plus visible human checkpoint and caption; no implied autonomous accuracy | 0 / 500 B |
-| AI cost optimization / Home, overview, its detail | Compare current spend with a test route, illustrating investigation only. No numerical axis, currency, percentage, savings claim or success badge; comparison and caveat stay visible | 1800ms total, easeOut; scaleY on illustrative test bar, origin bottom, no animated height | Unnumbered comparison bars with `services.*.animation` caption and text alternative saying example method, not a saving. Q13 unresolved; production copy must keep that qualification | 0 / 500 B |
-| Cloud and DevOps / Home, overview, its detail | Code → tests → human approval before release; stationary approval checkpoint prevents an automatic-deployment inference | 1800ms total, easeOut; opacity/scale on decorative stage marks with stagger inside total | Complete pipeline and approval stop; no real deployment timestamp/status | 0 / 500 B |
-| Websites and apps / Home, overview, its detail | Content blocks assemble into an enquiry path; illustrates information hierarchy | 1800ms total, easeOut; translateY (≤24 SVG units) and opacity on unlabeled shapes only | Finished miniature page, enquiry destination and caption; not an interactive browser mockup | 0 / 500 B |
-| Custom software / Home, overview, its detail | One connector joins incompatible tools; explains integration rather than an unspecified dashboard | 1800ms total, easeOut; connector translateX (≤35 SVG units), stationary tool names | Two tools joined by custom connector, complete caption | 0 / 500 B |
-
-The cost comparison inherits Concept C's illustrative bars; it is **not evidence of lower cost**. Q13/Q14 remain in the PRD and copy deck. If content approval changes the method, replace that illustration and alternative together; do not add claims locally. Scene geometry is original SVG, simple enough to read without motion.
-
-## Supporting motion and total allocations
-
-Timeline: each decorative step marker emphasizes arrival once at the same observer threshold, `motion.diagram` maximum; text/output stay visible. Use opacity/transform on marker only; CSS budget 600 B. No pinned timeline or scroll position indicator; static numbers carry chronology. Buttons/links: instant color/underline/focus changes; an optional icon translate of ≤2px over `motion.interaction` (120ms, easeOut) clarifies direction and resets on pointer exit/focus loss; disabled under fallback policies. Micro CSS budget 400 B. Form feedback is text plus focus, with no spinner. Cross-document View Transition: optional 180ms opacity, no shared-element flight, no client router; disabled under fallback policies and static without API support; CSS budget 300 B.
-
-Budgets are **allocations for #88/#58/#59, not measurements of unbuilt v2 components**. Decimal gzip bytes, sum per requested resource without double-counting shared CSS/JS. Single controller ≤5000 B covers all registration, policy and replay; each scene contributes **0 additional JS**. Generic motion/lifecycle CSS ≤1000 B; base shell/type/components ≤20,000 B. Timeline/micro/transitions total ≤1300 B.
-
-| Page | JS allocation | CSS allocation (base + lifecycle + scenes + supporting) | Hard limits |
-|---|---:|---:|---|
-| Home (hero + all six + timeline) | ≤5000 B controller; renderer 0 | ≤26,500 B (20000+1000+1200+3000+1300) | JS 35000, controller 5000, hero 15000, CSS 40000 |
-| Services overview (all six) | ≤5000 B | ≤25,300 B (20000+1000+3000+1300) | Same page limits; no renderer |
-| Any service detail (one sequence) | ≤5000 B | ≤22,800 B (20000+1000+500+1300) | Same page limits; no renderer |
-| How we work / other content | ≤5000 B if controller needed, otherwise 0 | ≤22,300 B (20000+1000+1300) | Same page limits |
-| Contact | ≤15000 B form; ≤5000 B controller only if used; total ≤20000 B | ≤22,300 B | Total JS ≤35000 B, CSS ≤40000 B |
-
-Every page also has fonts 26,832 B / 1 file (limits 120,000 B / 3), total ≤600,000 B, requests ≤20; reserve HTML/SVG/image bytes accordingly. Load only the scenes used on a page. Verify Lighthouse mobile ≥95 all categories, median 3 runs, LCP ≤2s, CLS ≤.05, TBT ≤150ms; INP ≤200ms requires field evidence, not an invented lab claim.
-
-## Evidence and implementation checks
-
-Unchanged selected prototype: C Lighthouse JSON (removed with change request 3), mobile metrics and sizes (removed with change request 3), 390px (removed with change request 3) / 1440px (removed with change request 3) static screenshots. PR #85 measured C at performance/accessibility/best-practices **100/100/100**, SEO **60** due to intentional noindex; median LCP 1.209s, CLS 0, TBT 0. JS **828 B**, CSS **3327 B**, renderer **0 B**, page **34,241 B**. These are feasibility evidence for the selected design, not a new v2 production measurement. #86 adds no prototype animation or shipped JS.
-
-Implementation must check: base CSS never hides flow/read/cost/release/assemble/join/trail outside the JS playing gate; reduced-motion, Save-Data and no-JS request/run no hero code; offscreen/hidden tab pause and resume; completion/replay/Escape focus; one shared observer per threshold; no moving text or label collisions at five target widths; full static workflow explanation; first-party requests only and CSP intact. Measure production bytes and mobile Lighthouse again after implementation. Historical prototype evidence remains a snapshot; do not regenerate it silently from later copy/config.
+## Controller
+Under the 5 kB controller limit (P-4). It holds marquee copies, the pause state, the two observers, tabs, the demo and disclosures. In production the contact enhancement stays a separate script.

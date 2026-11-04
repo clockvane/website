@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { Buffer } from 'node:buffer';
-import tokens from '../../docs/design/tokens.json';
+import tokens from '../../docs/design/tokens-legacy.json';
 
 /** Original workflow motif, rasterized at build time for social-card compatibility. */
 export async function GET(): Promise<Response> {
