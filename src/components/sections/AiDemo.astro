@@ -1,0 +1,252 @@
+---
+import { aiDemo, type AiDemoCopy } from '../../content/ai-demo';
+
+/**
+ * Prompt → steps → result. The HTML is the finished draft, which is all that no-JS and reduced-motion
+ * visitors get; the controller replays it when motion is allowed. All text stays in the DOM throughout.
+ */
+interface Props {
+  copy?: AiDemoCopy;
+}
+const { copy = aiDemo } = Astro.props;
+---
+
+<section
+  class="demo section"
+  aria-labelledby="demo-heading"
+  data-demo
+  data-finished={copy.finished}
+  data-control-name={copy.controlName}
+>
+  <div class="container demo-grid">
+    <div class="demo-copy">
+      <p class="tag">{copy.tag}</p>
+      <h2 id="demo-heading">{copy.heading}</h2>
+      <p class="lead">{copy.intro}</p>
+      <p class="explain">{copy.explanation}</p>
+      <div class="cta-row controls" data-demo-controls hidden>
+        <button
+          class="pill pill--primary pill--small"
+          type="button"
+          data-demo-toggle
+          aria-label={`Pause example: ${copy.controlName}`}
+          >Pause example</button
+        >
+        <button
+          class="pill pill--secondary pill--small"
+          type="button"
+          data-demo-replay
+          aria-label={`Replay example: ${copy.controlName}`}
+          >Replay example</button
+        >
+      </div>
+      <p class="visually-hidden">{copy.textAlternative}</p>
+      <p class="visually-hidden" aria-live="polite" data-demo-status></p>
+    </div>
+    <div class="demo-stage" data-demo-stage>
+      <div class="demo-card">
+        <p class="label">{copy.inputLabel}</p>
+        <p class="input">{copy.input}</p>
+        <p class="label">{copy.promptLabel}</p>
+        <p class="prompt" data-demo-prompt>{copy.prompt}</p>
+        <ol class="steps">
+          {
+            copy.steps.map((step) => (
+              <li class="step is-done" data-step>
+                <span class="dot" aria-hidden="true">
+                  <svg viewBox="0 0 20 20" focusable="false">
+                    <path d="M4.5 10.5 8.2 14l7.3-8" />
+                  </svg>
+                </span>
+                {step}
+              </li>
+            ))
+          }
+        </ol>
+        <div class="result" data-demo-result>
+          <p class="label label--strong">{copy.resultLabel}</p>
+          <p>{copy.result}</p>
+          <dl class="facts">
+            {
+              copy.resultFacts.map(({ label, value }) => (
+                <div>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </div>
+      <p class="closing">{copy.closing}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .demo-grid {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .demo-copy > * + * {
+    margin-block-start: var(--space-4);
+  }
+  .tag {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-light-surface);
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-semibold);
+  }
+  .explain,
+  .closing {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+  }
+  .controls {
+    justify-content: flex-start;
+  }
+  .demo-stage {
+    padding: var(--space-3);
+    border-radius: var(--radius-xl);
+    background: var(--color-light-surface);
+  }
+  .demo-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--color-light-card);
+    box-shadow: var(--shadow-card);
+  }
+  .demo-card p {
+    margin-block-start: 0;
+  }
+  .demo-card .label {
+    margin-block-end: var(--space-1);
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-semibold);
+  }
+  .demo-card .label--strong {
+    color: var(--color-light-text);
+  }
+  .input {
+    margin-block-end: var(--space-4);
+    font-weight: var(--font-weight-medium);
+  }
+  .prompt {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-light-surface);
+    font-size: var(--font-size-small);
+  }
+  .prompt :global(.is-typing-rest) {
+    opacity: 0;
+  }
+  .prompt :global(.is-caret) {
+    display: inline-block;
+    inline-size: 2px;
+    block-size: 1.05em;
+    background: var(--color-service-automation);
+    vertical-align: -0.15em;
+  }
+  .steps {
+    display: grid;
+    gap: var(--space-2);
+    margin-block: var(--space-4);
+    list-style: none;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+  }
+  .dot {
+    position: relative;
+    flex: none;
+    inline-size: var(--space-5);
+    block-size: var(--space-5);
+    border: 2px solid var(--color-light-control-border);
+    border-radius: var(--radius-pill);
+  }
+  .dot svg {
+    position: absolute;
+    inset: -2px;
+    opacity: 0;
+    fill: none;
+    stroke: var(--color-light-success);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .step.is-active,
+  .step.is-done {
+    color: var(--color-light-text);
+  }
+  .step.is-active .dot {
+    border-color: var(--color-service-automation);
+    border-inline-end-color: transparent;
+    animation: demo-spin 800ms var(--motion-ease-linear) infinite;
+  }
+  .demo[data-state='paused'] .step.is-active .dot,
+  .demo-stage[data-offscreen] .step.is-active .dot,
+  :global(html[data-hidden-tab]) .step.is-active .dot {
+    animation-play-state: paused;
+  }
+  .step.is-done .dot {
+    border-color: transparent;
+  }
+  .step.is-done svg {
+    opacity: 1;
+  }
+  @keyframes demo-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .result {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 0 1px var(--color-light-control-border);
+    font-size: var(--font-size-small);
+    transition:
+      opacity var(--motion-duration-slow) var(--motion-ease-standard),
+      transform var(--motion-duration-slow) var(--motion-ease-standard);
+  }
+  .result.is-waiting {
+    opacity: 0;
+    transform: translateY(8px);
+    /* Preparing a replay must not fade readable text into a low-contrast state. */
+    transition: none;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-6);
+    margin-block-start: var(--space-3);
+  }
+  .facts dt {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-micro);
+  }
+  .facts dd {
+    font-weight: var(--font-weight-semibold);
+  }
+  .closing {
+    padding: var(--space-3) var(--space-2) var(--space-1);
+  }
+  @media (min-width: 64rem) {
+    .demo-grid {
+      grid-template-columns: 5fr 7fr;
+      gap: var(--space-16);
+      align-items: center;
+    }
+    .demo-stage {
+      padding: var(--space-6);
+      border-radius: var(--radius-xxl);
+    }
+  }
+</style>

@@ -12,6 +12,10 @@ const config = {
             pattern: '/__components/',
             entrypoint: './tests/fixtures/page-components.astro',
           });
+          injectRoute({
+            pattern: '/__design-system/',
+            entrypoint: './tests/fixtures/design-system.astro',
+          });
         },
       },
     },

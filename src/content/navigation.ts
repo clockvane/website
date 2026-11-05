@@ -9,4 +9,5 @@ export const company = [
   { href: '/how-we-work/', label: 'How we work' },
   { href: '/about/', label: 'About' },
 ] as const;
+export const allServices = { href: '/services/', label: 'All services' };
 export const primaryCta = siteConfig.primaryCta;

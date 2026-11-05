@@ -42,7 +42,7 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
     aboutCopy.who.heading,
     aboutCopy.expertise.heading,
     aboutCopy.proof.heading,
-    'Tell us about one slow process',
+    'What would you like to get done?',
   ]);
   await expect(main.getByRole('listitem')).toHaveText(
     aboutCopy.expertise.items,

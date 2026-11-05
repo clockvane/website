@@ -63,9 +63,13 @@ export async function expectNoAxeViolations(page: Page) {
 }
 
 export async function expectNoHorizontalScroll(page: Page) {
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
+  // Reports what overflows, so a failure names the element.
+  const result = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth - innerWidth,
+    elements: [...document.querySelectorAll('body *')]
+      .filter((el) => el.getBoundingClientRect().right > innerWidth + 1)
+      .slice(0, 5)
+      .map((el) => `${el.tagName}.${el.className}`),
+  }));
+  expect(result.overflow, result.elements.join(', ')).toBeLessThanOrEqual(0);
 }

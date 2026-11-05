@@ -9,7 +9,9 @@ for (const width of [320, 768, 1024, 1440]) {
     await page.goto('/__components/');
     await page.evaluate(() => document.fonts.ready);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await expect(page.locator('script, [style], svg style')).toHaveCount(0);
+    await expect(
+      page.locator('script:not([src]), [style], svg style'),
+    ).toHaveCount(0);
     await expect(
       page.locator('main [tabindex="0"], main button:visible'),
     ).toHaveCount(0);
@@ -51,10 +53,10 @@ for (const width of [320, 768, 1024, 1440]) {
       forcedColors: 'active',
       reducedMotion: 'reduce',
     });
-    await page.locator('.closing-grid a').focus();
+    await page.locator('.band a').focus();
     expect(
       await page
-        .locator('.closing-grid a')
+        .locator('.band a')
         .evaluate((el) => getComputedStyle(el).outlineStyle),
     ).toBe('solid');
   });
@@ -69,9 +71,6 @@ test('fixture remains readable without JavaScript', async ({ browser }) => {
   await page.goto('/__components/');
   await expect(page.locator('main h1')).toHaveText('Services');
   await expect(page.locator('.service-row')).toHaveCount(8);
-  await expect(page.locator('.closing-grid a')).toHaveAttribute(
-    'href',
-    '/contact/',
-  );
+  await expect(page.locator('.band a')).toHaveAttribute('href', '/contact/');
   await context.close();
 });

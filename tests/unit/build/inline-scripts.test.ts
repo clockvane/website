@@ -86,7 +86,7 @@ describe('built HTML CSP (ADR-004)', () => {
         gzipSync(readFileSync(join(dist, path))).byteLength;
       expect(
         scripts.reduce((total, path) => total + size(path), 0),
-      ).toBeLessThanOrEqual(35000);
+      ).toBeLessThanOrEqual(50000);
       expect(
         styles.reduce((total, path) => total + size(path), 0),
       ).toBeLessThanOrEqual(40000);

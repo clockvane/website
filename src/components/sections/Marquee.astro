@@ -1,0 +1,228 @@
+---
+import ExampleScreen from '../ui/ExampleScreen.astro';
+import { marqueeCopy, type ExampleId } from '../../content/examples';
+
+/**
+ * Auto-scrolling example screens (ADR-004 §4, docs/design/components.md). The HTML is the stopped
+ * layout; the controller adds aria-hidden loop copies and `.js-motion` only when motion is allowed.
+ */
+interface Props {
+  /** Unique on the page; prefixes the note's id. */
+  id: string;
+  label: string;
+  /** One list per column, or a single list for the row. */
+  tracks: ExampleId[][];
+  variant?: 'columns' | 'row';
+}
+const { id, label, tracks, variant = 'columns' } = Astro.props;
+const noteId = `${id}-note`;
+const sizes =
+  variant === 'row'
+    ? '(min-width: 48rem) 520px, 78vw'
+    : '(min-width: 64rem) 260px, (min-width: 48rem) 30vw, 44vw';
+---
+
+<div class="toolbar">
+  <p class="note" id={noteId}>{marqueeCopy.note}</p>
+  <button
+    class="pill pill--secondary pill--small"
+    type="button"
+    data-pause
+    data-pause-label={marqueeCopy.pause}
+    data-resume-label={marqueeCopy.resume}
+    hidden>{marqueeCopy.pause}</button
+  >
+</div>
+{
+  /* eslint-disable astro/jsx-a11y/no-noninteractive-tabindex -- the stopped layout scrolls, so keyboard users must be able to focus it (components.md) */
+}
+<div
+  class:list={['stage', `stage--${variant}`]}
+  data-marquee
+  tabindex="0"
+  role="group"
+  aria-label={label}
+  aria-describedby={noteId}
+>
+  {/* eslint-enable astro/jsx-a11y/no-noninteractive-tabindex */}
+  <div class="tracks">
+    {
+      tracks.map((ids, index) => (
+        <div class={`col col-${index + 1}`}>
+          <div class="track">
+            <div class="group">
+              {ids.map((shot) => (
+                <ExampleScreen id={shot} {sizes} />
+              ))}
+            </div>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    min-block-size: var(--layout-tap);
+    margin-block-end: var(--space-3);
+  }
+  .note {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+  }
+  .stage {
+    position: relative;
+    overflow: hidden;
+  }
+  .group {
+    display: flex;
+    gap: var(--space-3);
+  }
+  /* Columns */
+  .stage--columns {
+    block-size: min(34rem, 125vw);
+    max-inline-size: var(--layout-stage);
+    margin-inline: auto;
+    border-radius: var(--radius-xl);
+    background: var(--color-light-surface);
+  }
+  .stage--columns .tracks {
+    display: grid;
+    grid-template-columns: repeat(3, 44vw);
+    gap: var(--space-3);
+    inline-size: max-content;
+    margin-inline-start: calc(50% - 66vw - var(--space-3));
+  }
+  .stage--columns .group {
+    flex-direction: column;
+    padding-block-end: var(--space-3);
+  }
+  .col-4,
+  .col-5 {
+    display: none;
+  }
+  :global(.js-motion) .stage--columns::before,
+  :global(.js-motion) .stage--columns::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset-inline: 0;
+    block-size: var(--space-16);
+    pointer-events: none;
+  }
+  :global(.js-motion) .stage--columns::before {
+    inset-block-start: 0;
+    background: linear-gradient(var(--color-light-surface), transparent);
+  }
+  :global(.js-motion) .stage--columns::after {
+    inset-block-end: 0;
+    background: linear-gradient(transparent, var(--color-light-surface));
+  }
+  :global(.js-motion) .stage--columns .track {
+    animation: marquee-up var(--motion-duration-column-slow)
+      var(--motion-ease-linear) infinite;
+  }
+  :global(.js-motion) .stage--columns .col-2 .track,
+  :global(.js-motion) .stage--columns .col-4 .track {
+    animation-name: marquee-down;
+    animation-duration: var(--motion-duration-column-fast);
+  }
+  /* Row */
+  .stage--row {
+    max-inline-size: 120rem;
+    margin-inline: auto;
+    padding-block: var(--space-2) var(--space-6);
+  }
+  .stage--row .track {
+    display: flex;
+    inline-size: max-content;
+  }
+  .stage--row .group {
+    padding-inline-end: var(--space-3);
+  }
+  .stage--row :global(.shot) {
+    inline-size: 78vw;
+    flex: none;
+  }
+  :global(.js-motion) .stage--row .track {
+    animation: marquee-left var(--motion-duration-row) var(--motion-ease-linear)
+      infinite;
+  }
+  /* Stopped layout: nothing clips, and the focusable stage scrolls by itself. */
+  :global(html:not(.js-motion)) .stage--columns,
+  :global(html:not(.js-motion)) .stage--row {
+    overflow: auto;
+  }
+  :global(html:not(.js-motion)) .stage--columns .tracks {
+    margin-inline-start: 0;
+    padding: var(--space-3);
+  }
+  /* Every reason to pause: hover, focus, off-screen, hidden tab, the button. */
+  :global(.js-motion) [data-marquee]:hover .track,
+  :global(.js-motion) [data-marquee]:focus-within .track,
+  :global(.js-motion) [data-marquee][data-offscreen] .track,
+  :global(.js-motion[data-paused]) .track,
+  :global(.js-motion[data-hidden-tab]) .track {
+    animation-play-state: paused !important;
+  }
+  @keyframes marquee-up {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+  @keyframes marquee-down {
+    from {
+      transform: translateY(-50%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes marquee-left {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (min-width: 48rem) {
+    .stage--columns {
+      block-size: 40rem;
+      border-radius: var(--radius-xxl);
+    }
+    .stage--columns .tracks {
+      grid-template-columns: repeat(4, 30vw);
+      margin-inline-start: calc(50% - 60vw - var(--space-3) * 1.5);
+    }
+    .col-4 {
+      display: block;
+    }
+    .stage--row :global(.shot) {
+      inline-size: 32.5rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .stage--columns {
+      block-size: min(45rem, 58vw);
+    }
+    .stage--columns .tracks,
+    :global(html:not(.js-motion)) .stage--columns .tracks {
+      grid-template-columns: repeat(5, 1fr);
+      inline-size: auto;
+      margin: 0;
+      gap: var(--space-4);
+      padding-inline: var(--space-4);
+    }
+    .stage--columns .group {
+      gap: var(--space-4);
+      padding-block-end: var(--space-4);
+    }
+    .col-5 {
+      display: block;
+    }
+  }
+</style>

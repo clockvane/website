@@ -7,9 +7,15 @@ export default getViteConfig(
       include: ['tests/{unit,infra}/**/*.test.ts'],
       coverage: {
         provider: 'v8',
-        include: ['site.config.ts', 'src/lib/**/*.ts'],
+        include: ['site.config.ts', 'src/lib/**/*.ts', 'src/scripts/**/*.ts'],
         reporter: ['text', 'lcov'],
-        thresholds: { perFile: true, lines: 80 },
+        // Report both controllers; retain the existing gates and add one for motion.
+        // Contact's DOM behaviour is covered by Playwright, not the unit suite.
+        thresholds: {
+          'site.config.ts': { perFile: true, lines: 80 },
+          'src/lib/**/*.ts': { perFile: true, lines: 80 },
+          'src/scripts/motion.ts': { perFile: true, lines: 80 },
+        },
       },
     },
   }),

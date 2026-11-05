@@ -1,45 +1,53 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MAX_SCENE_MS,
-  Playback,
+  DEMO_STEP_MS,
+  DEMO_TYPE_MS,
+  demoEnd,
+  demoFrame,
   motionAllowed,
-  sceneDuration,
+  tabTarget,
 } from '../../../../src/lib/motion/policy';
 
-const none = { reducedMotion: false, reducedData: false, saveData: false };
-
 describe('motionAllowed', () => {
-  it('allows motion only when no reduction preference is set', () => {
-    expect(motionAllowed(none)).toBe(true);
-    expect(motionAllowed({ ...none, reducedMotion: true })).toBe(false);
-    expect(motionAllowed({ ...none, reducedData: true })).toBe(false);
-    expect(motionAllowed({ ...none, saveData: true })).toBe(false);
+  const on = { reducedMotion: false, reducedData: false, saveData: false };
+  it('needs all three preferences off', () => {
+    expect(motionAllowed(on)).toBe(true);
+    expect(motionAllowed({ ...on, reducedMotion: true })).toBe(false);
+    expect(motionAllowed({ ...on, reducedData: true })).toBe(false);
+    expect(motionAllowed({ ...on, saveData: true })).toBe(false);
   });
 });
 
-describe('sceneDuration', () => {
-  it('falls back for missing or invalid values and caps at 2.4 s', () => {
-    expect(sceneDuration(undefined)).toBe(1800);
-    expect(sceneDuration('abc')).toBe(1800);
-    expect(sceneDuration('-5')).toBe(1800);
-    expect(sceneDuration('1200')).toBe(1200);
-    expect(sceneDuration('9000')).toBe(MAX_SCENE_MS);
+describe('demoFrame', () => {
+  it('types, then runs each step, then shows the result', () => {
+    expect(demoFrame(0, 100, 4)).toEqual({
+      typed: 0,
+      active: -1,
+      done: 0,
+      resultShown: false,
+    });
+    expect(demoFrame(DEMO_TYPE_MS / 2, 100, 4).typed).toBe(50);
+    const second = demoFrame(DEMO_TYPE_MS + DEMO_STEP_MS, 100, 4);
+    expect(second).toMatchObject({ typed: 100, active: 1, done: 1 });
+    expect(demoFrame(demoEnd(4) - 1, 100, 4)).toMatchObject({
+      active: -1,
+      done: 4,
+      resultShown: false,
+    });
+    expect(demoFrame(demoEnd(4), 100, 4).resultShown).toBe(true);
+  });
+
+  it('stops by itself in about 5.7 s, as motion.md specifies', () => {
+    expect(demoEnd(4)).toBe(5700);
   });
 });
 
-describe('Playback', () => {
-  it('resumes with the remaining time after a pause', () => {
-    const p = new Playback(1800);
-    p.resume(1000);
-    expect(p.running).toBe(true);
-    p.pause(1500);
-    expect(p.remaining).toBe(1300);
-    expect(p.running).toBe(false);
-    p.pause(2000); // pausing twice changes nothing
-    expect(p.remaining).toBe(1300);
-    p.resume(3000);
-    p.resume(3100); // resuming twice keeps the first start
-    p.pause(5000);
-    expect(p.remaining).toBe(0);
+describe('tabTarget', () => {
+  it('wraps with arrows, jumps with Home and End, ignores other keys', () => {
+    expect(tabTarget('ArrowRight', 3, 4)).toBe(0);
+    expect(tabTarget('ArrowLeft', 0, 4)).toBe(3);
+    expect(tabTarget('Home', 2, 4)).toBe(0);
+    expect(tabTarget('End', 0, 4)).toBe(3);
+    expect(tabTarget('a', 0, 4)).toBeUndefined();
   });
 });

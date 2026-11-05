@@ -95,9 +95,9 @@ describe('shared page components', () => {
     });
     expect(html).toContain(helpChoose.heading);
     expect(html.match(/<section /g)).toHaveLength(1);
-    expect(html).not.toContain('Tell us about one slow process');
+    expect(html).not.toContain('What would you like to get done?');
     expect(await container.renderToString(CtaBand)).toContain(
-      'Tell us about one slow process',
+      'What would you like to get done?',
     );
   });
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   ...base,
-  testMatch: 'components.spec.ts',
+  testMatch: ['components.spec.ts', 'design-system.spec.ts'],
   testIgnore: [],
   webServer: {
     ...base.webServer,

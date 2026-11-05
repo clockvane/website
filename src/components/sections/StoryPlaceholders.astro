@@ -1,0 +1,83 @@
+---
+/**
+ * Stories block (copy deck `home.stories`). Renders nothing for an empty list, so the live site
+ * omits the section until approved stories exist (FR-5). Never seed it with invented content.
+ */
+export interface Story {
+  title: string;
+  body: string;
+  /** True while the entry still holds `[[PLACEHOLDER: …]]` text. */
+  placeholder?: boolean;
+}
+interface Props {
+  heading: string;
+  stories: readonly Story[];
+}
+const { heading, stories } = Astro.props;
+---
+
+{
+  stories.length > 0 && (
+    <section class="stories section" aria-labelledby="stories-heading">
+      <div class="container">
+        <h2 id="stories-heading">{heading}</h2>
+        <ul class="story-grid">
+          {stories.map(({ title, body, placeholder }) => (
+            <li class:list={['story', { 'story--placeholder': placeholder }]}>
+              {placeholder && <p class="tag">Placeholder</p>}
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  h2 {
+    margin-block-end: var(--space-8);
+    text-align: center;
+  }
+  .story-grid {
+    display: grid;
+    gap: var(--space-3);
+    list-style: none;
+  }
+  .story {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 1px solid var(--color-light-hairline);
+    border-radius: var(--radius-xl);
+  }
+  .story--placeholder {
+    border: 1px dashed var(--color-light-control-border);
+  }
+  .story p {
+    margin-block-start: 0;
+  }
+  .story h3 {
+    font-size: var(--font-size-body);
+  }
+  .story p:last-child {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+  }
+  .tag {
+    justify-self: start;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-light-placeholder-fill);
+    color: var(--color-light-placeholder-text);
+    font-size: var(--font-size-micro);
+    font-weight: var(--font-weight-semibold);
+  }
+  @media (min-width: 48rem) {
+    .story-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,162 @@
+---
+import ExampleScreen from '../ui/ExampleScreen.astro';
+import ServiceToken from '../ui/ServiceToken.astro';
+import type { ServiceTab } from '../../content/service-tabs';
+
+/**
+ * Service tabs (docs/design/components.md). Without JavaScript the tablist stays hidden and all
+ * panels stack; the controller adds the tab roles, so they exist only when they work.
+ */
+interface Props {
+  tabs: ServiceTab[];
+  label: string;
+}
+const { tabs, label } = Astro.props;
+const thumbSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 30vw, 44vw';
+---
+
+<div class="tablist" role="tablist" aria-label={label} data-tabs hidden>
+  {
+    tabs.map(({ key, name }, index) => (
+      <button
+        class="tab"
+        type="button"
+        role="tab"
+        id={`tab-${key}`}
+        aria-controls={`panel-${key}`}
+        aria-selected={index === 0}
+        tabindex={index === 0 ? 0 : -1}
+      >
+        <ServiceToken service={key} size="sm" />
+        <span>{name}</span>
+      </button>
+    ))
+  }
+</div>
+{
+  tabs.map(({ key, name, summary, audience, cta, link, thumbs }) => (
+    <section class="panel" id={`panel-${key}`} aria-labelledby={`h-${key}`}>
+      <div class="panel-head">
+        <div>
+          <h3 id={`h-${key}`}>{name}</h3>
+          <p>{summary}</p>
+          <p class="for">
+            <strong>For:</strong> {audience}
+          </p>
+        </div>
+        <div class="panel-cta">
+          <a class="pill pill--primary" href={cta.href}>
+            {cta.label}
+          </a>
+          <a class="pill pill--secondary" href={link.href}>
+            {link.label}
+          </a>
+        </div>
+      </div>
+      <div class="thumbs">
+        {thumbs.map((id) => (
+          <ExampleScreen {id} sizes={thumbSizes} lift />
+        ))}
+      </div>
+    </section>
+  ))
+}
+
+<style>
+  .tablist {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-block-end: var(--space-4);
+  }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-block-size: var(--layout-tap);
+    padding: var(--space-1) var(--space-4) var(--space-1) var(--space-2);
+    border: 1px solid var(--color-light-control-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-light-canvas);
+    color: var(--color-light-text);
+    font: inherit;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: background-color var(--motion-duration-fast)
+      var(--motion-ease-standard);
+  }
+  .tab:hover {
+    background: var(--color-light-secondary-hover);
+  }
+  .tab:active {
+    background: var(--color-light-secondary-active);
+  }
+  .tab[aria-selected='true'] {
+    background: var(--color-light-action);
+    border-color: var(--color-light-action);
+    color: var(--color-light-on-action);
+  }
+  .panel {
+    padding: var(--space-5);
+    border-radius: var(--radius-xl);
+    background: var(--color-light-surface);
+  }
+  .panel + .panel {
+    margin-block-start: var(--space-4);
+  }
+  .panel-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-block-end: var(--space-5);
+  }
+  .panel-head p {
+    margin-block-start: var(--space-2);
+    max-inline-size: 34rem;
+  }
+  .for {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+  }
+  .for strong {
+    color: var(--color-light-text);
+    font-weight: var(--font-weight-semibold);
+  }
+  .panel-cta {
+    display: flex;
+    flex-wrap: wrap;
+    flex: none;
+    gap: var(--space-2);
+  }
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+  }
+  .thumbs > :global(.shot:nth-child(3)) {
+    display: none;
+  }
+  @media (min-width: 48rem) {
+    .panel {
+      padding: var(--space-8);
+      border-radius: var(--radius-xxl);
+    }
+    .thumbs {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .thumbs > :global(.shot:nth-child(3)) {
+      display: block;
+    }
+  }
+  @media (min-width: 64rem) {
+    .panel-head {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--space-8);
+    }
+  }
+</style>

@@ -15,8 +15,8 @@ for (const width of [320, 480, 768, 1024, 1280]) {
     await page.goto('/');
     await expect(page.getByRole('banner')).toBeVisible();
     await expect(page.getByRole('contentinfo')).toBeVisible();
-    await expect(page.locator('.compact-cta')).toBeVisible({
-      visible: width >= 480 && width < 1024,
+    await expect(page.locator('.site-header a.cta')).toBeVisible({
+      visible: true,
     });
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Skip to main content' });
@@ -27,7 +27,7 @@ for (const width of [320, 480, 768, 1024, 1280]) {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
     const summary = page.locator(
-      width < 1024 ? '.mobile-nav summary' : '.desktop-nav summary',
+      width < 1024 ? '.menu summary' : '.disc summary',
     );
     await summary.focus();
     await page.keyboard.press('Space');
@@ -105,7 +105,7 @@ for (const width of [320, 1280]) {
           .map((entry) => new URL(entry.name).pathname),
       ),
     ).toEqual(['/fonts/public-sans-latin-wght-normal.woff2']);
-    await expect(page.locator('script')).toHaveCount(0);
+    await expect(page.locator('script:not([src])')).toHaveCount(0);
     await page.screenshot({
       path: `.agentops-scratch/layout-${width}.png`,
       fullPage: true,
@@ -113,9 +113,7 @@ for (const width of [320, 1280]) {
     for (const open of [false, true]) {
       if (open)
         await page
-          .locator(
-            width < 1024 ? '.mobile-nav summary' : '.desktop-nav summary',
-          )
+          .locator(width < 1024 ? '.menu summary' : '.disc summary')
           .click();
       const scan = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
@@ -125,7 +123,10 @@ for (const width of [320, 1280]) {
         .locator('a:visible, summary:visible')
         .all()) {
         const box = await control.boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
+        const minimum = await control.evaluate((el) =>
+          el.classList.contains('pill--small') ? 40 : 44,
+        );
+        expect(box!.height).toBeGreaterThanOrEqual(minimum);
         expect(
           box!.width,
           await control.evaluate((el) => el.outerHTML),

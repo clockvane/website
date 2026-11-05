@@ -1,0 +1,66 @@
+---
+import ServiceToken from '../ui/ServiceToken.astro';
+import type { ServiceKey } from '../../content/services';
+
+/** A run of words, optionally ending in a service token that stays on its line. */
+export type HeadlinePart = string | { text: string; service: ServiceKey };
+interface Props {
+  /** One array per set line; the breaks apply from 64rem only. */
+  lines: HeadlinePart[][];
+  level?: 'h1' | 'h2';
+  /** The hero's entrance animation (docs/design/motion.md); hero only. */
+  animate?: boolean;
+}
+const { lines, level: Heading = 'h1', animate = false } = Astro.props;
+---
+
+<Heading class:list={['headline', { 'headline--animate': animate }]}>
+  {
+    lines.map((parts, index) => (
+      <>
+        {index > 0 && <br class="wide-break" />}
+        {parts.map((part) =>
+          typeof part === 'string' ? (
+            part
+          ) : (
+            <span class="keep">
+              {part.text} <ServiceToken service={part.service} />
+            </span>
+          ),
+        )}
+      </>
+    ))
+  }
+</Heading>
+
+<style>
+  .wide-break {
+    display: none;
+  }
+  @media (min-width: 23rem) {
+    .keep {
+      white-space: nowrap;
+    }
+  }
+  @media (min-width: 64rem) {
+    .wide-break {
+      display: inline;
+    }
+  }
+  .headline--animate :global(.tok) {
+    animation: token-in var(--motion-duration-slow) var(--motion-ease-standard)
+      backwards;
+  }
+  .headline--animate .keep:nth-of-type(2) :global(.tok) {
+    animation-delay: 80ms;
+  }
+  .headline--animate .keep:nth-of-type(3) :global(.tok) {
+    animation-delay: 160ms;
+  }
+  @keyframes token-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+</style>

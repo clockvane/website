@@ -1,7 +1,7 @@
 export const contactCopy = {
   title: 'Contact',
   description:
-    'Book a free audit call or send a short message about the work you want off your plate. We reply within 1 business day.',
+    'Describe the problem or the work you have in mind. We reply within 1 business day.',
   heading: 'Tell us what you want off your plate',
   intro: 'Send a short message. We reply within 1 business day.',
   formHeading: 'Send a message',
@@ -38,7 +38,7 @@ export const contactCopy = {
   steps: [
     'We read your message.',
     'We reply within 1 business day, by email or phone.',
-    'If it looks like a fit, we book a free audit call.',
+    'We discuss the request and arrange the next step with you.',
   ],
   thanks: {
     title: 'Enquiry sent',

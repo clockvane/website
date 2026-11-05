@@ -1,35 +1,71 @@
 ---
+import ServiceToken from '../ui/ServiceToken.astro';
 import { primaryCta } from '../../content/navigation';
 import { closingCta } from '../../content/sections';
+import { services } from '../../content/services';
 interface Props {
   content?: { heading: string; body: string };
 }
 const { content = closingCta } = Astro.props;
 ---
 
-<section class="cta-band section">
-  <div class="container closing-grid">
-    <div><h2>{content.heading}</h2><p class="measure">{content.body}</p></div>
-    <div class="cta-action">
-      <a class="button standalone" href={primaryCta.href}>{primaryCta.label}</a>
+<section class="band-wrap">
+  <div class="band">
+    <div class="tokens">
+      {services.map(({ key }) => <ServiceToken service={key} size="closing" />)}
     </div>
+    <h2>{content.heading}</h2>
+    <p class="lead">{content.body}</p>
+    <a class="pill pill--primary" href={primaryCta.href}>{primaryCta.label}</a>
   </div>
 </section>
 
 <style>
-  .closing-grid {
-    display: grid;
-    gap: var(--space-6);
+  .band-wrap {
+    padding: var(--space-20) var(--space-3) var(--space-12);
+  }
+  .band {
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: var(--space-5);
+    max-inline-size: var(--layout-stage);
+    margin-inline: auto;
+    padding: var(--space-16) var(--space-5);
+    border-radius: var(--radius-xl);
+    background: var(--color-light-surface);
+    text-align: center;
   }
-  .closing-grid > * {
-    min-inline-size: 0;
+  .band p {
+    margin-block-start: 0;
+    max-inline-size: 34rem;
   }
-  .cta-action {
-    padding: var(--space-2);
+  .band > * {
+    max-inline-size: 100%;
   }
-  .cta-band {
-    background: var(--color-dark-surface);
-    border-block: var(--stroke-border) solid var(--color-dark-border);
+  .tokens {
+    flex-wrap: wrap;
+    justify-content: center;
+    display: flex;
+    gap: var(--space-2);
+  }
+  @media (min-width: 48rem) {
+    .band-wrap {
+      padding-inline: var(--space-6);
+    }
+    .band {
+      border-radius: var(--radius-xxl);
+    }
+  }
+  @media (min-width: 64rem) {
+    .band-wrap {
+      padding-block: var(--space-32) var(--space-16);
+    }
+    .band {
+      padding-block: var(--space-20);
+    }
+    h2 {
+      font-size: var(--font-size-closing-wide);
+    }
   }
 </style>

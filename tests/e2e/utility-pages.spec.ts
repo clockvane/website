@@ -28,7 +28,7 @@ test('privacy renders the approved draft and unresolved facts', async ({
   );
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await expect(
-    main.getByRole('heading', { name: 'Tell us about one slow process' }),
+    main.getByRole('heading', { name: 'What would you like to get done?' }),
   ).toHaveCount(0);
 });
 

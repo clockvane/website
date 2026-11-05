@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../src/layouts/BaseLayout.astro';
+import AiDemo from '../../src/components/sections/AiDemo.astro';
+import CtaBand from '../../src/components/sections/CtaBand.astro';
+import Marquee from '../../src/components/sections/Marquee.astro';
+import ServiceTabs from '../../src/components/sections/ServiceTabs.astro';
+import TokenHeadline from '../../src/components/sections/TokenHeadline.astro';
+import { serviceTabs } from '../../src/content/service-tabs';
+---
+
+<BaseLayout
+  title="Design system fixture"
+  description="Test-only design system components."
+  noindex
+>
+  <div class="container section">
+    <TokenHeadline
+      animate
+      lines={[
+        ['Get expert ', { text: 'support,', service: 'expert' }],
+        [{ text: 'AI automation', service: 'automation' }, ' and '],
+        [{ text: 'websites', service: 'website' }, ' built around your needs.'],
+      ]}
+    />
+  </div>
+  <div class="container">
+    <Marquee
+      id="columns"
+      label="Scrolling columns of example screens"
+      tracks={[
+        ['web-bakery', 'exp-session', 'ai-assistant'],
+        ['ai-inbox', 'web-shop'],
+        ['exp-request', 'ai-run'],
+        ['web-booking', 'ai-draft'],
+        ['sol-tool', 'exp-start', 'ai-approve'],
+      ]}
+    />
+    <Marquee
+      id="row"
+      variant="row"
+      label="Scrolling row of example screens"
+      tracks={[['wide-studio', 'wide-flows', 'wide-board', 'wide-orders']]}
+    />
+  </div>
+  <section class="container section" aria-labelledby="tabs-heading">
+    <h2 id="tabs-heading">One place</h2>
+    <ServiceTabs tabs={serviceTabs} label="Services" />
+  </section>
+  <AiDemo />
+  <CtaBand />
+</BaseLayout>
