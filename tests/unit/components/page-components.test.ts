@@ -6,11 +6,29 @@ import ProcessSteps from '../../../src/components/sections/ProcessSteps.astro';
 import CtaBand from '../../../src/components/sections/CtaBand.astro';
 import ResultPanel from '../../../src/components/sections/ResultPanel.astro';
 import Card from '../../../src/components/ui/Card.astro';
+import ContactForm from '../../../src/components/ContactForm.astro';
 import { services } from '../../../src/content/services';
 import { services as navigation } from '../../../src/content/navigation';
 import { helpChoose, homeProcess } from '../../../src/content/sections';
 
 const container = await AstroContainer.create();
+
+describe('contact form', () => {
+  it('offers the services as a required radio group and submits natively', async () => {
+    const html = await container.renderToString(ContactForm);
+    for (const { slug, label } of services) {
+      expect(html).toContain(`value="${slug}"`);
+      expect(html).toContain(label);
+    }
+    expect(html).toContain('value="not-sure"');
+    expect(html.match(/type="radio"/g)).toHaveLength(5);
+    expect(html.match(/type="radio"[^>]*required/g)).toHaveLength(5);
+    expect(html).toContain('role="radiogroup"');
+    expect(html).toContain('Send message');
+    expect(html).toMatch(/<form[^>]*action="https:[^>]*method="post"/);
+    expect(html).toMatch(/name="website"/);
+  });
+});
 
 describe('shared page components', () => {
   it('omits absent optional header content and exposes a plain current breadcrumb', async () => {

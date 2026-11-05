@@ -32,10 +32,11 @@ async function endpoint(page: Page, status = 200) {
   });
 }
 async function fill(page: Page) {
-  await page.getByLabel('Your name (required)').fill('Alex');
-  await page.getByLabel('Email or phone (required)').fill('alex@example.test');
+  await page.getByLabel('Your name').fill('Alex');
+  await page.getByLabel('Email or phone').fill('alex@example.test');
+  await page.getByRole('radio', { name: 'AI automation' }).check();
   await page
-    .getByLabel('What would you like off your plate? (required)')
+    .getByLabel('What would you like help with?')
     .fill('Please automate our daily order entry.');
 }
 async function axe(page: Page) {
@@ -54,15 +55,60 @@ test('validation links errors, keeps input and focuses summary and fields', asyn
   await page.goto('/contact/');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.locator('[data-errors]')).toBeFocused();
-  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(3);
+  await expect(page.locator('[aria-invalid="true"]')).toHaveCount(4);
   await page.locator('[data-errors] a').first().click();
-  await expect(page.getByLabel('Your name (required)')).toBeFocused();
+  await expect(page.getByLabel('Your name')).toBeFocused();
   await fill(page);
-  await page.getByLabel('Email or phone (required)').fill('bad@example');
+  await page.getByLabel('Email or phone').fill('bad@example');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.locator('#reply-error')).toBeVisible();
-  await expect(page.getByLabel('Your name (required)')).toHaveValue('Alex');
+  await expect(page.getByLabel('Your name')).toHaveValue('Alex');
   await axe(page);
+});
+
+test('service choice is validated, linked from the summary and sent', async ({
+  page,
+}) => {
+  let posted = '';
+  await page.route(siteConfig.contact.endpoint, async (route) => {
+    posted = route.request().postData() ?? '';
+    await route.fulfill({
+      json: { ok: true },
+      headers: { 'Access-Control-Allow-Origin': new URL(page.url()).origin },
+    });
+  });
+  await page.goto('/contact/');
+  const group = page.getByRole('radiogroup', {
+    name: 'What do you need help with?',
+  });
+  await expect(group.getByRole('radio')).toHaveCount(5);
+  await fill(page);
+  await page
+    .getByRole('radio', { name: 'AI automation' })
+    .evaluate((radio: HTMLInputElement) => {
+      radio.checked = false;
+    });
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(page.locator('#service-error')).toContainText(
+    'Choose a service or select Not sure.',
+  );
+  await expect(group).toHaveAttribute('aria-invalid', 'true');
+  await expect(group).toHaveAttribute(
+    'aria-describedby',
+    'service-hint service-error',
+  );
+  await page.locator('[data-errors] a[href="#contact-service"]').click();
+  await expect(
+    page.getByRole('radio', { name: 'Expert support' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#service-error')).toBeHidden();
+  await expect(group).toHaveAttribute('aria-invalid', 'false');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Message sent', exact: true }),
+  ).toBeFocused();
+  expect(new URLSearchParams(posted).get('service')).toBe('ai-automation');
 });
 
 test('success replaces form and moves focus under the strict CSP', async ({
@@ -105,9 +151,7 @@ test('character guidance helps visitors correct a message and send it', async ({
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/contact/');
   await fill(page);
-  const message = page.getByLabel(
-    'What would you like off your plate? (required)',
-  );
+  const message = page.getByLabel('What would you like help with?');
   const send = page.getByRole('button', { name: 'Send message', exact: true });
   const guidance =
     'Replace < and > in your message with words such as “less than” or “over”. Retype any pasted text to remove hidden characters.';
@@ -153,7 +197,7 @@ for (const status of [502, 429])
       .getByRole('button', { name: 'Send message', exact: true })
       .click();
     await expect(page.locator('[data-failure]')).toBeFocused();
-    await expect(page.getByLabel('Your name (required)')).toHaveValue('Alex');
+    await expect(page.getByLabel('Your name')).toHaveValue('Alex');
     await expect(page.locator('form')).toHaveAttribute('aria-busy', 'false');
     await expect(page.locator('button[type="submit"]')).toHaveAttribute(
       'aria-disabled',
@@ -179,10 +223,8 @@ test('network failure retains text and restores controls', async ({ page }) => {
   await fill(page);
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.locator('[data-failure]')).toBeFocused();
-  await expect(page.getByLabel('Your name (required)')).toHaveValue('Alex');
-  await expect(page.getByLabel('Your name (required)')).not.toHaveAttribute(
-    'readonly',
-  );
+  await expect(page.getByLabel('Your name')).toHaveValue('Alex');
+  await expect(page.getByLabel('Your name')).not.toHaveAttribute('readonly');
 });
 
 test('sending locks fields, announces status and prevents duplicate requests', async ({
@@ -206,10 +248,7 @@ test('sending locks fields, announces status and prevents duplicate requests', a
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Sending your message.');
   await expect(page.locator('form')).toHaveAttribute('aria-busy', 'true');
-  await expect(page.getByLabel('Your name (required)')).toHaveAttribute(
-    'readonly',
-    '',
-  );
+  await expect(page.getByLabel('Your name')).toHaveAttribute('readonly', '');
   await page.locator('form').evaluate((form: HTMLFormElement) => {
     form.requestSubmit();
     form.requestSubmit();
@@ -239,11 +278,11 @@ test('server field errors are linked and focused even after client validation pa
   await fill(page);
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(page.locator('[data-errors]')).toBeFocused();
-  await expect(page.getByLabel('Email or phone (required)')).toHaveAttribute(
+  await expect(page.getByLabel('Email or phone')).toHaveAttribute(
     'aria-describedby',
     'reply-hint reply-error',
   );
-  await expect(page.getByLabel('Your name (required)')).toHaveValue('Alex');
+  await expect(page.getByLabel('Your name')).toHaveValue('Alex');
 });
 
 for (const status of [200, 502])
@@ -294,7 +333,9 @@ for (const width of [320, 1280])
           'noindex, follow',
         );
       for (const control of await page
-        .locator('a:visible, button:visible, input:visible, textarea:visible')
+        .locator(
+          'a:visible, button:visible, label.option:visible, input.control:visible, textarea:visible',
+        )
         .all()) {
         const box = await control.boundingBox();
         expect(box!.width).toBeGreaterThanOrEqual(44);

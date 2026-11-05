@@ -9,12 +9,19 @@ import { privacyCopy as copy } from '../content/privacy';
     <PageHeader title={copy.heading} />
     <div class="measure">
       <p>{copy.updated}</p>
-      <p>{copy.status}</p>
       {
         copy.sections.map(({ heading, body }) => (
           <section class="privacy-section">
             <h2>{heading}</h2>
-            <p>{body}</p>
+            <p>
+              {body.map((part) =>
+                typeof part === 'string' ? (
+                  part
+                ) : (
+                  <a href={part.href}>{part.label}</a>
+                ),
+              )}
+            </p>
           </section>
         ))
       }
