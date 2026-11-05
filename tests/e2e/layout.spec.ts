@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { siteConfig, siteOrigin } from '../../site.config';
+import { siteOrigin } from '../../site.config';
 import { services } from '../../src/content/navigation';
+import { homeSeo } from '../../src/content/site';
 
 for (const width of [320, 480, 768, 1024, 1280]) {
   test(`shared shell at ${width}px works without JavaScript`, async ({
@@ -51,9 +52,7 @@ for (const width of [320, 480, 768, 1024, 1280]) {
 
 test('metadata and empty-safe footer use site config', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(
-    `Automate repetitive business work | ${siteConfig.brand}`,
-  );
+  await expect(page).toHaveTitle(homeSeo.title);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
@@ -105,7 +104,10 @@ for (const width of [320, 1280]) {
           .map((entry) => new URL(entry.name).pathname),
       ),
     ).toEqual(['/fonts/public-sans-latin-wght-normal.woff2']);
-    await expect(page.locator('script:not([src])')).toHaveCount(0);
+    // ADR-004: JSON-LD is the only inline script allowed.
+    await expect(
+      page.locator('script:not([src]):not([type="application/ld+json"])'),
+    ).toHaveCount(0);
     await page.screenshot({
       path: `.agentops-scratch/layout-${width}.png`,
       fullPage: true,

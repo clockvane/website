@@ -1,12 +1,115 @@
 ---
-import { siteConfig } from '../../site.config';
+import { siteConfig, siteOrigin } from '../../site.config';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import AiDemo from '../components/sections/AiDemo.astro';
+import CtaBand from '../components/sections/CtaBand.astro';
+import Marquee from '../components/sections/Marquee.astro';
+import ServiceTabs from '../components/sections/ServiceTabs.astro';
+import StoryPlaceholders from '../components/sections/StoryPlaceholders.astro';
+import TokenHeadline from '../components/sections/TokenHeadline.astro';
+import {
+  hero,
+  heroScreens,
+  onePlace,
+  problemSolution,
+  stories,
+  wideScreens,
+} from '../content/home';
+import { primaryCta } from '../content/navigation';
+import { serviceTabs } from '../content/service-tabs';
 import { homeSeo } from '../content/site';
+import { organizationJsonLd } from '../lib/seo/structured-data';
 ---
 
-<BaseLayout {...homeSeo}>
-  <section class="container section">
-    <h1 class="measure">{siteConfig.brand}</h1>
-    <p class="measure">{siteConfig.tagline}</p>
+<BaseLayout
+  {...homeSeo}
+  structuredData={organizationJsonLd(siteConfig, siteOrigin)}
+>
+  <section class="container hero">
+    <p class="tagline">{siteConfig.tagline}</p>
+    <TokenHeadline animate lines={hero.lines} />
+    <p class="lead hero-lede">{hero.lede}</p>
+    <div class="cta-row">
+      <a class="pill pill--primary" href={primaryCta.href}>{primaryCta.label}</a
+      >
+      <a class="pill pill--secondary" href={hero.secondary.href}
+        >{hero.secondary.label}</a
+      >
+    </div>
   </section>
+  <Marquee id="hero-screens" {...heroScreens} />
+
+  <section class="section" aria-labelledby="problem-heading">
+    <div class="container problem">
+      <h2 id="problem-heading">{problemSolution.heading}</h2>
+      <p class="statement">
+        <span class="statement-muted">{problemSolution.body}</span>{' '}
+        {problemSolution.solution}
+      </p>
+      <a class="standalone" href={problemSolution.link.href}
+        >{problemSolution.link.label}</a
+      >
+    </div>
+    <Marquee id="wide-screens" variant="row" {...wideScreens} />
+  </section>
+
+  <section class="container section" aria-labelledby="services-heading">
+    <div class="services-head">
+      <h2 id="services-heading">{onePlace.heading}</h2>
+      <p class="lead">{onePlace.intro}</p>
+    </div>
+    <ServiceTabs tabs={serviceTabs} label={onePlace.tabsLabel} />
+  </section>
+
+  <AiDemo />
+  <StoryPlaceholders heading={stories.heading} stories={stories.items} />
+  <CtaBand />
 </BaseLayout>
+
+<style>
+  .hero {
+    padding-block: var(--space-16) var(--space-12);
+    text-align: center;
+  }
+  .tagline {
+    margin-block-end: var(--space-5);
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-medium);
+  }
+  .hero-lede {
+    max-inline-size: var(--layout-text);
+    margin-block: var(--space-6) var(--space-8);
+    margin-inline: auto;
+  }
+  .problem {
+    margin-block-end: var(--space-12);
+  }
+  .statement {
+    margin-block: var(--space-6);
+    font-size: var(--font-size-statement);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--font-line-height-heading);
+    letter-spacing: var(--font-tracking-heading);
+  }
+  .statement-muted {
+    color: var(--color-light-text-muted);
+  }
+  .services-head {
+    max-inline-size: var(--layout-text);
+    margin-block-end: var(--space-8);
+    margin-inline: auto;
+    text-align: center;
+  }
+  .services-head .lead {
+    margin-block-start: var(--space-4);
+  }
+  @media (min-width: 64rem) {
+    .hero {
+      padding-block: var(--space-20) var(--space-16);
+    }
+    .statement {
+      font-size: var(--font-size-statement-wide);
+    }
+  }
+</style>
