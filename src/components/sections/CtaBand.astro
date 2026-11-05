@@ -5,8 +5,9 @@ import { closingCta } from '../../content/sections';
 import { services } from '../../content/services';
 interface Props {
   content?: { heading: string; body: string };
+  cta?: { label: string; href: string };
 }
-const { content = closingCta } = Astro.props;
+const { content = closingCta, cta = primaryCta } = Astro.props;
 ---
 
 <section class="band-wrap">
@@ -16,7 +17,7 @@ const { content = closingCta } = Astro.props;
     </div>
     <h2>{content.heading}</h2>
     <p class="lead">{content.body}</p>
-    <a class="pill pill--primary" href={primaryCta.href}>{primaryCta.label}</a>
+    <a class="pill pill--primary" href={cta.href}>{cta.label}</a>
   </div>
 </section>
 

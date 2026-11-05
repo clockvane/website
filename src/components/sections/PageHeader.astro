@@ -4,9 +4,11 @@ interface Props {
   title: string;
   lede?: string;
   breadcrumbs?: readonly { label: string; href: string }[];
+  /** The current breadcrumb, when the page's name differs from its h1. Defaults to `title`. */
+  current?: string;
   action?: { label: string; href: string };
 }
-const { title, lede, breadcrumbs = [], action } = Astro.props;
+const { title, lede, breadcrumbs = [], current = title, action } = Astro.props;
 ---
 
 <header class="page-header measure">
@@ -22,11 +24,12 @@ const { title, lede, breadcrumbs = [], action } = Astro.props;
               <span aria-hidden="true">/</span>
             </li>
           ))}
-          <li aria-current="page">{title}</li>
+          <li aria-current="page">{current}</li>
         </ol>
       </nav>
     )
   }
+  <slot name="before-title" />
   <h1>{title}</h1>
   {lede && <p class="lede">{lede}</p>}
   {

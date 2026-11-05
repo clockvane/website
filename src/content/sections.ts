@@ -4,11 +4,13 @@ export const closingCta = {
   body: 'Tell us where you are stuck or what you want to build. We will help you work out the next step.',
 };
 export const helpChoose = {
-  heading: 'Not sure which one you need?',
+  heading: 'Not sure which service fits?',
   body: 'Tell us what you are trying to do. You do not need to choose a tool or write a technical brief first.',
 };
 export const sectionLabels = {
   breadcrumb: 'Breadcrumb',
+  home: 'Home',
+  services: 'Services',
   typicalWork: 'Typical work',
 };
 export const homeProcess = [

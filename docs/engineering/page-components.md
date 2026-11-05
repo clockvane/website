@@ -13,8 +13,8 @@ motion or data-saving preferences prevent playback. Production page assembly sta
 
 | Component | Contract |
 | --- | --- |
-| `sections/PageHeader.astro` | Required `title`; optional `lede`, `action: { label, href }`, `breadcrumbs: { label, href }[]`. Breadcrumbs contain ancestors only: the component appends the current title as plain text. Supplies the page's h1. |
-| `sections/CtaBand.astro` | Defaults to approved `closing-cta`. Pass `content={helpChoose}` from `src/content/sections.ts` on Services to produce its single merged band. CTA label/destination use the existing shared navigation action. |
+| `sections/PageHeader.astro` | Required `title`; optional `lede`, `action: { label, href }`, `breadcrumbs: { label, href }[]`, `current` and a `before-title` slot. Breadcrumbs contain ancestors only: the component appends `current` (default `title`) as plain text. Supplies the page's h1. |
+| `sections/CtaBand.astro` | Defaults to approved `closing-cta` and the shared navigation action. Service pages pass their own `content` and `cta` (copy deck §3). |
 | `sections/ServiceRows.astro` | `variant="home"` (default): number, h3, summary and link. `variant="overview"`: h2, summary, work list and stable slug anchor. The four names/order/links come from `src/content/services.ts`; navigation derives its service list from the same module. |
 | `sections/ProcessSteps.astro` | Required `steps: { title, body, output? }[]`; optional `variant="home"` or `"timeline"` (default). Place below an h2. Home becomes two/four columns at tablet/desktop; timeline keeps chronological order and puts optional outputs alongside steps on desktop. Empty steps render nothing. |
 | `ui/Card.astro` | Optional `title`, `body`, `link: { label, href }`, default slot and `headingLevel="h2"` or `"h3"` (default). Empty cards render nothing; cards without links have no tab stops. Light palette is retained inside inverse bands. |
@@ -30,7 +30,7 @@ Wrap normal page content in `.container.section`; headers and result panels deli
 outer section padding. CTA bands own their container and section padding. Add ordinary headings
 and approved content around service rows/process lists. Components never invent page copy.
 Related-service cards should read names/links from the service module rather than duplicate them.
-Service wording in `services.ts` is a DRAFT from the brief until copy deck v3 replaces it.
+`services.ts` holds copy deck v3 service wording; `src/pages/services/[slug].astro` is the one template for all four service pages.
 
 Responsive rules belong in `src/styles/responsive.template.css`, where the existing generator
 substitutes token breakpoints. Component defaults consume custom properties for display/padding
