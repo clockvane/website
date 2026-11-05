@@ -3,7 +3,17 @@ import { expect, type Page } from '@playwright/test';
 import { siteOrigin } from '../../../site.config';
 
 /** Routes to cover. Page PRs add their path here. */
-export const routes = ['/', '/about/', '/privacy/', '/how-we-work/'];
+export const routes = [
+  '/',
+  '/about/',
+  '/privacy/',
+  '/how-we-work/',
+  '/services/',
+  '/services/expert-support/',
+  '/services/ai-automation/',
+  '/services/website-creation/',
+  '/services/solutions/',
+];
 
 export const viewports = [
   { name: 'mobile', width: 360, height: 800 },

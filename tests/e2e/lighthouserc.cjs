@@ -16,7 +16,18 @@ const chromePath =
   process.env.CHROME_PATH ||
   (existsSync(playwrightChromium) ? playwrightChromium : undefined);
 // Page PRs add their path here.
-const paths = ['/', '/about/', '/how-we-work/', '/contact/', '/privacy/'];
+const paths = [
+  '/',
+  '/about/',
+  '/how-we-work/',
+  '/contact/',
+  '/privacy/',
+  '/services/',
+  '/services/expert-support/',
+  '/services/ai-automation/',
+  '/services/website-creation/',
+  '/services/solutions/',
+];
 
 module.exports = {
   ci: {

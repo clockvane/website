@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CtaBand from '../../components/sections/CtaBand.astro';
+import Marquee from '../../components/sections/Marquee.astro';
+import ExampleScreen from '../../components/ui/ExampleScreen.astro';
+import ServiceToken from '../../components/ui/ServiceToken.astro';
+import { helpChoose, sectionLabels } from '../../content/sections';
+import { services, servicesOverview as copy } from '../../content/services';
+import { breadcrumbJsonLd } from '../../lib/seo/breadcrumbs';
+import { siteConfig, siteOrigin } from '../../../site.config';
+
+const thumbSizes = '(min-width: 64rem) 16rem, 40vw';
+---
+
+<BaseLayout
+  title={`${copy.title} | ${siteConfig.brand}`}
+  description={copy.description}
+  structuredData={breadcrumbJsonLd(
+    [
+      { label: sectionLabels.home, href: '/' },
+      { label: sectionLabels.services, href: copy.href },
+    ],
+    siteOrigin,
+  )}
+>
+  <div class="container section intro">
+    <p class="tagline">{siteConfig.tagline}</p>
+    <h1>{copy.heading}</h1>
+    <p class="lead">{copy.lede}</p>
+    <nav class="cta-row" aria-label={copy.jumpLabel}>
+      {
+        services.map(({ key, slug, label }) => (
+          <a class="pill pill--secondary jump" href={`#${slug}`}>
+            <ServiceToken service={key} size="sm" />
+            <span>{label}</span>
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+
+  <div class="container">
+    <Marquee
+      id="services-examples"
+      variant="row"
+      label={copy.marqueeLabel}
+      tracks={[['wide-studio', 'wide-flows', 'wide-board', 'wide-orders']]}
+    />
+  </div>
+
+  <div class="container section">
+    {
+      services.map((service) => (
+        <section
+          class="service"
+          id={service.slug}
+          aria-labelledby={`${service.slug}-title`}
+        >
+          <div class="service-copy">
+            <ServiceToken service={service.key} size="lg" />
+            <h2 id={`${service.slug}-title`}>{service.label}</h2>
+            <p class="lead">{service.summary}</p>
+            <h3>{copy.labels.what}</h3>
+            <p>{service.overview.what}</p>
+            <h3>{copy.labels.how}</h3>
+            <p>{service.overview.how}</p>
+            <h3>{copy.labels.who}</h3>
+            <p>{service.audience}</p>
+            <div class="service-cta">
+              <a class="pill pill--primary" href={service.cta.href}>
+                {service.cta.label}
+              </a>
+              <a class="pill pill--secondary" href={service.href}>
+                {service.linkLabel}
+              </a>
+            </div>
+          </div>
+          <div class="stage">
+            {service.thumbs.slice(0, 2).map((id) => (
+              <ExampleScreen {id} sizes={thumbSizes} lift />
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    <section class="help" aria-labelledby="help-title">
+      <div>
+        <h2 id="help-title">{helpChoose.heading}</h2>
+        <p>{helpChoose.body}</p>
+      </div>
+      <a class="pill pill--primary" href={siteConfig.primaryCta.href}>
+        {siteConfig.primaryCta.label}
+      </a>
+    </section>
+  </div>
+
+  <CtaBand />
+</BaseLayout>
+
+<style>
+  .intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    text-align: center;
+  }
+  .intro > * {
+    max-inline-size: 100%;
+    margin-block: 0;
+  }
+  .intro .lead {
+    max-inline-size: 42rem;
+  }
+  .tagline {
+    color: var(--color-light-text-muted);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-semibold);
+  }
+  .jump {
+    gap: var(--space-2);
+    padding-inline-start: var(--space-2);
+    font-size: var(--font-size-small);
+  }
+  .service {
+    display: grid;
+    gap: var(--space-8);
+    align-items: center;
+    padding-block: var(--space-12);
+  }
+  .service > * {
+    min-inline-size: 0;
+  }
+  .service-copy h2 {
+    margin-block-start: var(--space-4);
+  }
+  .service-copy h3 {
+    margin-block-start: var(--space-5);
+    font-size: var(--font-size-body);
+    letter-spacing: normal;
+  }
+  .service-copy h3 + p {
+    margin-block-start: var(--space-1);
+    color: var(--color-light-text-muted);
+  }
+  .service-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-block-start: var(--space-6);
+  }
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-xl);
+    background: var(--color-light-surface);
+  }
+  .stage > :global(.shot:nth-child(2)) {
+    margin-block-start: var(--space-12);
+  }
+  .help {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-5);
+    margin-block-start: var(--space-8);
+    padding-block-start: var(--space-8);
+    border-block-start: 1px solid var(--color-light-hairline);
+  }
+  @media (min-width: 48rem) {
+    .stage {
+      padding: var(--space-8);
+      border-radius: var(--radius-xxl);
+    }
+  }
+  @media (min-width: 64rem) {
+    .service {
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-16);
+      padding-block: var(--space-16);
+    }
+    /* Alternate sides on wide screens only; the copy stays first in the DOM. */
+    .service:nth-of-type(odd) .stage {
+      order: -1;
+    }
+    .help {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+</style>
