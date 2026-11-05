@@ -22,7 +22,7 @@ const sizes =
     : '(min-width: 64rem) 260px, (min-width: 48rem) 30vw, 44vw';
 ---
 
-<div class="toolbar">
+<div class="toolbar container">
   <p class="note" id={noteId}>{marqueeCopy.note}</p>
   <button
     class="pill pill--secondary pill--small"
@@ -87,7 +87,7 @@ const sizes =
   /* Columns */
   .stage--columns {
     block-size: min(34rem, 125vw);
-    max-inline-size: var(--layout-stage);
+    max-inline-size: min(var(--layout-stage), 100% - var(--space-3) * 2);
     margin-inline: auto;
     border-radius: var(--radius-xl);
     background: var(--color-light-surface);
@@ -192,6 +192,7 @@ const sizes =
   @media (min-width: 48rem) {
     .stage--columns {
       block-size: 40rem;
+      max-inline-size: min(var(--layout-stage), 100% - var(--space-6) * 2);
       border-radius: var(--radius-xxl);
     }
     .stage--columns .tracks {

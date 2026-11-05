@@ -9,7 +9,7 @@ service scenes, workflow diagrams and illustrations, scene replay) and their con
 Issue #126 implements the approved v3 tokens, shell and shared building blocks. `BaseLayout`
 loads the single motion controller (`src/scripts/motion.ts`, `src/lib/motion/policy.ts`) for
 disclosures, tabs, marquees and the scripted demo. It leaves complete HTML when JavaScript,
-motion or data-saving preferences prevent playback. Production page assembly stays in #58/#59.
+motion or data-saving preferences prevent playback. `src/pages/index.astro` (#127) assembles the home page; the service pages stay in #128.
 
 | Component | Contract |
 | --- | --- |
@@ -21,7 +21,7 @@ motion or data-saving preferences prevent playback. Production page assembly sta
 | `sections/ResultPanel.astro` | Required `title`, `body`; optional slot and root-absolute `actions`. Default h1 for standalone results. `inline` supplies a focusable h2 with `data-result-heading`; the caller owns focus after submission. Existing contact pages retain their specialised result behavior. |
 | `sections/TokenHeadline.astro` | `lines` of text or `{ text, service }` segments; optional `animate`. Produces one h1 with decorative inline service tokens; words remain complete without the glyphs. |
 | `ui/ExampleScreen.astro` | Required example `id` and slot-specific `sizes`; optional `eager`, `priority`, `lift`. Local sources become AVIF/WebP at 320/480/640/960 widths with dimensions and HTML example captions. Lazy by default; at most one above-fold image gets `priority`. |
-| `sections/Marquee.astro` | Unique `id`, accessible `label`, `tracks` of example IDs; `variant="columns"` or `"row"`. CSS movement, shared persistent pause controls, off-screen/hidden-tab pause, stopped scrollable layout under reduced motion, Save-Data or no JavaScript. |
+| `sections/Marquee.astro` | Unique `id`, accessible `label`, `tracks` of example IDs; `variant="columns"` or `"row"`. Place it outside `.container`: it aligns its own toolbar and sets its stage width. CSS movement, shared persistent pause controls, off-screen/hidden-tab pause, stopped scrollable layout under reduced motion, Save-Data or no JavaScript. |
 | `sections/ServiceTabs.astro` | `tabs` from `src/content/service-tabs.ts` and an accessible `label`. Roving arrow/Home/End selection; every panel stacks without JavaScript. Use once per page (service IDs are stable). |
 | `sections/AiDemo.astro` | Optional typed `copy`, defaulting to the approved scripted example. One instance per page. Complete draft without playback; keyboard pause/replay, Escape, off-screen/hidden-tab suspension and a polite completion message. |
 | `sections/StoryPlaceholders.astro` | Required `heading` and `stories`. Empty data omits the whole section; placeholder mode is for fixtures/editorial previews only. Production callers must supply approved real stories or an empty list. |

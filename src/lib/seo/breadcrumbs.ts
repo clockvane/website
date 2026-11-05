@@ -4,15 +4,9 @@ export interface Crumb {
   href: string;
 }
 
-/**
- * schema.org BreadcrumbList as a string for a `<script type="application/ld+json">` body. `<` is
- * escaped so no value can close the script element.
- */
-export function breadcrumbJsonLd(
-  crumbs: readonly Crumb[],
-  origin: string,
-): string {
-  return JSON.stringify({
+/** schema.org BreadcrumbList JSON-LD. BaseLayout escapes it with `serializeJsonLd`. */
+export function breadcrumbJsonLd(crumbs: readonly Crumb[], origin: string) {
+  return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: crumbs.map((crumb, index) => ({
@@ -21,5 +15,5 @@ export function breadcrumbJsonLd(
       name: crumb.label,
       item: new URL(crumb.href, origin).href,
     })),
-  }).replaceAll('<', '\\u003c');
+  };
 }

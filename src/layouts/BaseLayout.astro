@@ -3,6 +3,7 @@ import { siteConfig, siteOrigin } from '../../site.config';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import MotionScript from '../components/MotionScript.astro';
+import { serializeJsonLd } from '../lib/seo/structured-data';
 import '../styles/base.css';
 import '../styles/utilities.css';
 // Generated media rules come last so responsive classes override component defaults.
@@ -11,8 +12,8 @@ interface Props {
   title: string;
   description: string;
   noindex?: boolean;
-  /** Serialized JSON-LD; build it with a src/lib/seo/ helper, which escapes it. */
-  structuredData?: string;
+  /** JSON-LD built by `src/lib/seo/`. */
+  structuredData?: object;
 }
 const { title, description, noindex = false, structuredData } = Astro.props;
 const currentPath = Astro.url.pathname;
@@ -56,7 +57,7 @@ const canonical = new URL(currentPath, siteOrigin).href;
         <script
           is:inline
           type="application/ld+json"
-          set:html={structuredData}
+          set:html={serializeJsonLd(structuredData)}
         />
       )
     }
