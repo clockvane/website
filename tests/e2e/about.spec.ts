@@ -6,7 +6,7 @@ import {
   expectNoHorizontalScroll,
 } from './helpers/page-checks';
 
-test('About preserves approved facts and placeholders, metadata and sitemap entry', async ({
+test('About follows the copy deck, metadata and sitemap entry', async ({
   page,
 }) => {
   await page.goto('/');
@@ -15,45 +15,51 @@ test('About preserves approved facts and placeholders, metadata and sitemap entr
     .locator('meta[name="description"]')
     .getAttribute('content');
   await page.goto('/about/');
-  await expect(page).toHaveTitle(`About us | ${siteConfig.brand}`);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    `About ${siteConfig.brand}`,
+  await expect(page).toHaveTitle(aboutCopy.title);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    'content',
+    aboutCopy.title,
   );
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
     aboutCopy.description,
   );
-  expect(aboutCopy.description).not.toMatch(/small business|startup/i);
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    'content',
+    aboutCopy.description,
+  );
   expect(await page.title()).not.toBe(homeTitle);
   expect(aboutCopy.description).not.toBe(homeDescription);
   const main = page.getByRole('main');
-  await expect(main).toContainText(
-    'three founders: Mohammed Farhan, Adnan Sameer and Syed Zoheb Ali.',
+  await expect(main.getByRole('heading', { level: 1 })).toHaveText(
+    aboutCopy.heading,
   );
-  for (const text of [
-    aboutCopy.lede,
-    aboutCopy.who.body,
-    aboutCopy.expertise.caveat,
-    aboutCopy.expertise.note,
-    aboutCopy.proof.body,
-  ])
-    await expect(main).toContainText(text);
   await expect(main.locator('h2')).toHaveText([
     aboutCopy.who.heading,
     aboutCopy.expertise.heading,
     aboutCopy.proof.heading,
     'What would you like to get done?',
   ]);
-  await expect(main.getByRole('listitem')).toHaveText(
-    aboutCopy.expertise.items,
-  );
+  for (const text of [
+    aboutCopy.lede,
+    aboutCopy.who.body,
+    aboutCopy.expertise.body,
+    aboutCopy.proof.body,
+    aboutCopy.proof.linksPlaceholder,
+  ])
+    await expect(main).toContainText(text);
   await expect(main.locator('img')).toHaveCount(0);
-  await expect(main.locator('a')).toHaveCount(1);
-  await expect(main.getByRole('link')).toHaveAttribute(
+  await expect(
+    main.getByRole('link', { name: aboutCopy.expertise.link.label }),
+  ).toHaveAttribute('href', aboutCopy.expertise.link.href);
+  await expect(main.locator('.band-wrap')).toHaveCount(1);
+  await expect(main.locator('.band-wrap a')).toHaveText(
+    siteConfig.primaryCta.label,
+  );
+  await expect(main.locator('.band-wrap a')).toHaveAttribute(
     'href',
     siteConfig.primaryCta.href,
   );
-  await expect(main.getByRole('link')).toHaveText(siteConfig.primaryCta.label);
   const sitemap = await (await page.request.get('/sitemap-0.xml')).text();
   expect(sitemap).toContain(`${siteOrigin}/about/</loc>`);
 });
@@ -85,9 +91,10 @@ for (const width of [320, 1280]) {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
     await page.keyboard.press('Tab');
-    const cta = page.getByRole('main').getByRole('link');
-    await expect(cta).toBeFocused();
-    await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('link', { name: aboutCopy.expertise.link.label }),
+    ).toBeFocused();
+    await page.locator('main .band-wrap a').click();
     await expect(page).toHaveURL(/\/contact\/$/);
     await page.goto('/about/');
     await page.evaluate(() => {
