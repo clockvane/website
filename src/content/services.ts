@@ -39,7 +39,7 @@ const entries = [
   },
   {
     key: 'solutions',
-    slug: 'solutions-for-companies',
+    slug: 'solutions',
     label: 'Solutions for companies',
     linkLabel: 'Read about solutions for companies',
     summary: 'Tailored software and technical solutions.',
