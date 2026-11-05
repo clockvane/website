@@ -28,6 +28,7 @@ const $ = <T extends HTMLElement>(selector: string) =>
 async function load(reduced: boolean) {
   document.documentElement.className = '';
   document.documentElement.removeAttribute('data-paused');
+  document.documentElement.removeAttribute('data-hidden-tab');
   document.body.innerHTML = page;
   vi.stubGlobal(
     'matchMedia',
@@ -57,6 +58,7 @@ describe('motion controller', () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -148,5 +150,39 @@ describe('motion controller', () => {
     disc.open = true;
     document.body.click();
     expect(disc.open).toBe(false);
+  });
+
+  it('freezes the demo in a hidden tab and resumes from the same elapsed position', async () => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    // Use the fake clock for elapsed time as well as interval scheduling.
+    vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    const [seen] = await load(false);
+    const root = document.documentElement;
+    const demo = $('[data-demo]');
+    const prompt = $('[data-demo-prompt]');
+    seen?.([{ target: $('[data-demo-stage]'), isIntersecting: true }]);
+    await vi.advanceTimersByTimeAsync(600);
+    expect(prompt.firstElementChild?.textContent).toBe('Pro');
+    const frame = $('[data-demo-stage]').innerHTML;
+
+    hidden.mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(root.hasAttribute('data-hidden-tab')).toBe(true);
+    await vi.advanceTimersByTimeAsync(10000);
+    expect($('[data-demo-stage]').innerHTML).toBe(frame);
+    expect(demo.dataset.state).toBe('running');
+    expect($('[data-demo-status]').textContent).toBe('');
+
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(root.hasAttribute('data-hidden-tab')).toBe(false);
+    expect($('[data-demo-stage]').innerHTML).toBe(frame);
+    await vi.advanceTimersByTimeAsync(900);
+    // About 1,500 ms of visible playback: neither restarted nor advanced by the hidden time.
+    expect(prompt.firstElementChild?.textContent).toBe('Prompt ');
+    expect(demo.dataset.state).toBe('running');
+    await vi.advanceTimersByTimeAsync(3100);
+    expect(demo.dataset.state).toBe('done');
+    expect($('[data-demo-status]').textContent).toBe('Finished.');
   });
 });

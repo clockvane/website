@@ -21,6 +21,10 @@ describe.skipIf(!existsSync(dist))('dist budgets', () => {
   const assets = (html: string, pattern: RegExp) =>
     [...html.matchAll(pattern)].map((m) => join(dist, m[1] ?? ''));
 
+  it('ships no throwaway prototypes under labs/', () => {
+    expect(existsSync(join(dist, 'labs'))).toBe(false);
+  });
+
   it('ships no PNG, JPEG or GIF from the pipeline, and each image ≤ 100 kB', () => {
     const generated = files.filter((file) => file.includes('/_astro/'));
     expect(generated.filter((f) => /\.(png|jpe?g|gif)$/.test(f))).toEqual([]);
@@ -35,9 +39,11 @@ describe.skipIf(!existsSync(dist))('dist budgets', () => {
     const styles = assets(html, /<link[^>]+href="(\/[^"]+\.css)"/g);
     const sum = (list: string[]) => list.reduce((n, f) => n + gz(f), 0);
     expect(sum(scripts), 'P-4 script').toBeLessThanOrEqual(50 * KB);
-    for (const script of scripts.filter((f) =>
+    const motionScripts = scripts.filter((f) =>
       /MotionScript|motion\./.test(f),
-    )) {
+    );
+    expect(motionScripts, 'P-4 one shared motion controller').toHaveLength(1);
+    for (const script of motionScripts) {
       expect(gz(script), 'P-4 motion controller').toBeLessThanOrEqual(5 * KB);
     }
     expect(sum(styles), 'P-5 CSS').toBeLessThanOrEqual(40 * KB);

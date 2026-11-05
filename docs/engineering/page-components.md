@@ -55,5 +55,6 @@ The v3 fixture adds tab/demo keyboard journeys, marquee pause, reduced-motion an
 image output checks and 320/768/1440 px screenshots (`.agentops-scratch/126-components-*.png`).
 Run `DIST_DIR=.agentops-scratch/components-dist npm run test:dist` to apply the NFR size and CSP
 checks to the image-rich fixture as well as the existing production routes. Example sources
-are original screens under `src/assets/examples/`; the retained renderer under
-`docs/design/v3/prototype-src/` regenerates those PNG sources, never public runtime assets.
+are original screens under `src/assets/examples/`. `docs/design/v3/prototype-src/` is the permanent
+home of their screen definitions and PNG renderer, despite its historical name. It regenerates
+those PNG sources, never public runtime assets; do not delete it during prototype cleanup.

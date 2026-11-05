@@ -4,13 +4,54 @@ Verified locally on 2026-11-04, resuming `sde3/126-design-system-v3`. The site s
 pages use the approved v3 tokens. New page building blocks are exercised in an isolated fixture;
 Home and Services assembly remain #58 and #59. Neither fixture route is published in `dist/`.
 
-## Checks
+## Tech-lead review fixes — 2026-11-05
+
+Review target: `f3acedbd21ca9e219a3ebf787baaeafeb684cd8d`, PR #135.
+
+- Hidden-tab regression: the unit test overrides `document.hidden`, dispatches `visibilitychange`,
+  checks `data-hidden-tab`, and freezes a partially typed demo for 10 seconds. On becoming visible,
+  the attribute clears, playback continues from its previous position, and finishes normally.
+  Two temporary mutations each failed this test: removing the hidden guard advanced the demo while
+  hidden; retaining the old timer timestamp skipped ahead on resume. Both mutations were reverted;
+  production `motion.ts` is unchanged. This is unit evidence, not a browser visibility simulation.
+- Coverage now includes `src/scripts/**`. Motion line coverage is **88.95%**, branches **70.58%**.
+  All-file line coverage is **72.36%**: `contact.ts` reports **0% unit coverage** (its DOM journeys
+  run in Playwright). The existing per-file 80% gates for `site.config.ts` and `src/lib/**` remain,
+  with a new per-file 80% gate for `motion.ts`. The earlier 100% figure excluded both controllers.
+- Artifact checks now reject any `dist/labs/` directory and require exactly one matching motion
+  script per page before checking its size. Renderer ownership is documented as permanent in
+  `page-components.md`; stale legacy-token wording and OG variable aliases are removed.
+- Removed the old free-audit claims using v3 copy; Contact's title reads `siteConfig.primaryCta.label`.
+  `rg -n -i 'free audit' src` returns no matches. Contact screenshots below are refreshed at
+  320/1280 px and visually checked; component screenshots remain the original implementation evidence.
+
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run check` | Pass; zero diagnostics. Final coverage-config edit also checked with `tsc --noEmit` and Prettier |
+| `npm run build` | 8 pages, 866 ms warm production build; this does not measure cold image encoding |
+| `npm test` | 156 pass across 16 files, including 36 production artifact checks and the hidden-tab test |
+| `PORT=4412 npm run test:e2e` | 57 pass |
+| `PORT=4412 npm run test:components` | 15 pass |
+| `DIST_DIR=.agentops-scratch/components-dist npm run test:dist` | 42 pass |
+
+Gzip -9: motion **1,959 B / 5,000 B**; contact enhancement **7,411 B / 15,000 B**;
+Contact total scripts **9,370 B / 50,000 B**. No styles or dependencies changed in this fix.
+Both Playwright servers and browsers exited after their runs. Local Lighthouse was not rerun;
+[CI run 41933668518](https://github.com/clockvane/website/actions/runs/41933668518) passed build,
+lint, typecheck, unit and Lighthouse on the reviewed `f3acedb`. New commits require fresh CI/reviews.
+
+Nonblocking follow-ups from the latest review remain separate: finding 2 asks the EM for a required
+Playwright CI job; finding 3 assigns cold image-build timing/memory and cache assessment to Home
+assembly (#58, now #127). Finding 10's elevation scale needs the designer's token definition.
+No new CI job, page assembly or visual token scale is introduced by this review fix.
+
+## Initial implementation checks
 
 | Command | Result |
 | --- | --- |
 | `npm run lint` | ESLint, Stylelint token rules and Prettier pass |
 | `npm run check` | Astro and TypeScript pass; 0 errors, warnings or hints |
-| `npm test` | 154 tests pass; reported line coverage 100% |
+| `npm test` | 154 tests pass; reported line coverage 100% for the then-configured scope, excluding `src/scripts/**` |
 | `npm run build` | 8 static pages; final warm build 794 ms |
 | `npm run test:e2e` | 57 pass, including axe, contact success/failure/native POST, keyboard, 320 px reflow, enlarged text, forced colours and reduced motion |
 | `npm run test:components` | 15 pass, including pause/replay, tab keyboard navigation, off-screen pause, runtime reduced-motion changes, no-JS reading and responsive images |
@@ -65,7 +106,7 @@ detection (`EROFS` under Windows AppData). A scratch wrapper launched the instal
 Playwright Chromium with `--remote-debugging-port=9222`, then ran the same LHCI autorun/config
 with `--collect.settings.port=9222`, closing Chromium in `finally`. This changes only how the
 browser starts; audit settings, three-run collection and assertions are unchanged. The preview
-used port 4411. CI continues to use the normal `lighthouse` job; remote results are pending PR CI.
+used port 4411. CI uses the normal `lighthouse` job; its run on `f3acedb` passed (linked above).
 
 The 404 and contact result pages remain intentionally noindex and are covered by the browser
 suite, rather than the indexable-page Lighthouse SEO assertion.

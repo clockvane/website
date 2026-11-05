@@ -7,5 +7,5 @@ export const footerLocation = 'India · working with clients worldwide';
 export const homeSeo = {
   title: `Automate repetitive business work | ${siteConfig.brand}`,
   description:
-    'We take over copy-paste chores, report building and approval chasing, so your team can do real work. Book a free audit call.',
+    'Get expert help, AI automation, websites and technical solutions in one place. Tell us what you need and book a call.',
 };

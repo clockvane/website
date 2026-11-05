@@ -2,14 +2,14 @@
 export const howWeWork = {
   title: 'How we work: from first call to handover',
   description:
-    'Four steps from a free audit call to a working system. Fixed-price packages, an optional retainer and clear handover. Book a free audit call.',
+    'See how we arrange expert support and take projects from a first conversation to handover, with scope and pricing agreed before work begins.',
   heading: 'How we work',
   lede: 'You should know what happens next at every stage, and what it costs before we start.',
   processHeading: 'From first call to delivery',
   steps: [
     {
-      title: 'Free audit call.',
-      body: 'We look at one slow process and listen.',
+      title: 'Talk about the need.',
+      body: 'Tell us what you want to achieve and what is getting in the way.',
       output: 'You get an honest view of what is worth automating.',
     },
     {

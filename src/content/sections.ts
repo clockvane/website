@@ -5,14 +5,17 @@ export const closingCta = {
 };
 export const helpChoose = {
   heading: 'Not sure which one you need?',
-  body: 'Most people are not. Book a free audit call. We will look at one slow process and tell you what we would automate.',
+  body: 'Tell us what you are trying to do. You do not need to choose a tool or write a technical brief first.',
 };
 export const sectionLabels = {
   breadcrumb: 'Breadcrumb',
   typicalWork: 'Typical work',
 };
 export const homeProcess = [
-  { title: 'Talk.', body: 'A free audit call about one slow process.' },
+  {
+    title: 'Talk.',
+    body: 'Tell us what you want to achieve and what is getting in the way.',
+  },
   {
     title: 'Scope.',
     body: 'We write down what we will build, for how much and by when.',
