@@ -9,6 +9,32 @@ import {
 
 const paths = [servicesOverview.href, ...services.map(({ href }) => href)];
 
+async function expectUnclippedCaptions(page: import('@playwright/test').Page) {
+  const captions = page.locator('.stage figcaption, .gallery figcaption');
+  expect(await captions.count()).toBeGreaterThan(0);
+  for (const caption of await captions.all()) {
+    await caption.scrollIntoViewIfNeeded();
+    const bounds = await caption.evaluate((element) => {
+      const figure = element.closest('figure')!.getBoundingClientRect();
+      const label = element.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const text = range.getBoundingClientRect();
+      return {
+        figure: figure.toJSON(),
+        label: label.toJSON(),
+        text: text.toJSON(),
+      };
+    });
+    for (const rect of [bounds.label, bounds.text]) {
+      expect(rect.top).toBeGreaterThanOrEqual(bounds.figure.top - 1);
+      expect(rect.bottom).toBeLessThanOrEqual(bounds.figure.bottom + 1);
+      expect(rect.left).toBeGreaterThanOrEqual(bounds.figure.left - 1);
+      expect(rect.right).toBeLessThanOrEqual(bounds.figure.right + 1);
+    }
+  }
+}
+
 async function breadcrumbNames(page: import('@playwright/test').Page) {
   const json = await page
     .locator('script[type="application/ld+json"]')
@@ -96,6 +122,9 @@ for (const service of services) {
     await expect(main.locator('[data-demo]')).toHaveCount(
       service.example.demo ? 1 : 0,
     );
+    await expect(
+      main.getByRole('region', { name: service.example.heading, exact: true }),
+    ).toHaveCount(1);
     const cta = main.locator('.band-wrap a');
     await expect(cta).toHaveText(service.cta.label);
     await cta.click();
@@ -122,7 +151,7 @@ test('every page has breadcrumb data, a canonical URL and a sitemap entry; old r
   expect(old.status()).toBe(404);
 });
 
-for (const width of [320, 1280]) {
+for (const width of [320, 768, 1280]) {
   for (const path of paths) {
     test(`${path} at ${width}px: axe, reflow, keyboard, reduced motion, no JavaScript`, async ({
       browser,
@@ -136,6 +165,7 @@ for (const width of [320, 1280]) {
       await page.evaluate(() => document.fonts.ready);
       await expectNoAxeViolations(page);
       await expectNoHorizontalScroll(page);
+      await expectUnclippedCaptions(page);
       await page.keyboard.press('Tab');
       await page.keyboard.press('Enter');
       await expect(page.getByRole('main')).toBeFocused();
@@ -150,6 +180,7 @@ for (const width of [320, 1280]) {
         document.documentElement.style.fontSize = '200%';
       });
       await expectNoHorizontalScroll(page);
+      await expectUnclippedCaptions(page);
       await context.close();
 
       const noJs = await browser.newContext({

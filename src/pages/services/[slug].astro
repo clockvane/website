@@ -32,7 +32,7 @@ const ancestors = [
   { label: sectionLabels.home, href: '/' },
   { label: sectionLabels.services, href: servicesOverview.href },
 ];
-const shotSizes = '(min-width: 48rem) 340px, 44vw';
+const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
 ---
 
 <BaseLayout
@@ -84,10 +84,10 @@ const shotSizes = '(min-width: 48rem) 340px, 44vw';
 
   <section
     class="container section"
-    aria-labelledby={example.demo ? 'demo-heading' : 'example-title'}
+    aria-labelledby={example.demo ? 'example-caption' : 'example-title'}
   >
     {!example.demo && <h2 id="example-title">{example.heading}</h2>}
-    <p class="caption">{example.caption}</p>
+    <p class="caption" id="example-caption">{example.caption}</p>
     {example.proof && <p>{example.proof}</p>}
     <p class="note">{marqueeCopy.note}</p>
     <div class="gallery">
@@ -141,7 +141,7 @@ const shotSizes = '(min-width: 48rem) 340px, 44vw';
   }
   /* Columns, not a grid: the screens differ in height and count per service. */
   .gallery {
-    columns: 2;
+    columns: 1;
     column-gap: var(--space-3);
     margin-block-start: var(--space-6);
     padding: var(--space-3);
@@ -151,6 +151,12 @@ const shotSizes = '(min-width: 48rem) 340px, 44vw';
   .gallery > :global(.shot) {
     break-inside: avoid;
     margin-block-end: var(--space-3);
+  }
+  /* Qualifications must grow the card when visitors enlarge text. */
+  .gallery :global(figcaption) {
+    position: static;
+    inline-size: fit-content;
+    margin: var(--space-2);
   }
   @media (min-width: 48rem) {
     .gallery {

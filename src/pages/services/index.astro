@@ -9,7 +9,7 @@ import { services, servicesOverview as copy } from '../../content/services';
 import { breadcrumbJsonLd } from '../../lib/seo/breadcrumbs';
 import { siteConfig, siteOrigin } from '../../../site.config';
 
-const thumbSizes = '(min-width: 64rem) 16rem, 40vw';
+const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
 ---
 
 <BaseLayout
@@ -111,7 +111,7 @@ const thumbSizes = '(min-width: 64rem) 16rem, 40vw';
     margin-block: 0;
   }
   .intro .lead {
-    max-inline-size: 42rem;
+    max-inline-size: var(--layout-text);
   }
   .tagline {
     color: var(--color-light-text-muted);
@@ -152,15 +152,18 @@ const thumbSizes = '(min-width: 64rem) 16rem, 40vw';
   }
   .stage {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     align-items: start;
     gap: var(--space-3);
     padding: var(--space-3);
     border-radius: var(--radius-xl);
     background: var(--color-light-surface);
   }
-  .stage > :global(.shot:nth-child(2)) {
-    margin-block-start: var(--space-12);
+  /* Qualifications must grow the card when visitors enlarge text. */
+  .stage :global(figcaption) {
+    position: static;
+    inline-size: fit-content;
+    margin: var(--space-2);
   }
   .help {
     display: flex;
@@ -173,8 +176,12 @@ const thumbSizes = '(min-width: 64rem) 16rem, 40vw';
   }
   @media (min-width: 48rem) {
     .stage {
+      grid-template-columns: repeat(2, 1fr);
       padding: var(--space-8);
       border-radius: var(--radius-xxl);
+    }
+    .stage > :global(.shot:nth-child(2)) {
+      margin-block-start: var(--space-12);
     }
   }
   @media (min-width: 64rem) {
