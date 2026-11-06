@@ -8,6 +8,7 @@ const origin = 'https://site.example.test';
 const data = {
   name: 'Alex',
   reply: 'alex@example.test',
+  service: 'ai-automation',
   message: 'Please automate our order entry.',
   website: '',
   started: '1000',
@@ -39,7 +40,12 @@ describe('portable enquiry handler', () => {
     const response = await handleEnquiry(request(), deps);
     expect(response.status).toBe(200);
     expect(deps.deliver).toHaveBeenCalledWith(
-      { name: data.name, reply: data.reply, message: data.message },
+      {
+        name: data.name,
+        reply: data.reply,
+        service: data.service,
+        message: data.message,
+      },
       expect.any(String),
     );
     expect(await response.json()).toMatchObject({ ok: true });

@@ -15,17 +15,23 @@ test('privacy renders the approved draft and unresolved facts', async ({
   await expect(page).toHaveTitle(privacyCopy.title);
   const main = page.getByRole('main');
   await expect(main).toContainText(privacyCopy.updated);
-  await expect(main).toContainText(privacyCopy.status);
   for (const section of privacyCopy.sections) {
     await expect(
       main.getByRole('heading', { name: section.heading, exact: true }),
     ).toBeVisible();
-    await expect(main).toContainText(section.body);
+    await expect(main).toContainText(
+      section.body
+        .map((part) => (typeof part === 'string' ? part : part.label))
+        .join(''),
+    );
   }
-  await expect(main).toContainText('[[PLACEHOLDER: Q10 analytics provider]]');
+  await expect(main).toContainText('[[PLACEHOLDER: Q4 final notification');
   await expect(main).toContainText(
-    '[[PLACEHOLDER: Q9 registered name and address',
+    '[[PLACEHOLDER: Q9 confirmed operator identity',
   );
+  await expect(
+    main.getByRole('link', { name: 'contact form' }),
+  ).toHaveAttribute('href', '/contact/');
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await expect(
     main.getByRole('heading', { name: 'What would you like to get done?' }),
@@ -106,14 +112,14 @@ for (const width of [320, 1280]) {
       });
       await page
         .getByRole('main')
-        .getByRole('link', { name: 'Home', exact: true })
+        .getByRole('link', { name: 'Back to home', exact: true })
         .focus();
       await page.keyboard.press('Enter');
       await expect(page).toHaveURL('/');
       await page.goto('/unknown/nested/path/');
       await page
         .getByRole('main')
-        .getByRole('link', { name: 'Contact', exact: true })
+        .getByRole('link', { name: 'Contact us', exact: true })
         .focus();
       await page.keyboard.press('Enter');
       await expect(page).toHaveURL('/contact/');

@@ -1,7 +1,7 @@
 ---
 import { siteConfig } from '../../site.config';
 import { contactCopy as copy } from '../content/contact';
-import { fieldNames, limits } from '../lib/contact/schema';
+import { fieldNames, limits, serviceOptions } from '../lib/contact/schema';
 import ContactFallback from './ContactFallback.astro';
 import ContactResult from './ContactResult.astro';
 ---
@@ -38,35 +38,71 @@ import ContactResult from './ContactResult.astro';
       enctype="application/x-www-form-urlencoded"
     >
       {
-        fieldNames.map((field) => (
-          <div class="field">
-            <label for={`contact-${field}`}>{copy.fields[field].label}</label>
-            <p class="hint" id={`${field}-hint`}>
-              {copy.fields[field].hint}
-            </p>
-            {field === 'message' ? (
-              <textarea
-                id={`contact-${field}`}
-                name={field}
-                required
-                minlength="10"
-                maxlength={limits[field]}
-                aria-describedby={`${field}-hint`}
-              />
-            ) : (
-              <input
-                id={`contact-${field}`}
-                name={field}
-                type="text"
-                autocomplete={field === 'name' ? 'name' : undefined}
-                required
-                maxlength={limits[field]}
-                aria-describedby={`${field}-hint`}
-              />
-            )}
-            <p class="field-error" id={`${field}-error`} hidden />
-          </div>
-        ))
+        fieldNames.map((field) =>
+          field === 'service' ? (
+            <fieldset
+              class="field"
+              role="radiogroup"
+              aria-required="true"
+              aria-describedby="service-hint"
+              data-field="service"
+            >
+              <legend class="field-label">{copy.fields.service.label}</legend>
+              <p class="hint" id="service-hint">
+                {copy.fields.service.hint}
+              </p>
+              <div class="options">
+                {serviceOptions.map(({ value, label }, index) => (
+                  <label class="option">
+                    <input
+                      id={index === 0 ? 'contact-service' : undefined}
+                      name="service"
+                      type="radio"
+                      value={value}
+                      required
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <p class="field-error" id="service-error" hidden />
+            </fieldset>
+          ) : (
+            <div class="field">
+              <label class="field-label" for={`contact-${field}`}>
+                {copy.fields[field].label}
+              </label>
+              <p class="hint" id={`${field}-hint`}>
+                {copy.fields[field].hint}
+              </p>
+              {field === 'message' ? (
+                <textarea
+                  class="control"
+                  id={`contact-${field}`}
+                  name={field}
+                  required
+                  minlength="10"
+                  maxlength={limits[field]}
+                  aria-describedby={`${field}-hint`}
+                  data-field={field}
+                />
+              ) : (
+                <input
+                  class="control"
+                  id={`contact-${field}`}
+                  name={field}
+                  type="text"
+                  autocomplete={field === 'name' ? 'name' : undefined}
+                  required
+                  maxlength={limits[field]}
+                  aria-describedby={`${field}-hint`}
+                  data-field={field}
+                />
+              )}
+              <p class="field-error" id={`${field}-error`} hidden />
+            </div>
+          ),
+        )
       }
       <div hidden aria-hidden="true">
         <input
@@ -80,10 +116,9 @@ import ContactResult from './ContactResult.astro';
       </div>
       <button class="pill pill--primary" type="submit">{copy.send}</button>
       <p class="hint">
-        {copy.privacy}
-        <a class="standalone" href="/privacy/">{copy.privacyLink}</a>
+        {copy.privacy}{' '}
+        <a class="standalone" href="/privacy/">{copy.privacyLink}</a>.
       </p>
-      <p class="hint">{copy.sensitive}</p>
     </form>
   </div>
   <div data-contact-success hidden><ContactResult kind="thanks" inline /></div>
@@ -102,17 +137,45 @@ import ContactResult from './ContactResult.astro';
     gap: var(--space-2);
     margin-block-end: var(--space-6);
   }
-  label {
+  fieldset {
+    min-inline-size: 0;
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+  }
+  .field-label {
+    padding: 0;
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-small);
+  }
+  legend {
+    margin-block-end: var(--space-2);
+  }
+  .option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--layout-tap);
+    cursor: pointer;
+  }
+  .option input {
+    flex: none;
+    inline-size: var(--space-6);
+    block-size: var(--space-6);
+    margin: 0;
+    accent-color: var(--color-light-action);
+    cursor: inherit;
+  }
+  fieldset:disabled .option {
+    color: var(--color-light-disabled-text);
+    cursor: not-allowed;
   }
   .hint {
     color: var(--color-light-text-muted);
     font-size: var(--font-size-small);
     margin-block-start: 0;
   }
-  input,
-  textarea {
+  .control {
     inline-size: 100%;
     min-inline-size: 0;
     min-block-size: var(--layout-tap);
@@ -127,19 +190,15 @@ import ContactResult from './ContactResult.astro';
     min-block-size: var(--space-40);
     resize: vertical;
   }
-  input:hover,
-  textarea:hover,
-  input:active,
-  textarea:active {
+  .control:hover,
+  .control:active {
     border-color: var(--color-light-text);
   }
-  input:read-only,
-  textarea:read-only {
+  .control:read-only {
     background: var(--color-light-disabled-fill);
     color: var(--color-light-disabled-text);
   }
-  input[aria-invalid='true'],
-  textarea[aria-invalid='true'] {
+  .control[aria-invalid='true'] {
     border-color: var(--color-light-error);
   }
   .field-error,
@@ -172,8 +231,5 @@ import ContactResult from './ContactResult.astro';
   }
   form > .hint {
     margin-block-start: var(--space-4);
-  }
-  .hint a {
-    display: flex;
   }
 </style>

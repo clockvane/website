@@ -1,8 +1,13 @@
 import * as z from 'zod/mini';
 import { contactCopy } from '../../content/contact';
+import { services } from '../../content/services';
 
 export const limits = { name: 100, reply: 254, message: 3000 } as const;
-export const fieldNames = ['name', 'reply', 'message'] as const;
+export const fieldNames = ['name', 'reply', 'service', 'message'] as const;
+export const serviceOptions = [
+  ...services.map(({ slug, label }) => ({ value: slug as string, label })),
+  { value: 'not-sure', label: contactCopy.notSure },
+];
 export type FieldName = (typeof fieldNames)[number];
 export type FieldErrors = Partial<Record<FieldName, string>>;
 const errors = contactCopy.errors;
@@ -37,6 +42,10 @@ export const enquirySchema = z.object({
             : errors.phone,
       },
     ),
+  ),
+  service: z.enum(
+    serviceOptions.map(({ value }) => value),
+    errors.service,
   ),
   message: z
     .string()

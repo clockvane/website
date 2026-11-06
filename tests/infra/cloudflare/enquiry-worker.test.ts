@@ -48,6 +48,7 @@ describe('Worker boundary', () => {
         body: new URLSearchParams({
           name: 'Alex',
           reply: 'alex@example.test',
+          service: 'ai-automation',
           message: 'Please automate order entry.',
         }),
       });

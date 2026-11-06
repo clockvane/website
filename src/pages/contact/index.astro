@@ -1,25 +1,20 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/sections/PageHeader.astro';
 import ContactForm from '../../components/ContactForm.astro';
 import ContactFallback from '../../components/ContactFallback.astro';
 import { contactCopy as copy } from '../../content/contact';
-import { siteConfig } from '../../../site.config';
 ---
 
-<BaseLayout
-  title={`${copy.title} ${siteConfig.brand} | ${siteConfig.primaryCta.label}`}
-  description={copy.description}
->
+<BaseLayout title={copy.title} description={copy.description}>
   <article
     class="container section"
     itemscope
     itemtype="https://schema.org/ContactPage"
   >
-    <header class="measure">
-      <h1 itemprop="name">{copy.heading}</h1><p itemprop="description">
-        {copy.intro}
-      </p>
-    </header>
+    <meta itemprop="name" content={copy.heading} />
+    <meta itemprop="description" content={copy.intro} />
+    <PageHeader title={copy.heading} lede={copy.intro} />
     <div class="contact-grid">
       <ContactForm />
       <aside class="contact-next" aria-labelledby="contact-next-title">

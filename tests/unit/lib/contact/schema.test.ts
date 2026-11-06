@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { validateEnquiry } from '../../../../src/lib/contact/schema';
+import {
+  serviceOptions,
+  validateEnquiry,
+} from '../../../../src/lib/contact/schema';
+import { services } from '../../../../src/content/services';
 
 const valid = {
   name: ' Alex ',
   reply: 'alex@example.test',
+  service: 'ai-automation',
   message: 'Please automate our order entry.',
 };
 describe('enquiry validation', () => {
@@ -45,6 +50,25 @@ describe('enquiry validation', () => {
   it('rejects non-objects', () => {
     expect(validateEnquiry(null).ok).toBe(false);
   });
+
+  it('offers the four services, then Not sure', () => {
+    expect(serviceOptions.map(({ label }) => label)).toEqual([
+      ...services.map(({ label }) => label),
+      'Not sure',
+    ]);
+    expect(services).toHaveLength(4);
+    for (const { value } of serviceOptions)
+      expect(validateEnquiry({ ...valid, service: value }).ok).toBe(true);
+  });
+  it.each([{ service: undefined }, { service: '' }, { service: 'other' }])(
+    'explains how to fix a missing or unknown service: %j',
+    (override) => {
+      expect(validateEnquiry({ ...valid, ...override })).toEqual({
+        ok: false,
+        fields: { service: 'Choose a service or select Not sure.' },
+      });
+    },
+  );
 
   it.each([
     {

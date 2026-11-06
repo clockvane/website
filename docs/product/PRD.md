@@ -268,6 +268,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [ ] **Q22 Real stories or proof:** any past projects, clients (with permission to name), testimonials, certifications or results we may publish? Default: launch without the stories section, showing this site, public repositories and articles (Q5).
 - [ ] **Q23 First call:** is the first call free? Does that differ between a company call and a booked expert? Default: don't say "free".
 - [ ] **Q24 Tools strip:** which tools do we really work with, and may we show their logos? Default: text names only, confirmed by you, or leave the strip out.
+- [ ] **Q25 Company field on the contact form:** copy deck §6 lists an optional company field, but the NFRs (SEC-11, NFR-SEC-2) limit personal data to name, reply contact and message. Should the form ask for a company name? Default: no, leave it out. The form does ask which service is wanted, which is not personal data; the tech lead should add it to SEC-11.
 
 **Carried over and still open:**
 - [ ] **Q4 Booking link (rest answered):** create the Cal.com account and supply the link. Default: CTAs go to the contact form.
