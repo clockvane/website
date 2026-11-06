@@ -48,6 +48,23 @@ describe('shared page components', () => {
     expect(full).toContain('aria-label="Breadcrumb"');
     expect(full).toMatch(/<li aria-current="page"[^>]*>Services<\/li>/);
     expect(full).toContain('href="/contact/"');
+    const named = await container.renderToString(PageHeader, {
+      props: {
+        title: 'A long page heading',
+        breadcrumbs: [{ label: 'Home', href: '/' }],
+        current: 'Short name',
+      },
+    });
+    expect(named).toMatch(/<li aria-current="page"[^>]*>Short name<\/li>/);
+    expect(named).toContain('A long page heading</h1>');
+  });
+
+  it('lets a page set its own closing action', async () => {
+    const html = await container.renderToString(CtaBand, {
+      props: { cta: { label: 'Book an expert', href: '/contact/' } },
+    });
+    expect(html).toContain('Book an expert');
+    expect(html).not.toContain('Book a call');
   });
 
   it('shares service order with navigation, changes heading levels and work lists by variant', async () => {
