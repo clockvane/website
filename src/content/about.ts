@@ -1,28 +1,34 @@
 import { siteConfig } from '../../site.config';
-import { services } from './services';
+import { publicDetails } from '../lib/config/public-details';
+import { allServices } from './navigation';
 
-/**
- * Copy-deck.md §5, with change request 3 DRAFT edits (no client-size wording,
- * no name story) until copy deck v3; owner-dependent facts stay placeholders.
- */
+const github = publicDetails(siteConfig).socials.find(
+  ({ label }) => label === 'github',
+);
+
+/** Verbatim copy deck v3 §5. Editorial notes in the deck are not page copy. */
 export const aboutCopy = {
-  title: `About us | ${siteConfig.brand}`,
-  description: `Meet the founders behind ${siteConfig.brand}, an India-based team of experts who help individuals and companies worldwide.`,
-  heading: `About ${siteConfig.brand}`,
-  lede: 'We are a founder-led team of experts in India. We help individuals and companies, wherever they are.',
+  title: 'About our founders and approach',
+  description:
+    'Meet the founders behind our expert support, AI automation, websites and technical solutions. Based in India, working with clients worldwide.',
+  heading: 'People behind the technical work',
+  lede: 'You need to know who you are working with. We are founder-led, based in India and working with individuals and companies worldwide.',
   who: {
-    heading: `Who is behind ${siteConfig.brand}`,
-    body: `${siteConfig.brand} was started by three founders: Mohammed Farhan, Adnan Sameer and Syed Zoheb Ali. [[PLACEHOLDER: Q6 role line for each founder, for example "cloud and DevOps engineer" for Mohammed Farhan (from the brief), and bios]]`,
+    heading: 'Meet the founders',
+    body: `${siteConfig.brand} was started by Mohammed Farhan, Adnan Sameer and Syed Zoheb Ali.`,
   },
   expertise: {
-    heading: 'What we are good at',
-    items: services.map(({ label }) => label),
-    caveat:
-      "[[PLACEHOLDER: Q6 owner confirms each founder's areas; this list is the services list only]]",
-    note: '[[PLACEHOLDER: Q6 any certifications or years of experience the owner wants stated]]',
+    heading: 'How we can help',
+    body: 'Expert individuals provide advice and hands-on help. We also build AI automations, websites and technical solutions for companies.',
+    link: { label: 'Explore our services', href: allServices.href },
   },
   proof: {
-    heading: 'How you can check our work',
-    body: 'We build this site in the open, with written requirements, reviews and tests. [[PLACEHOLDER: Q5 public GitHub and Medium URLs; shown only once the owner approves]] Case studies will come as we complete client work.',
+    heading: 'See how we work',
+    body: 'This website is built through written requirements, reviews and tests. Its repository records the process.',
+    // Unconfigured links stay hidden (deck §5); the marker stays until Q8 is answered.
+    links: github
+      ? [{ label: 'Explore our public repositories', href: github.href }]
+      : [],
+    linksPlaceholder: '[[PLACEHOLDER: Q8 approved public URLs]].',
   },
 };

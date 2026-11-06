@@ -6,30 +6,37 @@ import {
   expectNoHorizontalScroll,
 } from './helpers/page-checks';
 
-test('process, engagement models and unresolved facts follow the copy deck', async ({
+test('process, working models, FAQ and unresolved facts follow the copy deck', async ({
   page,
 }) => {
   await page.goto('/how-we-work/');
   const main = page.getByRole('main');
   await expect(main.getByRole('heading')).toHaveText([
     copy.heading,
-    copy.processHeading,
-    ...copy.steps.map((step) => step.title),
-    copy.modelsHeading,
-    ...copy.models.map((model) => model.title),
-    copy.pricingHeading,
-    copy.handoverHeading,
+    copy.steps.heading,
+    ...copy.steps.items.map((step) => step.title),
+    copy.support.heading,
+    copy.models.heading,
+    copy.pricing.heading,
+    copy.handover.heading,
+    copy.faq.heading,
+    ...copy.faq.items.map((item) => item.title),
     'What would you like to get done?',
   ]);
-  const steps = main.getByRole('list').getByRole('listitem');
+  const steps = main.locator('ol > li');
   await expect(steps).toHaveCount(4);
-  for (const [index, step] of copy.steps.entries()) {
+  for (const [index, step] of copy.steps.items.entries())
     await expect(steps.nth(index)).toContainText(step.body);
-    await expect(steps.nth(index)).toContainText(step.output);
-  }
-  for (const model of copy.models) await expect(main).toContainText(model.body);
-  await expect(main).toContainText(copy.pricing);
-  await expect(main).toContainText(copy.handover);
+  await expect(main.locator('ul > li')).toHaveText(copy.models.items);
+  for (const text of [
+    copy.lede,
+    copy.support.body,
+    copy.models.placeholder,
+    copy.pricing.body,
+    copy.handover.body,
+    ...copy.faq.items.map((item) => item.body),
+  ])
+    await expect(main).toContainText(text);
   await expect(main.locator('.band-wrap')).toHaveCount(1);
   await main.getByRole('link', { name: siteConfig.primaryCta.label }).click();
   await expect(page).toHaveURL(/\/contact\/$/);
@@ -42,7 +49,15 @@ test('has distinct SEO metadata and a sitemap entry', async ({ page }) => {
     .locator('meta[name="description"]')
     .getAttribute('content');
   await page.goto('/how-we-work/');
-  await expect(page).toHaveTitle(`${copy.title} | ${siteConfig.brand}`);
+  await expect(page).toHaveTitle(copy.title);
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    'content',
+    copy.title,
+  );
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    'content',
+    copy.description,
+  );
   expect(await page.title()).not.toBe(homeTitle);
   expect(copy.description).not.toBe(homeDescription);
   const sitemap = await page.request.get('/sitemap-0.xml');
@@ -54,7 +69,7 @@ test('has distinct SEO metadata and a sitemap entry', async ({ page }) => {
 for (const width of [320, 1280]) {
   test(`accessible at ${width}px and readable without JavaScript`, async ({
     browser,
-  }) => {
+  }, testInfo) => {
     const context = await browser.newContext({
       viewport: { width, height: 900 },
     });
@@ -64,6 +79,10 @@ for (const width of [320, 1280]) {
     await expect(page.locator('script:not([src])')).toHaveCount(0);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
+    await page.screenshot({
+      path: testInfo.outputPath(`72-how-we-work-${width}.png`),
+      fullPage: true,
+    });
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
@@ -86,7 +105,7 @@ for (const width of [320, 1280]) {
     });
     const noJsPage = await noJs.newPage();
     await noJsPage.goto('/how-we-work/');
-    await expect(noJsPage.getByRole('main')).toContainText(copy.pricing);
+    await expect(noJsPage.getByRole('main')).toContainText(copy.pricing.body);
     await noJsPage.locator('main .band-wrap a').click();
     await expect(noJsPage).toHaveURL(/\/contact\/$/);
     await noJs.close();
