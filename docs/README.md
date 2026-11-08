@@ -13,7 +13,7 @@ documents are in [`templates/`](templates/).
 | Content | [Voice and tone](content/voice-and-tone.md) · [Copy deck](content/copy-deck.md) · [Microcopy](content/microcopy.md) | content-writer |
 | Quality | [Test strategy](qa/test-strategy.md) | qa-engineer |
 | Security | [Threat model](security/threat-model.md) · [Security headers](security/headers.md) · [Privacy](security/privacy.md) | security-reviewer |
-| Delivery | [CI/CD design](devops/cicd.md) · [Release process](devops/release.md) | devops-lead |
+| Delivery | [CI/CD design](devops/cicd.md) · [Release process](devops/release.md) · [Release checklists](releases/) | devops-lead |
 
 New documents go in the folder of their area, using a template from [`templates/`](templates/) where one
 fits. A new area needs a row here.

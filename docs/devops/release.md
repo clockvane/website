@@ -51,6 +51,44 @@ they become the entries. Each release also gets GitHub Release notes with the sa
 - Settings → Environments → `production`: **Required reviewers** = `@MohammedAbdulFarhan08`; **Deployment branches and tags** = tags matching `v*`; enable **Prevent self-review** only if a second human reviewer exists (with a single human, leave it off so he can approve).
 - Environment secrets as listed in cicd.md.
 
+## First go-live (`v1.0.0`)
+The current candidate is recorded in [`docs/releases/v0.1.0.md`](../releases/v0.1.0.md). Its open items O-1 to O-7 come first.
+Steps marked **needs-human** are for the owner only. Agents never create accounts, add secrets or change rulesets.
+
+**Before Gate 3**
+1. **needs-human: Required checks.** Once O-3 is merged, go to Settings → Rules → the `main` ruleset → Require status
+   checks. Add `e2e-a11y` and `html-links` next to `lint`, `typecheck`, `unit`, `build`, `lighthouse`, using the exact job names.
+2. **needs-human: Enquiry destination** (after the PRD Q4 channel is final). Create the WhatsApp or Telegram webhook and the
+   Google Sheet backup. Then go to Cloudflare → Workers & Pages → the enquiry Worker → Settings → Variables and Secrets →
+   **Add secret**, once for each `ENQUIRY_*` name that the Worker ticket lists. Paste the values only there, never in an issue
+   or PR. Then send one test enquiry on staging.
+3. The agents close O-1 to O-7, and QA and security sign off on staging. The EM then opens the `gate:3` PR. It renames the
+   checklist to `v1.0.0.md` and includes the release PR (version and changelog).
+
+**Production deploy**
+4. **needs-human:** merge the `gate:3` PR. The release automation pushes tag `v1.0.0` on that commit.
+5. **needs-human:** when GitHub emails "Review deployments", open the `release.yml` run, check that the commit matches the
+   checklist, then click **Approve and deploy**.
+6. The workflow deploys the verified `main` artifact to the Cloudflare production branch (`CF_PAGES_PRODUCTION_BRANCH`).
+   It smoke-tests `https://clockvane-website.pages.dev/` (status 200, headers, no `noindex`) and the Worker `/health`.
+7. devops-lead runs Lighthouse on production and adds the production URL, time and run links to the checklist.
+
+**Rollback**
+- After a later release: run `rollback.yml` with the previous tag, and the owner approves under `production` (cicd.md § Rollback).
+- For `v1.0.0` itself there is no earlier production deployment. Fallback: Cloudflare → Pages → `clockvane-website` →
+  Deployments → choose the last good production deployment → **Rollback to this deployment**. If the site must go dark,
+  **needs-human:** remove the custom domain (if any), or open an incident issue and fix forward with `v1.0.1`.
+
+**Domain and DNS** (when the owner buys one, [ADR-002](../adr/ADR-002-hosting.md) domain plan). Until then production is `clockvane-website.pages.dev`.
+1. **needs-human:** buy the domain (spend approval). Recommended: move its nameservers to Cloudflare (free) so the apex works.
+2. **needs-human:** Cloudflare → Pages → `clockvane-website` → Custom domains → **Set up a domain**. Enter the apex, then
+   `www`, and accept the DNS records Cloudflare proposes. TLS is issued automatically.
+3. **needs-human:** turn on Email Routing (or another mailbox) for the public address, if one is wanted.
+4. An agent PR then updates `site.config.ts` (domain and email) and the `pages.dev` → domain Bulk Redirect in `infra/cloudflare/`.
+   It ships as a PATCH or MINOR release through the normal flow.
+5. **needs-human:** after Gate 3, create the free uptime monitor (UptimeRobot or Cloudflare Health Checks) for `/` and the
+   Worker `/health`, with alerts to the owner's email.
+
 ## Hotfix
 Branch from `main`, fix via a normal PR (all checks still run), merge, verify on staging, tag `PATCH`, approve. There is no path around staging or the approval.
 
