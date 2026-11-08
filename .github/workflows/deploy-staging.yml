@@ -1,0 +1,174 @@
+name: deploy-staging
+
+# Staging deploy for every merge to main (ADR-002, docs/devops/cicd.md). Triggered by workflow_run
+# of ci.yml, so the exact artifact the main-branch CI built and tested is deployed: no rebuild.
+# Then E2E and Lighthouse (mobile) run against the live staging URL. Only `deploy` holds the
+# Cloudflare token; the test jobs get a read-only GITHUB_TOKEN and no secrets.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+# Never cancel a deploy in flight; a newer merge waits for it.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: '4.153.0'
+  NODE_VERSION: '24'
+
+jobs:
+  deploy:
+    name: deploy
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      url: ${{ steps.url.outputs.url }}
+    env:
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check configuration
+        run: |
+          missing=""
+          for n in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CF_PAGES_PROJECT; do
+            [ -n "${!n}" ] || missing="$missing $n"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing:${missing}. The owner must add the secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID to the 'staging' environment and the variable CF_PAGES_PROJECT to the repository (docs/devops/cicd.md, Secrets)."
+            exit 1
+          fi
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad SHA"; exit 1; }
+          [[ "$CF_PAGES_PROJECT" =~ ^[a-z0-9-]+$ ]] || { echo "::error::bad project name"; exit 1; }
+
+      - id: url
+        run: echo "url=https://staging.${CF_PAGES_PROJECT}.pages.dev" >> "$GITHUB_OUTPUT"
+
+      # Default ref of a workflow_run job is the default branch: trusted adapter scripts only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-${{ env.HEAD_SHA }}
+          path: ${{ runner.temp }}/artifact
+          run-id: ${{ env.RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Staging is not indexed either (NFR-SEO-2): same adapter as previews.
+      - name: Verify artifact and add staging-only files and headers
+        run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/staging"
+
+      - name: Deploy to Cloudflare Pages (branch staging)
+        working-directory: ${{ runner.temp }}
+        run: |
+          npx --yes "wrangler@${WRANGLER_VERSION}" pages deploy staging \
+            --project-name "$CF_PAGES_PROJECT" \
+            --branch staging \
+            --commit-hash "$HEAD_SHA" \
+            --commit-dirty=true
+
+      - name: Smoke test
+        env:
+          URL: ${{ steps.url.outputs.url }}
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            if curl -fsS -D "$RUNNER_TEMP/headers.txt" -o /dev/null "$URL/" &&
+               grep -qi '^x-robots-tag:.*noindex' "$RUNNER_TEMP/headers.txt" &&
+               grep -qi "^content-security-policy:.*frame-ancestors 'none'" "$RUNNER_TEMP/headers.txt" &&
+               grep -qi '^strict-transport-security:.*max-age=31536000' "$RUNNER_TEMP/headers.txt" &&
+               grep -qi '^x-content-type-options:.*nosniff' "$RUNNER_TEMP/headers.txt"; then
+              echo "OK: $URL is up, noindex, with CSP/HSTS/nosniff"; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Smoke test failed for $URL (unreachable, or missing noindex/CSP/HSTS/nosniff headers)"
+          exit 1
+
+  e2e:
+    name: e2e (staging)
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      BASE_URL: ${{ needs.deploy.outputs.url }}
+    steps:
+      # Same commit as the deployed artifact (it is on main, so trusted).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: E2E and accessibility against staging
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: staging-e2e-${{ github.event.workflow_run.head_sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  lighthouse:
+    name: lighthouse (staging, mobile)
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      BASE_URL: ${{ needs.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Lighthouse CI against staging (mobile, budgets from nfr.md)
+        run: npm run test:lighthouse
+      - name: Scores and page weights
+        if: always()
+        run: node tests/e2e/lighthouse-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: lighthouse-staging-${{ github.event.workflow_run.head_sha }}
+          path: .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 14
