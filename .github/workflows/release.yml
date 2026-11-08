@@ -29,6 +29,7 @@ jobs:
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
       run_id: ${{ steps.resolve.outputs.run_id }}
+      sums: ${{ steps.resolve.outputs.sums }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,10 +44,12 @@ jobs:
           sha="$(git rev-parse "refs/tags/${TAG}^{commit}")"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$TAG is not on main"; exit 1; }
-          run_id="$(infra/cloudflare/find-artifact-run.sh "$sha")"
+          # Fails closed unless staging succeeded for this commit; returns the staged artifact's identity.
+          read -r run_id sums < <(infra/cloudflare/find-artifact-run.sh "$sha")
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "Releasing $TAG = $sha from ci run $run_id" >> "$GITHUB_STEP_SUMMARY"
+          echo "sums=$sums" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG = $sha from ci run $run_id (staging-verified)" >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: deploy-production
@@ -63,6 +66,7 @@ jobs:
     env:
       SHA: ${{ needs.verify.outputs.sha }}
       RUN_ID: ${{ needs.verify.outputs.run_id }}
+      SUMS: ${{ needs.verify.outputs.sums }}
       CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
       CF_PAGES_PRODUCTION_BRANCH: ${{ vars.CF_PAGES_PRODUCTION_BRANCH || 'main' }}
       ENQUIRY_WORKER_ORIGIN: ${{ vars.ENQUIRY_WORKER_ORIGIN }}
@@ -92,7 +96,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify artifact and add production headers
-        run: infra/cloudflare/prepare-production.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/production"
+        run: infra/cloudflare/prepare-production.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/production" "$SUMS"
       - name: Deploy to Cloudflare Pages (production branch)
         working-directory: ${{ runner.temp }}
         run: |
@@ -109,7 +113,7 @@ jobs:
 
   github-release:
     name: github-release
-    needs: [deploy]
+    needs: [verify, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -125,10 +129,15 @@ jobs:
       - name: Publish GitHub Release from Conventional Commit titles
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.verify.outputs.sha }}
+          RUN_ID: ${{ needs.verify.outputs.run_id }}
+          SUMS: ${{ needs.verify.outputs.sums }}
         run: |
+          # The record pins the released artifact for rollback.yml (run id + checksum of SHA256SUMS).
+          printf 'tag=%s\nsha=%s\nci_run_id=%s\nsums_sha256=%s\n' "$TAG" "$SHA" "$RUN_ID" "$SUMS" > "$RUNNER_TEMP/release-record.txt"
           prev="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v -- '-' | grep -vx "$TAG" | head -n 1 || true)"
           args=(--version "${TAG#v}" --to "refs/tags/$TAG")
           [ -z "$prev" ] || args+=(--from "refs/tags/$prev")
           node infra/release/changelog.ts "${args[@]}" > "$RUNNER_TEMP/notes.md"
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes-file "$RUNNER_TEMP/notes.md"
+            --notes-file "$RUNNER_TEMP/notes.md" "$RUNNER_TEMP/release-record.txt"

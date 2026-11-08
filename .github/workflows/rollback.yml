@@ -32,6 +32,7 @@ jobs:
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
       run_id: ${{ steps.resolve.outputs.run_id }}
+      sums: ${{ steps.resolve.outputs.sums }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,10 +48,13 @@ jobs:
           sha="$(git rev-parse "refs/tags/${TAG}^{commit}")"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$TAG is not on main"; exit 1; }
-          run_id="$(infra/cloudflare/find-artifact-run.sh "$sha")"
+          # The record written at release time pins the exact artifact; fails closed if it is missing.
+          read -r run_id sums rsha < <(infra/cloudflare/find-release-record.sh "$TAG")
+          [ "$rsha" = "$sha" ] || { echo "::error::release record SHA differs from the tag"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "Rolling back to $TAG = $sha from ci run $run_id" >> "$GITHUB_STEP_SUMMARY"
+          echo "sums=$sums" >> "$GITHUB_OUTPUT"
+          echo "Rolling back to $TAG = $sha, recorded artifact from ci run $run_id" >> "$GITHUB_STEP_SUMMARY"
 
   rollback:
     name: rollback-production
@@ -66,6 +70,7 @@ jobs:
     env:
       SHA: ${{ needs.verify.outputs.sha }}
       RUN_ID: ${{ needs.verify.outputs.run_id }}
+      SUMS: ${{ needs.verify.outputs.sums }}
       CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
       CF_PAGES_PRODUCTION_BRANCH: ${{ vars.CF_PAGES_PRODUCTION_BRANCH || 'main' }}
       ENQUIRY_WORKER_ORIGIN: ${{ vars.ENQUIRY_WORKER_ORIGIN }}
@@ -95,7 +100,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verify artifact and add production headers
-        run: infra/cloudflare/prepare-production.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/production"
+        run: infra/cloudflare/prepare-production.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/production" "$SUMS"
       - name: Redeploy to Cloudflare Pages (production branch)
         working-directory: ${{ runner.temp }}
         run: |
