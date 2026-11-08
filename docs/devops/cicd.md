@@ -68,7 +68,7 @@ no direct pushes; dispatcher merge only. Use the job names above verbatim so the
 
 ## Rollback
 Target: ≤ 15 minutes (nfr O-4).
-1. **Preferred, 2 min:** run workflow `rollback.yml` (manual `workflow_dispatch`, input: a previous tag). It runs under `environment: production`, so the owner approves, downloads that tag's retained artifact and redeploys it. No rebuild.
+1. **Preferred, 2 min:** run workflow `rollback.yml` (manual `workflow_dispatch`, input: a previous tag; choose a `v*` tag under "Use workflow from", because the `production` environment accepts only tags). It runs under `environment: production`, so the owner approves, downloads that tag's retained artifact and redeploys it. No rebuild.
 2. **Fallback:** in the Cloudflare dashboard, *Deployments → previous production deployment → Rollback*.
 3. **If the artifact has expired** (90 days): re-run `release.yml` for the old tag; it rebuilds from the tag, and the checksum differs, so record why in the release notes.
 4. After a rollback, open an issue for the cause and fix forward with a patch release. Never delete or move a published tag.
