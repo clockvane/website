@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { siteConfig } from '../../../site.config';
+import { publicDetails } from '../../../src/lib/config/public-details';
 import { aboutCopy } from '../../../src/content/about';
 import { howWeWork } from '../../../src/content/how-we-work';
 
@@ -42,7 +43,7 @@ const pages = [
 ];
 
 describe.each(pages)('$name copy (copy deck v3)', ({ copy, section }) => {
-  it('matches the deck verbatim', () => {
+  it('uses verbatim strings from its deck section', () => {
     const resolved = section.replaceAll('{brand}', siteConfig.brand);
     for (const text of copyStrings(copy)) expect(resolved).toContain(text);
   });
@@ -66,8 +67,15 @@ describe('About and How we work', () => {
     );
   });
 
-  it('hide the public repositories link until a real URL is configured', () => {
-    expect(aboutCopy.proof.links).toEqual([]);
+  it('shows the public repositories link if and only if GitHub is configured', () => {
+    const github = publicDetails(siteConfig).socials.find(
+      ({ label }) => label === 'github',
+    );
+    expect(aboutCopy.proof.links).toEqual(
+      github
+        ? [{ label: 'Explore our public repositories', href: github.href }]
+        : [],
+    );
     expect(aboutCopy.proof.linksPlaceholder).toMatch(/^\[\[PLACEHOLDER: Q8/);
   });
 

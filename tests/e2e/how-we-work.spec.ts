@@ -66,10 +66,10 @@ test('has distinct SEO metadata and a sitemap entry', async ({ page }) => {
   );
 });
 
-for (const width of [320, 1280]) {
+for (const width of [320, 768, 1280]) {
   test(`accessible at ${width}px and readable without JavaScript`, async ({
     browser,
-  }, testInfo) => {
+  }) => {
     const context = await browser.newContext({
       viewport: { width, height: 900 },
     });
@@ -79,10 +79,6 @@ for (const width of [320, 1280]) {
     await expect(page.locator('script:not([src])')).toHaveCount(0);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
-    await page.screenshot({
-      path: testInfo.outputPath(`72-how-we-work-${width}.png`),
-      fullPage: true,
-    });
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();

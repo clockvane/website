@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { siteConfig, siteOrigin } from '../../site.config';
 import { aboutCopy } from '../../src/content/about';
+import { servicesOverview } from '../../src/content/services';
 import {
   expectNoAxeViolations,
   expectNoHorizontalScroll,
@@ -64,19 +65,34 @@ test('About follows the copy deck, metadata and sitemap entry', async ({
   expect(sitemap).toContain(`${siteOrigin}/about/</loc>`);
 });
 
-for (const width of [320, 1280]) {
-  test(`About accessibility and visual evidence at ${width}px`, async ({
+for (const width of [320, 768, 1280]) {
+  test(`Explore our services reaches the overview with HTTP 200 at ${width}px`, async ({
     page,
-  }, testInfo) => {
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/about/');
+    const responsePromise = page.waitForResponse(
+      (response) =>
+        response.request().isNavigationRequest() &&
+        new URL(response.url()).pathname === '/services/',
+    );
+    await page
+      .getByRole('main')
+      .getByRole('link', { name: 'Explore our services', exact: true })
+      .click();
+    expect((await responsePromise).status()).toBe(200);
+    await expect(page).toHaveURL(/\/services\/$/);
+    await expect(
+      page.getByRole('main').getByRole('heading', { level: 1 }),
+    ).toHaveText(servicesOverview.heading);
+  });
+
+  test(`About accessibility and reflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/about/');
     await page.evaluate(() => document.fonts.ready);
     await expectNoAxeViolations(page);
     await expectNoHorizontalScroll(page);
-    await page.screenshot({
-      path: testInfo.outputPath(`71-about-${width}.png`),
-      fullPage: true,
-    });
   });
 
   test(`About works without JavaScript at ${width}px`, async ({ browser }) => {
