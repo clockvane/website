@@ -11,7 +11,10 @@ export default defineConfig({
   outputDir: path.join(root, 'test-results'),
   reporter: [
     ['list'],
-    ['html', { open: 'never', outputFolder: path.join(root, 'playwright-report') }],
+    [
+      'html',
+      { open: 'never', outputFolder: path.join(root, 'playwright-report') },
+    ],
   ],
   use: { baseURL: `http://127.0.0.1:${port}`, browserName: 'chromium' },
   webServer: {
