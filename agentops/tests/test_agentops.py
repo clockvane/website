@@ -86,6 +86,7 @@ class FakeGH:
     def open_issues(self): return self.issues
     def issue_state(self, n): return self.states.get(n, "closed")
     def head_sha(self, n): return None
+    def changed_since(self, base, head): return getattr(self, "compares", {}).get((base, head))
 
 
 def pr(n, sha, labels, branch=None, body="Closes #1", created=NOW - 3600):
@@ -352,6 +353,35 @@ class Dispatch(unittest.TestCase):
         # … but once #140 (and #128) are closed the author gets fresh attempts
         self.assertEqual((w.role, w.action, w.pr, w.attempt_key), ("sde2", "fix", 141, "fix:141:bdf:after-128-140"))
         self.assertNotIn("label", [c[0] for c in gh.calls])
+
+    def test_fix_commit_re_asks_only_reviewers_whose_files_changed(self):
+        rv = lambda role, verdict, sha: f"<!-- agentops:review role={role} verdict={verdict} sha={sha} -->"
+        gh = FakeGH(prs=[pr(7, "0e1e001", ["agent:sde2", "ui-review"])],
+                    files={7: ["src/pages/about.astro", "docs/product/PRD.md", ".github/workflows/ci.yml"]},
+                    reviews={7: [rv("code-reviewer", "approve", "0a1d001"), rv("qa-engineer", "approve", "0a1d001"),
+                                 rv("product-owner", "approve", "0a1d001"), rv("devops-lead", "approve", "0a1d001"),
+                                 rv("security-reviewer", "approve", "0a1d001"), rv("ux-designer", "changes", "0a1d001")]})
+        gh.compares = {("0a1d001", "0e1e001"): ["src/pages/about.astro"]}
+        w = self.disp(gh).handle_prs(gh.prs)
+        carried = sorted(c[3][len("agent-review/"):] for c in gh.calls if c[0] == "status")
+        # product docs and the workflow did not change: those approvals stand
+        self.assertEqual(carried, ["devops-lead", "product-owner", "security-reviewer"])
+        # src changed: code and QA review again; UX asked for changes, so it reviews again too
+        self.assertEqual((w.role, w.action), ("code-reviewer", "review"))
+
+    def test_approvals_never_carry_on_gates_rebases_or_label_reviewers(self):
+        rv = lambda role, sha: f"<!-- agentops:review role={role} verdict=approve sha={sha} -->"
+        m = self.cfg.matrix
+        self.assertFalse(ao.carries_over("product-owner", ["src/a.ts"], ["gate:3"], "sde2", m))
+        self.assertFalse(ao.carries_over("ux-designer", ["src/a.ts"], ["ui-review"], "sde2", m))
+        self.assertTrue(ao.carries_over("ux-designer", ["docs/qa/x.md"], ["ui-review"], "sde2", m))
+        self.assertEqual(ao.latest_approvals([rv("qa-engineer", "0aa0001"),
+                                              "<!-- agentops:review role=qa-engineer verdict=changes sha=0aa0002 -->"]), {})
+        gh = FakeGH(prs=[pr(8, "0e1e002", ["agent:sde2"])], files={8: ["src/a.ts"]},
+                    reviews={8: [rv("code-reviewer", "0a1d002"), rv("qa-engineer", "0a1d002")]})
+        gh.compares = {}  # force-push: no clean diff from the old commit
+        self.disp(gh).handle_prs(gh.prs)
+        self.assertNotIn("status", [c[0] for c in gh.calls])
 
     def test_all_approved_merges(self):
         gh = FakeGH(prs=[pr(5, "aaa", ["agent:sde2"])], files={5: ["src/a.tsx"]},

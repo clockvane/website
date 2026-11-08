@@ -1403,6 +1403,15 @@ class GH:
         data = self.api("GET", f"repos/{self.repo}/commits/{sha}/status") or {}
         return data.get("statuses", [])
 
+    def changed_since(self, base: str, head: str) -> Optional[List[str]]:
+        """Files changed from commit `base` to `head`, or None when `head` does not simply build on
+        `base` (force-push, rebase) or the list may be cut off."""
+        data = self.api("GET", f"repos/{self.repo}/compare/{base}...{head}") or {}
+        files = data.get("files")
+        if data.get("status") != "ahead" or files is None or len(files) >= 300:
+            return None
+        return [f["filename"] for f in files]
+
     def set_status(self, sha: str, state: str, context: str, desc: str) -> None:
         self.api("POST", f"repos/{self.repo}/statuses/{sha}",
                  {"state": state, "context": context, "description": desc[:140]})
@@ -1505,6 +1514,36 @@ REVIEW_SHA_RX = re.compile(r"agentops:review\b[^>]*\bsha=([0-9a-f]{7,40})")
 REVIEW_ROLE_RX = re.compile(r"agentops:review\b[^>]*\brole=([a-z0-9-]+)")
 
 
+REVIEW_VERDICT_RX = re.compile(r"agentops:review\b[^>]*\bverdict=([a-z]+)")
+
+
+def latest_approvals(bodies: List[str]) -> Dict[str, str]:
+    """{role: commit sha} for every reviewer whose most recent verdict on this PR was an approval."""
+    out: Dict[str, str] = {}
+    for b in bodies:
+        r, v, s = REVIEW_ROLE_RX.search(b), REVIEW_VERDICT_RX.search(b), REVIEW_SHA_RX.search(b)
+        if not (r and v and s):
+            continue
+        if v.group(1) == "approve":
+            out[r.group(1)] = s.group(1)
+        else:
+            out.pop(r.group(1), None)
+    return out
+
+
+def carries_over(role: str, changed: List[str], labels: List[str], author: Optional[str],
+                 matrix: Dict[str, Any]) -> bool:
+    """May `role`'s approval of an earlier commit stand for the new head? Only when the commits since
+    then touch none of its files: no changed path makes it a required reviewer, and for a reviewer
+    required by a label (ui-review, arch-impact …) the change is docs-only. Gate PRs never carry."""
+    if not changed or any(lbl.startswith("gate:") for lbl in labels):
+        return False
+    if role in required_reviewers(changed, [], author, matrix):
+        return False
+    by_label = any(role in matrix.get("label_rules", {}).get(lbl, []) for lbl in labels)
+    return not by_label or all(path_matches(f, matrix.get("docs_only_globs", ["docs/**"])) for f in changed)
+
+
 def review_rounds(bodies: List[str], roles: Optional[Iterable[str]] = None) -> int:
     """How many review rounds ended in 'changes': one per reviewed commit, however many reviewers
     asked for changes on it (two reviewers on the same commit are one round, not two).
@@ -1583,6 +1622,28 @@ class Dispatcher:
         if n not in self._dep_state:
             self._dep_state[n] = self.gh.issue_state(n)
         return self._dep_state[n] != "closed"
+
+    def carry_approvals(self, n: int, sha: str, missing: List[str], labels: List[str],
+                        author: Optional[str]) -> List[str]:
+        """After a fix commit, a reviewer who approved an earlier commit is not asked again when the
+        commits since then touch none of its files (issue #147): its approval is recorded on the new
+        head with a note. Reviewers whose files changed, or who asked for changes, review again."""
+        approved = latest_approvals(self.gh.pr_review_bodies(n))
+        carried: List[str] = []
+        diffs: Dict[str, Optional[List[str]]] = {}
+        for role in missing:
+            old = approved.get(role)
+            if not old or sha.startswith(old) or old.startswith(sha):
+                continue
+            if old not in diffs:
+                diffs[old] = self.gh.changed_since(old, sha)
+            changed = diffs[old]
+            if changed is None or not carries_over(role, changed, labels, author, self.cfg.matrix):
+                continue
+            if self._do(f"PR #{n}: {role} approval carried from {old[:7]}", self.gh.set_status, sha, "success",
+                        REVIEW_CTX + role, f"Approved at {old[:7]}; later commits changed none of its files"):
+                carried.append(role)
+        return carried
 
     def pr_waits(self, pr: Dict[str, Any]) -> Tuple[bool, str]:
         """(waiting, attempt-key suffix) for a PR whose description says "Depends on #N".
@@ -1710,6 +1771,9 @@ class Dispatcher:
                        if str(s.get("context", "")).startswith(REVIEW_CTX)}
             changes = [r for r in required if verdict.get(r) == "failure"]
             missing = [r for r in required if verdict.get(r) not in ("success", "failure")]
+            if missing and rcfg.get("carry_approvals", True):
+                carried = self.carry_approvals(n, sha, missing, labels, author)
+                missing = [r for r in missing if r not in carried]
             if changes:
                 if review_rounds(self.gh.pr_review_bodies(n), changes) >= rcfg.get("max_review_rounds", 3):
                     if self.primary:

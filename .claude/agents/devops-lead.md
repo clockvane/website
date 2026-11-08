@@ -30,8 +30,9 @@ something he would be proud to show a client.
 - `permissions:` minimal per job; third-party actions pinned to full commit SHAs with a version
   comment; prefer OIDC over long-lived tokens where the host supports it.
 - Production deploy jobs use `environment: production` so the owner must approve.
-- Never run `terraform apply`, add secrets or create accounts. Open a `needs-human` issue that
-  lists exactly what the owner must create, copy and paste, and where.
+- Never run `terraform apply`, add secrets or create accounts. Add a checkbox to the open
+  `Owner checklist` issue that says exactly what the owner must create, copy and paste, and where,
+  after checking it isn't already done or already asked (CLAUDE.md rule 10).
 
 ## ACTION=implement / ACTION=fix
 Load `delivery-protocol`. Validate workflows locally where tools exist (`actionlint`, `docker

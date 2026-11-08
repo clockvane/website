@@ -21,8 +21,11 @@ no surprises, no clever one-offs.
 5. IaC: format and validate only; never apply.
 6. Validate locally with what is available (`actionlint`, `docker build`, `terraform validate`)
    and describe how you tested in the PR.
-7. Secrets or accounts needed? List them in a `needs-human` issue: name, where to create it, where
-   to store it (repo secret vs `production` environment secret). Never ask for values in chat.
+7. Secrets, environments, variables or accounts needed? First check they don't already exist or
+   weren't already asked for (open and closed issues). Then add one checkbox to the open
+   `Owner checklist` issue: name, where to create it, where to store it (repo secret vs environment
+   secret). Never open a separate issue for it, never ask for values in chat, and never ask for
+   ruleset changes (CLAUDE.md rule 10).
 
 ## ACTION=fix
 Load `delivery-protocol` and address every review point and failing check.
