@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isPlaceholder, siteConfig, siteConfigSchema } from '../../site.config';
+import {
+  isPlaceholder,
+  siteConfig,
+  siteConfigSchema,
+  siteOrigin,
+} from '../../site.config';
 import { primaryCta } from '../../src/content/navigation';
 
 describe('site config', () => {
@@ -23,6 +28,12 @@ describe('site config', () => {
   it('flags placeholder values', () => {
     expect(isPlaceholder(siteConfig.email)).toBe(true);
     expect(isPlaceholder(siteConfig.brand)).toBe(false);
+  });
+
+  it('derives the site origin from the configured domain', () => {
+    expect(isPlaceholder(siteConfig.domain)).toBe(false);
+    expect(siteConfig.domain).toBe('clockvane-website.pages.dev');
+    expect(siteOrigin).toBe(`https://${siteConfig.domain}`);
   });
 
   it('shares the configured CTA with navigation and rejects an empty label', () => {
