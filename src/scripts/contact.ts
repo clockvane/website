@@ -3,6 +3,7 @@ import {
   fieldNames,
   validateEnquiry,
   type FieldErrors,
+  type FieldName,
 } from '../lib/contact/schema';
 
 const root = document.querySelector<HTMLElement>('[data-contact]');
@@ -12,22 +13,23 @@ if (root) {
   const status = root.querySelector<HTMLElement>('[data-status]')!;
   const summary = root.querySelector<HTMLElement>('[data-errors]')!;
   const failure = root.querySelector<HTMLElement>('[data-failure]')!;
-  const controls = fieldNames.map(
-    (name) =>
-      form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement,
-  );
+  const control = (name: FieldName) =>
+    form.querySelector<HTMLElement>(`[data-field="${name}"]`)!;
+  const textControls = form.querySelectorAll<
+    HTMLInputElement | HTMLTextAreaElement
+  >('input[data-field], textarea[data-field]');
+  const serviceGroup = control('service') as HTMLFieldSetElement;
   const started = form.elements.namedItem('started') as HTMLInputElement;
   started.value = String(Date.now());
   form.noValidate = true;
   let busy = false;
   const values = () => Object.fromEntries(new FormData(form));
-  const showField = (name: (typeof fieldNames)[number], message?: string) => {
-    const control = controls.find((control) => control.name === name)!;
+  const showField = (name: FieldName, message?: string) => {
     const error = root.querySelector<HTMLElement>(`#${name}-error`)!;
     error.textContent = message ? `! ${message}` : '';
     error.hidden = !message;
-    control.setAttribute('aria-invalid', String(Boolean(message)));
-    control.setAttribute(
+    control(name).setAttribute('aria-invalid', String(Boolean(message)));
+    control(name).setAttribute(
       'aria-describedby',
       `${name}-hint${message ? ` ${name}-error` : ''}`,
     );
@@ -48,22 +50,43 @@ if (root) {
     summary.hidden = false;
     summary.focus();
   };
-  for (const control of controls)
-    control.addEventListener('blur', () => {
-      const parsed = validateEnquiry(values());
-      showField(
-        control.name as (typeof fieldNames)[number],
-        parsed.ok
-          ? undefined
-          : parsed.fields[control.name as (typeof fieldNames)[number]],
-      );
+  const validateField = (name: FieldName) => {
+    if (busy) return;
+    const parsed = validateEnquiry(values());
+    showField(name, parsed.ok ? undefined : parsed.fields[name]);
+  };
+  let pointerDown = false;
+  document.addEventListener('pointerdown', () => {
+    pointerDown = true;
+  });
+  for (const type of ['pointerup', 'pointercancel'])
+    document.addEventListener(type, () => {
+      pointerDown = false;
     });
+  for (const name of fieldNames)
+    control(name).addEventListener('focusout', (event) => {
+      // Moving between the radios of one group is not leaving the field.
+      if (control(name).contains(event.relatedTarget as Node | null)) return;
+      // A message appearing mid-press moves what is under the pointer and the
+      // click misses, so wait until the press has finished.
+      if (pointerDown)
+        document.addEventListener(
+          'pointerup',
+          () => setTimeout(() => validateField(name)),
+          { once: true },
+        );
+      else validateField(name);
+    });
+  serviceGroup.addEventListener('change', () => validateField('service'));
   const setBusy = (value: boolean) => {
     busy = value;
     form.setAttribute('aria-busy', String(value));
     button.setAttribute('aria-disabled', String(value));
     button.textContent = value ? copy.sending : copy.send;
-    for (const control of controls) control.readOnly = value;
+    for (const field of textControls) field.readOnly = value;
+    // Radios have no read-only state. Disabling drops them from FormData, so
+    // the request body is built before this runs.
+    serviceGroup.disabled = value;
     status.textContent = value ? copy.sendingStatus : '';
   };
   form.addEventListener('submit', async (event) => {
@@ -77,15 +100,16 @@ if (root) {
       return;
     }
     for (const name of fieldNames) showField(name);
+    const body = new URLSearchParams(
+      [...new FormData(form)].map(([name, value]) => [name, String(value)]),
+    );
     setBusy(true);
     let failureMessage = copy.failure;
     try {
       const response = await fetch(form.action, {
         method: 'POST',
         headers: { Accept: 'application/json' },
-        body: new URLSearchParams(
-          [...new FormData(form)].map(([name, value]) => [name, String(value)]),
-        ),
+        body,
         credentials: 'omit',
         signal: AbortSignal.timeout(15_000),
       });

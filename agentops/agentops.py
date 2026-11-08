@@ -1576,6 +1576,26 @@ class Dispatcher:
         self.primary = self.worker == "claude"
         self.first = worker_number(self.worker) == 1
         self.actions: List[str] = []
+        self._dep_state: Dict[int, str] = {}
+
+    def dep_open(self, n: int) -> bool:
+        """Is issue or PR #n still open? (one lookup per tick)"""
+        if n not in self._dep_state:
+            self._dep_state[n] = self.gh.issue_state(n)
+        return self._dep_state[n] != "closed"
+
+    def pr_waits(self, pr: Dict[str, Any]) -> Tuple[bool, str]:
+        """(waiting, attempt-key suffix) for a PR whose description says "Depends on #N".
+        While #N is open the PR waits: no fix runs and no escalation, because the author can't finish
+        before #N lands (a run that only re-confirms "still blocked" must not count as a failed fix).
+        Once every #N is closed, fix attempts count from zero again (suffix `:after-<N>`)."""
+        own = {pr["number"], linked_issue(pr)}
+        deps = [d for d in dependencies(pr.get("body") or "") if d not in own]
+        if not deps:
+            return False, ""
+        if any(self.dep_open(d) for d in deps):
+            return True, ""
+        return False, ":after-" + "-".join(str(d) for d in sorted(deps))
 
     def avoid(self, action: Optional[str] = None) -> set:
         """Engines that can't take a run of this kind now (plan at your limit)."""
@@ -1651,11 +1671,14 @@ class Dispatcher:
                 continue
             if "needs-human" in labels:
                 continue
+            waiting, after = self.pr_waits(pr) if author else (False, "")
+            if waiting:
+                continue  # "Depends on #N" is still open: the PR waits, nobody escalates
             if pr.get("mergeable") == "CONFLICTING":
                 # main moved under this PR (another merge, a layout change): its author merges main in
                 if not author:
                     continue  # the owner's own PR: GitHub shows him the conflict
-                key = f"conflict:{n}:{sha}"
+                key = f"conflict:{n}:{sha}{after}"
                 if self.state.attempts(key) >= 2:
                     if self.escalates(author):
                         self._escalate(n, f"`{author}` could not resolve the merge conflicts with main after 2 attempts.")
@@ -1673,7 +1696,7 @@ class Dispatcher:
             if ci == "failure":
                 if not author:
                     continue
-                key = f"fix:{n}:{sha}"
+                key = f"fix:{n}:{sha}{after}"
                 if self.state.attempts(key) >= 2:
                     if self.escalates(author):
                         self._escalate(n, f"CI still failing after 2 fix attempts by `{author}`.")
@@ -1696,7 +1719,7 @@ class Dispatcher:
                     continue
                 if not author:
                     continue
-                key = f"fix:{n}:{sha}"
+                key = f"fix:{n}:{sha}{after}"
                 tried = self.state.attempts(key)
                 if tried >= 1:
                     # the author answered without a new commit (evidence, or a reasoned disagreement): the

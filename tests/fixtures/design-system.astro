@@ -23,25 +23,23 @@ import { serviceTabs } from '../../src/content/service-tabs';
       ]}
     />
   </div>
-  <div class="container">
-    <Marquee
-      id="columns"
-      label="Scrolling columns of example screens"
-      tracks={[
-        ['web-bakery', 'exp-session', 'ai-assistant'],
-        ['ai-inbox', 'web-shop'],
-        ['exp-request', 'ai-run'],
-        ['web-booking', 'ai-draft'],
-        ['sol-tool', 'exp-start', 'ai-approve'],
-      ]}
-    />
-    <Marquee
-      id="row"
-      variant="row"
-      label="Scrolling row of example screens"
-      tracks={[['wide-studio', 'wide-flows', 'wide-board', 'wide-orders']]}
-    />
-  </div>
+  <Marquee
+    id="columns"
+    label="Scrolling columns of example screens"
+    tracks={[
+      ['web-bakery', 'exp-session', 'ai-assistant'],
+      ['ai-inbox', 'web-shop'],
+      ['exp-request', 'ai-run'],
+      ['web-booking', 'ai-draft'],
+      ['sol-tool', 'exp-start', 'ai-approve'],
+    ]}
+  />
+  <Marquee
+    id="row"
+    variant="row"
+    label="Scrolling row of example screens"
+    tracks={[['wide-studio', 'wide-flows', 'wide-board', 'wide-orders']]}
+  />
   <section class="container section" aria-labelledby="tabs-heading">
     <h2 id="tabs-heading">One place</h2>
     <ServiceTabs tabs={serviceTabs} label="Services" />

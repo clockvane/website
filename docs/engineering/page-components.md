@@ -9,19 +9,19 @@ service scenes, workflow diagrams and illustrations, scene replay) and their con
 Issue #126 implements the approved v3 tokens, shell and shared building blocks. `BaseLayout`
 loads the single motion controller (`src/scripts/motion.ts`, `src/lib/motion/policy.ts`) for
 disclosures, tabs, marquees and the scripted demo. It leaves complete HTML when JavaScript,
-motion or data-saving preferences prevent playback. Production page assembly stays in #58/#59.
+motion or data-saving preferences prevent playback. `src/pages/index.astro` (#127) assembles the home page; the service pages stay in #128.
 
 | Component | Contract |
 | --- | --- |
-| `sections/PageHeader.astro` | Required `title`; optional `lede`, `action: { label, href }`, `breadcrumbs: { label, href }[]`. Breadcrumbs contain ancestors only: the component appends the current title as plain text. Supplies the page's h1. |
-| `sections/CtaBand.astro` | Defaults to approved `closing-cta`. Pass `content={helpChoose}` from `src/content/sections.ts` on Services to produce its single merged band. CTA label/destination use the existing shared navigation action. |
+| `sections/PageHeader.astro` | Required `title`; optional `lede`, `action: { label, href }`, `breadcrumbs: { label, href }[]`, `current` and a `before-title` slot. Breadcrumbs contain ancestors only: the component appends `current` (default `title`) as plain text. Supplies the page's h1. |
+| `sections/CtaBand.astro` | Defaults to approved `closing-cta` and the shared navigation action. Service pages pass their own `content` and `cta` (copy deck §3). |
 | `sections/ServiceRows.astro` | `variant="home"` (default): number, h3, summary and link. `variant="overview"`: h2, summary, work list and stable slug anchor. The four names/order/links come from `src/content/services.ts`; navigation derives its service list from the same module. |
 | `sections/ProcessSteps.astro` | Required `steps: { title, body, output? }[]`; optional `variant="home"` or `"timeline"` (default). Place below an h2. Home becomes two/four columns at tablet/desktop; timeline keeps chronological order and puts optional outputs alongside steps on desktop. Empty steps render nothing. |
 | `ui/Card.astro` | Optional `title`, `body`, `link: { label, href }`, default slot and `headingLevel="h2"` or `"h3"` (default). Empty cards render nothing; cards without links have no tab stops. Light palette is retained inside inverse bands. |
 | `sections/ResultPanel.astro` | Required `title`, `body`; optional slot and root-absolute `actions`. Default h1 for standalone results. `inline` supplies a focusable h2 with `data-result-heading`; the caller owns focus after submission. Existing contact pages retain their specialised result behavior. |
 | `sections/TokenHeadline.astro` | `lines` of text or `{ text, service }` segments; optional `animate`. Produces one h1 with decorative inline service tokens; words remain complete without the glyphs. |
 | `ui/ExampleScreen.astro` | Required example `id` and slot-specific `sizes`; optional `eager`, `priority`, `lift`. Local sources become AVIF/WebP at 320/480/640/960 widths with dimensions and HTML example captions. Lazy by default; at most one above-fold image gets `priority`. |
-| `sections/Marquee.astro` | Unique `id`, accessible `label`, `tracks` of example IDs; `variant="columns"` or `"row"`. CSS movement, shared persistent pause controls, off-screen/hidden-tab pause, stopped scrollable layout under reduced motion, Save-Data or no JavaScript. |
+| `sections/Marquee.astro` | Unique `id`, accessible `label`, `tracks` of example IDs; `variant="columns"` or `"row"`. Place it outside `.container`: it aligns its own toolbar and sets its stage width. CSS movement, shared persistent pause controls, off-screen/hidden-tab pause, stopped scrollable layout under reduced motion, Save-Data or no JavaScript. |
 | `sections/ServiceTabs.astro` | `tabs` from `src/content/service-tabs.ts` and an accessible `label`. Roving arrow/Home/End selection; every panel stacks without JavaScript. Use once per page (service IDs are stable). |
 | `sections/AiDemo.astro` | Optional typed `copy`, defaulting to the approved scripted example. One instance per page. Complete draft without playback; keyboard pause/replay, Escape, off-screen/hidden-tab suspension and a polite completion message. |
 | `sections/StoryPlaceholders.astro` | Required `heading` and `stories`. Empty data omits the whole section; placeholder mode is for fixtures/editorial previews only. Production callers must supply approved real stories or an empty list. |
@@ -30,7 +30,7 @@ Wrap normal page content in `.container.section`; headers and result panels deli
 outer section padding. CTA bands own their container and section padding. Add ordinary headings
 and approved content around service rows/process lists. Components never invent page copy.
 Related-service cards should read names/links from the service module rather than duplicate them.
-Service wording in `services.ts` is a DRAFT from the brief until copy deck v3 replaces it.
+`services.ts` holds copy deck v3 service wording; `src/pages/services/[slug].astro` is the one template for all four service pages.
 
 Responsive rules belong in `src/styles/responsive.template.css`, where the existing generator
 substitutes token breakpoints. Component defaults consume custom properties for display/padding

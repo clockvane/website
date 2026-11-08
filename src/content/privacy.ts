@@ -1,41 +1,66 @@
 import { siteConfig } from '../../site.config';
 
-/** Copy deck §9; unresolved analytics facts remain placeholders per #62. */
-export const privacyCopy = {
-  title: `Privacy notice | ${siteConfig.brand}`,
-  description: `What ${siteConfig.brand} collects when you contact us or visit this site, why, who sees it and how to ask us to delete it.`,
+type Part = string | { label: string; href: `/${string}` };
+
+/** Approved copy-deck.md §9; unresolved facts remain placeholders. */
+export const privacyCopy: {
+  title: string;
+  description: string;
+  heading: string;
+  updated: string;
+  sections: readonly { heading: string; body: readonly Part[] }[];
+} = {
+  title: 'Privacy notice: enquiries and site visits',
+  description:
+    'Read what information this site collects through enquiries and visits, why it is used and how to contact us about your data.',
   heading: 'Privacy notice',
-  updated: 'Last updated: [[PLACEHOLDER: date of publication]]',
-  status:
-    'Structure and plain-English draft only, not legal advice. The owner must review it before launch. [[PLACEHOLDER: Q9 legal review]]',
+  updated: 'Last updated: [[PLACEHOLDER: publication date]].',
   sections: [
     {
-      heading: 'What we collect',
-      body: 'If you send a message, we collect your name, how to reach you, your message and, if you give it, your company name. [[PLACEHOLDER: Q10 analytics visit counts, pages viewed, country and browser type]]',
+      heading: 'Who we are',
+      body: [
+        `${siteConfig.brand}, India (Telangana). Contact us about this notice through our `,
+        { label: 'contact form', href: '/contact/' },
+        '. [[PLACEHOLDER: Q9 confirmed operator identity and address; no registration number until registered]].',
+      ],
     },
     {
-      heading: 'Why we collect it',
-      body: 'To reply to you and to understand which pages are useful. [[PLACEHOLDER: Q9 legal basis wording for the jurisdiction]]',
+      heading: 'What we collect',
+      body: [
+        'When you enquire, we collect your name, reply contact, selected service and message. [[PLACEHOLDER: confirm technical logs and spam-prevention data against the implemented contact flow]].',
+      ],
+    },
+    {
+      heading: 'Why we use it',
+      body: [
+        'We use enquiry details to respond to your request. [[PLACEHOLDER: Q9 applicable legal basis and any further purposes, including enquiry reporting]].',
+      ],
     },
     {
       heading: 'Who receives it',
-      body: 'Your message is sent to us through [[PLACEHOLDER: Q4 notification channel and backup store, for example a messaging app and a spreadsheet; confirm names with the owner before publishing]]. [[PLACEHOLDER: Q10 analytics provider]]',
+      body: [
+        '[[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].',
+      ],
     },
     {
       heading: 'How long we keep it',
-      body: '[[PLACEHOLDER: Q9 retention period for enquiries]]',
+      body: [
+        '[[PLACEHOLDER: Q9 enquiry and technical-log retention periods]].',
+      ],
     },
     {
-      heading: 'Your rights and how to use them',
-      body: `You can ask what we hold about you and ask us to correct or delete it. Contact us at ${siteConfig.email}. [[PLACEHOLDER: Q9 rights wording for India (Telangana)]]`,
+      heading: 'Analytics and cookies',
+      body: [
+        '[[PLACEHOLDER: verify the configured Cloudflare Web Analytics data collection and cookie wording against the deployed site]].',
+      ],
     },
     {
-      heading: 'Cookies and analytics',
-      body: '[[PLACEHOLDER: Q10 analytics tool and cookie information]]. If that changes, we will update this page first.',
-    },
-    {
-      heading: 'Who we are',
-      body: `${siteConfig.brand}, India (Telangana). Registration is in progress. [[PLACEHOLDER: Q9 registered name and address, once registered]]`,
+      heading: 'Questions about your information',
+      body: [
+        'Contact us through the ',
+        { label: 'form', href: '/contact/' },
+        ' if you have a question about information you have shared. [[PLACEHOLDER: Q9 applicable access, correction and deletion rights and request process]].',
+      ],
     },
   ],
 };

@@ -1,4 +1,5 @@
 ---
+import ResultPanel from './sections/ResultPanel.astro';
 import { contactCopy as copy } from '../content/contact';
 import ContactFallback from './ContactFallback.astro';
 interface Props {
@@ -6,64 +7,37 @@ interface Props {
   inline?: boolean;
 }
 const { kind, inline = false } = Astro.props;
-const Heading = inline ? 'h2' : 'h1';
 const NextHeading = inline ? 'h3' : 'h2';
 const result = copy[kind];
 ---
 
-<div class="contact-result">
-  <Heading tabindex={inline ? '-1' : undefined} data-result-heading
-    >{kind === 'thanks' && !inline ? copy.next : result.heading}</Heading
-  >
-  <p>{kind === 'thanks' && !inline ? copy.thanks.neutral : result.body}</p>
-  {
-    kind === 'thanks' ? (
-      <>
-        {inline && <NextHeading>{copy.next}</NextHeading>}
-        <ol>
-          {copy.steps.map((step) => (
-            <li>{step}</li>
-          ))}
-        </ol>
-        <a class="standalone" href="/how-we-work/">
-          {copy.how}
-        </a>
-        <a class="standalone" href="/">
-          {copy.home}
-        </a>
-        {!inline && (
-          <a class="standalone" href="/contact/">
-            {copy.back}
-          </a>
-        )}
-      </>
-    ) : (
-      <>
-        <ContactFallback />
-        <a class="pill pill--primary" href="/contact/">
-          {copy.back}
-        </a>
-      </>
-    )
-  }
-</div>
+{
+  kind === 'thanks' ? (
+    <ResultPanel
+      title={result.heading}
+      body={result.body}
+      {inline}
+      actions={[
+        { label: copy.how, href: '/how-we-work/' },
+        { label: copy.home, href: '/' },
+      ]}
+    >
+      <NextHeading class="next">{copy.next}</NextHeading>
+      <p>{copy.thanks.nextBody}</p>
+    </ResultPanel>
+  ) : (
+    <ResultPanel title={result.heading} body={result.body} {inline}>
+      <ContactFallback />
+      <a class="pill pill--primary back" href="/contact/">
+        {copy.back}
+      </a>
+    </ResultPanel>
+  )
+}
 
 <style>
-  .contact-result {
-    max-inline-size: var(--layout-text);
-  }
-  ol {
-    padding-inline-start: var(--space-6);
-    margin-block: var(--space-6);
-  }
-  li + li {
-    margin-block-start: var(--space-3);
-  }
-  h3,
-  .button {
+  .next,
+  .back {
     margin-block-start: var(--space-6);
-  }
-  a + a {
-    margin-inline-start: var(--space-4);
   }
 </style>
