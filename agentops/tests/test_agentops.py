@@ -336,6 +336,23 @@ class Dispatch(unittest.TestCase):
         d.handle_prs(gh.prs)
         self.assertIn(("label", 5, ["needs-human"]), gh.calls)
 
+    def test_pr_waiting_on_dependency_never_escalates_and_retries_after(self):
+        body = "Closes #137\n\nDepends on #140 (services delivery for #128). PR #140 is still open."
+        gh = FakeGH(prs=[pr(141, "bdf", ["agent:sde2", "ui-review"], branch="sde2/137-about", body=body)],
+                    files={141: ["src/a.tsx"]}, statuses={"bdf": [bad("ux-designer")]},
+                    states={140: "open", 128: "open"})
+        for _ in range(4):  # waiting: no fix run, no needs-human, however often the scheduler looks
+            self.assertIsNone(self.disp(gh).handle_prs(gh.prs))
+        self.assertNotIn("label", [c[0] for c in gh.calls])
+        # the earlier "still blocked" runs used up the plain attempts …
+        self.state.bump("fix:141:bdf")
+        self.state.bump("fix:141:bdf")
+        gh.states.update({140: "closed", 128: "closed"})
+        w = self.disp(gh).handle_prs(gh.prs)
+        # … but once #140 (and #128) are closed the author gets fresh attempts
+        self.assertEqual((w.role, w.action, w.pr, w.attempt_key), ("sde2", "fix", 141, "fix:141:bdf:after-128-140"))
+        self.assertNotIn("label", [c[0] for c in gh.calls])
+
     def test_all_approved_merges(self):
         gh = FakeGH(prs=[pr(5, "aaa", ["agent:sde2"])], files={5: ["src/a.tsx"]},
                     statuses={"aaa": [ok("code-reviewer"), ok("qa-engineer")]})
