@@ -46,9 +46,11 @@ jobs:
           git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$TAG is not on main"; exit 1; }
           # Fails closed unless staging succeeded for this commit; returns the staged artifact's identity.
           read -r run_id sums < <(infra/cloudflare/find-artifact-run.sh "$sha")
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "sums=$sums" >> "$GITHUB_OUTPUT"
+          {
+            echo "sha=$sha"
+            echo "run_id=$run_id"
+            echo "sums=$sums"
+          } >> "$GITHUB_OUTPUT"
           echo "Releasing $TAG = $sha from ci run $run_id (staging-verified)" >> "$GITHUB_STEP_SUMMARY"
 
   deploy:

@@ -51,9 +51,11 @@ jobs:
           # The record written at release time pins the exact artifact; fails closed if it is missing.
           read -r run_id sums rsha < <(infra/cloudflare/find-release-record.sh "$TAG")
           [ "$rsha" = "$sha" ] || { echo "::error::release record SHA differs from the tag"; exit 1; }
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "sums=$sums" >> "$GITHUB_OUTPUT"
+          {
+            echo "sha=$sha"
+            echo "run_id=$run_id"
+            echo "sums=$sums"
+          } >> "$GITHUB_OUTPUT"
           echo "Rolling back to $TAG = $sha, recorded artifact from ci run $run_id" >> "$GITHUB_STEP_SUMMARY"
 
   rollback:
