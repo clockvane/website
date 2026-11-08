@@ -24,10 +24,10 @@ export function parseSubject(subject: string): Entry | null {
   const m = PATTERN.exec(subject.trim());
   if (!m) return null;
   return {
-    type: m[1],
+    type: m[1] ?? '',
     scope: m[2] ?? '',
     breaking: m[3] === '!',
-    text: m[4],
+    text: m[4] ?? '',
     // Titles may carry the issue number and then the PR number; the PR number comes last.
     ref: m[6] ?? m[5] ?? '',
   };
