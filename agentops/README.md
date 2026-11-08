@@ -252,6 +252,8 @@ and claims its work under a shared lock, so two agents never take the same ticke
   merge them.
 - **Auto-unblock:** when every `Depends on #N` of a blocked ticket is closed, agentops marks it ready
   itself (no manager run).
+- **PRs that wait:** a PR whose description says `Depends on #N` gets no fix runs and is never escalated
+  while #N is open. When #N closes, its author gets fresh fix attempts.
 - **Switching between Claude and GPT.** When one plan is at your limit (or a run would not fit under it),
   that engine's roles run on the other engine instead of waiting: the designer and engineers move to
   Claude, the reviewers, manager and writers move to GPT. They switch back by themselves as soon as their
