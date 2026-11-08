@@ -8,6 +8,7 @@ export const routes = [
   '/about/',
   '/privacy/',
   '/how-we-work/',
+  '/contact/',
   '/services/',
   '/services/expert-support/',
   '/services/ai-automation/',
