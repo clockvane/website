@@ -1,48 +1,79 @@
-/** Verbatim how.* copy from docs/content/copy-deck.md. */
+/** Verbatim copy deck v3 §4. Editorial notes in the deck are not page copy. */
 export const howWeWork = {
-  title: 'How we work: from first call to handover',
+  title: 'How we work: expert help and project delivery',
   description:
     'See how we arrange expert support and take projects from a first conversation to handover, with scope and pricing agreed before work begins.',
-  heading: 'How we work',
-  lede: 'You should know what happens next at every stage, and what it costs before we start.',
-  processHeading: 'From first call to delivery',
-  steps: [
-    {
-      title: 'Talk about the need.',
-      body: 'Tell us what you want to achieve and what is getting in the way.',
-      output: 'You get an honest view of what is worth automating.',
-    },
-    {
-      title: 'Scope and price.',
-      body: 'We write down what we will build, by when and for how much.',
-      output: 'You get a written plan to approve.',
-    },
-    {
-      title: 'Build.',
-      body: 'We work in small steps and show progress.',
-      output: 'You get working pieces to test, not a surprise at the end.',
-    },
-    {
-      title: 'Hand over.',
-      body: 'We move it live and document it. [[PLACEHOLDER: Q1 confirm handover commitments: team training, removing our access when done]]',
-      output: 'You get the system and the documents.',
-    },
-  ],
-  modelsHeading: 'How we engage',
-  models: [
-    {
-      title: 'Fixed-price package.',
-      body: 'One clear outcome, one price, one timeline. Typical: Workflow Automation Audit 2–3 days · Business Website 1–2 weeks · Automation Build 1–3 weeks · Cloud and DevOps setup, scoped per client.',
-    },
-    {
-      title: 'Monthly retainer.',
-      body: 'For ongoing automation or DevOps changes after the first build. [[PLACEHOLDER: Q2 retainer scope and hours]]',
-    },
-  ],
-  pricingHeading: 'Pricing',
-  pricing:
-    'Packages have a fixed price, shown as a "from" price. The final price depends on the number of tools, the amount of custom work and how clear the process is. We agree it in writing before we start. [[PLACEHOLDER: Q2 "from" prices for the four packages]]',
-  handoverHeading: 'Security and handover',
-  handover:
-    '[[PLACEHOLDER: Q1 confirm ownership terms and access practice. Draft: "You keep your accounts, data and code. We ask for the least access we need and remove it when we finish. We document how everything works."]]',
+  heading: 'Know what happens next',
+  lede: 'You should understand the work, the price and the next step before you commit.',
+  steps: {
+    heading: 'From first conversation to delivery',
+    items: [
+      {
+        title: 'Talk about the need.',
+        body: 'Tell us what you want to achieve and what is getting in the way.',
+      },
+      {
+        title: 'Agree the work.',
+        body: 'We set out the scope, price and review steps before work starts.',
+      },
+      {
+        title: 'Build and review.',
+        body: 'You see progress and check it against the agreed requirements.',
+      },
+      {
+        title: 'Prepare the handover.',
+        body: 'We agree what you need to use and maintain the result.',
+      },
+    ],
+  },
+  support: {
+    heading: 'If you need an expert',
+    body: 'Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements; Q20 support pricing]].',
+  },
+  models: {
+    heading: 'Choose how to work together',
+    items: [
+      'Fixed price for defined project work',
+      'A monthly option for ongoing work',
+    ],
+    placeholder:
+      '[[PLACEHOLDER: Q20 confirmed scope of monthly support and pricing]].',
+  },
+  pricing: {
+    heading: 'How pricing works',
+    body: 'Defined project work has a fixed price. Starting prices show where that work begins; your quote reflects the agreed scope. Ongoing work can use a monthly arrangement.',
+  },
+  handover: {
+    heading: 'Agree the details before work begins',
+    body: 'Discuss the accounts, access, documentation and ongoing help the work will need. Ownership and handover terms belong in the agreed scope.',
+  },
+  faq: {
+    heading: 'Common questions',
+    items: [
+      {
+        title: 'Do I need a technical brief?',
+        body: 'No. Start with what you want to do and what is getting in the way.',
+      },
+      {
+        title: 'Can an individual ask for help?',
+        body: 'Yes. Expert individuals help individuals and companies with technical work.',
+      },
+      {
+        title: 'How long will the work take?',
+        body: 'We discuss timing once the scope is clear. A support request and a project need different plans.',
+      },
+      {
+        title: 'How much does it cost?',
+        body: 'Project work is priced against an agreed scope. Ask us about the work you need and we will discuss pricing with you.',
+      },
+      {
+        title: 'Who owns the result?',
+        body: 'We agree ownership and licensing terms before work starts.',
+      },
+      {
+        title: 'How soon will I hear back?',
+        body: 'We reply to enquiries within 1 business day.',
+      },
+    ],
+  },
 };
