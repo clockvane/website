@@ -31,7 +31,7 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
   tagline: 'Built by experts. Powered by AI.',
   // Free Cloudflare Pages host until a domain is bought (ADR-002 domain plan step 1).
   domain: 'clockvane-website.pages.dev',
-  email: '[[PLACEHOLDER: public contact email]]',
+  email: 'clockvane.support@gmail.com',
   phone: '[[PLACEHOLDER: public phone number, optional]]',
   socials: {
     linkedin: '[[PLACEHOLDER: LinkedIn URL]]',

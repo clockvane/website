@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { siteOrigin } from '../../site.config';
+import { siteConfig, siteOrigin } from '../../site.config';
 import { services } from '../../src/content/navigation';
 import { homeSeo } from '../../src/content/site';
 
@@ -72,9 +72,12 @@ test('metadata and empty-safe footer use site config', async ({ page }) => {
   );
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('footer')).not.toContainText('PLACEHOLDER');
-  await expect(
-    page.locator('footer a[href^="mailto:"], footer a[href^="tel:"]'),
-  ).toHaveCount(0);
+  await expect(page.locator('footer a[href^="mailto:"]')).toHaveCount(1);
+  await expect(page.locator('footer a[href^="mailto:"]')).toHaveAttribute(
+    'href',
+    `mailto:${siteConfig.email}`,
+  );
+  await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
   await expect(
     page.getByRole('navigation', { name: 'Social links' }),
   ).toHaveCount(0);
