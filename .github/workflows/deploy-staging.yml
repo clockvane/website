@@ -41,10 +41,11 @@ jobs:
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       RUN_ID: ${{ github.event.workflow_run.id }}
       CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Check configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           missing=""
           for n in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CF_PAGES_PROJECT; do
@@ -60,9 +61,10 @@ jobs:
       - id: url
         run: echo "url=https://staging.${CF_PAGES_PROJECT}.pages.dev" >> "$GITHUB_OUTPUT"
 
-      # Default ref of a workflow_run job is the default branch: trusted adapter scripts only.
+      # The deployed commit is on main (trusted). Its site.config.ts gives the enquiry origin.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -75,12 +77,21 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # Needed to read site.config.ts (zod); no scripts run, and no secret is in this step.
+      - run: npm ci --ignore-scripts
 
       # Staging is not indexed either (NFR-SEO-2): same adapter as previews.
-      - name: Verify artifact and add staging-only files and headers
+      - name: Verify artifact; add staging-only files and headers (CSP allows the configured enquiry origin)
+        env:
+          PREPARE_ENQUIRY_FROM_CONFIG: "1"
         run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/staging"
 
       - name: Deploy to Cloudflare Pages (branch staging)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         working-directory: ${{ runner.temp }}
         run: |
           npx --yes "wrangler@${WRANGLER_VERSION}" pages deploy staging \

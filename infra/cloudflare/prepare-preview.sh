@@ -27,6 +27,7 @@ rm -f "$out/SHA256SUMS"
 printf 'User-agent: *\nDisallow: /\n' > "$out/robots.txt"
 
 # Security headers come from the single source in infra/headers (docs/security/headers.md).
-# ENQUIRY_WORKER_ORIGIN (optional https origin) is added to connect-src and form-action.
+# ENQUIRY_WORKER_ORIGIN (optional https origin) is added to connect-src and form-action;
+# PREPARE_ENQUIRY_FROM_CONFIG=1 takes it from site.config.ts contact.endpoint (needs npm ci).
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-node "$root/infra/headers/cli.ts" --noindex > "$out/_headers"
+node "$root/infra/headers/cli.ts" --noindex ${PREPARE_ENQUIRY_FROM_CONFIG:+--enquiry-from-config} > "$out/_headers"

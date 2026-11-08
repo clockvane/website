@@ -49,6 +49,7 @@ GitHub Actions minutes are unlimited on public repositories; if the repo ever go
 
 Notes:
 - The tag workflow fails closed if no green `main` run exists for the tagged SHA. That guarantees staging tested the exact bytes that reach production.
+- Staging headers are generated at deploy time with the enquiry origin taken from `site.config.ts` `contact.endpoint` (`PREPARE_ENQUIRY_FROM_CONFIG=1`), so the CSP lets the contact form reach its endpoint and the E2E contact flows run against the real headers.
 - Only commits reachable from `main` may be released: the first step checks `git merge-base --is-ancestor <tag-sha> origin/main`.
 - Environment-specific headers and `noindex` are generated at deploy time from `infra/headers`; the artifact has no environment flag (ADR-002).
 - Required reviewers and the tag restriction on `production` are configured by the owner (see Secrets).
