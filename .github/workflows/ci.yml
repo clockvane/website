@@ -200,7 +200,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # Job 7 in docs/devops/cicd.md: internal links, sitemap, robots and OG image on the built output.
+  # Job 7 in docs/devops/cicd.md: html-validate, internal links, sitemap, robots and OG image on the built output.
   html-links:
     name: html-links
     needs: [build]
@@ -220,5 +220,8 @@ jobs:
         with:
           name: site-${{ env.ARTIFACT_SHA }}
           path: dist
+      - run: npm ci --ignore-scripts
+      - name: Validate HTML
+        run: npm run test:html
       - name: Check internal links and metadata
         run: node tests/e2e/check-links.mjs dist
