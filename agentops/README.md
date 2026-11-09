@@ -255,6 +255,9 @@ and claims its work under a shared lock, so two agents never take the same ticke
 - **Fewer re-reviews:** after a fix commit, only reviewers whose files changed (and anyone who asked for
   changes) review again; other approvals carry over to the new commit with a note. Gate PRs, rebases and
   label-only reviewers on code changes always review again. Off with `run.carry_approvals: false`.
+- **Stale owner flag:** a PR flagged `needs-human` (held for your merge, or escalated) is handled again
+  when a new commit arrives on it: the flag comes off, reviews and CI run on the new head, and it is held
+  again once approved. Before this, a merge of main into a held PR left it with no reviewer at all.
 - **PRs that wait:** a PR whose description says `Depends on #N` gets no fix runs and is never escalated
   while #N is open. When #N closes, its author gets fresh fix attempts.
 - **Switching between Claude and GPT.** When one plan is at your limit (or a run would not fit under it),
