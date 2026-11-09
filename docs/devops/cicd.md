@@ -34,10 +34,8 @@ flowchart LR
 | 4 | `build` | `npm run build`; writes `SHA256SUMS`; uploads artifact `site-<sha>`, where `<sha>` is the PR head commit (on `main`, the pushed commit), the SHA `deploy-preview.yml` looks it up by (retention 90 days for `main` runs, 14 for PR runs) | 1-3 | `contents: read` | build error; budget breach (page weight, JS) |
 | 5 | `e2e-a11y` | downloads artifact, serves `dist/` statically, Playwright (Chromium only) plus `@axe-core/playwright` on every page; the header test runs against previews | 4 | `contents: read` | failed flow, any axe WCAG 2.2 AA violation |
 | 6 | `lighthouse` | downloads artifact `site-<sha>`; `npm run test:dist` (no inline `<script>` except JSON-LD, ADR-004) when present; `npm run test:lighthouse` (`lhci autorun`, mobile, 3 runs, pages listed in `tests/e2e/lighthouserc.cjs`); writes scores and per-page JS/CSS/font/total sizes to the job summary; uploads `.lighthouseci/` as `lighthouse-<sha>` (14 days) | 4 | `contents: read` | score ≥ 95 or LCP/CLS/TBT limit not met; inline script found |
-| 7 | `html-links` | internal link and anchor check on the built output (`html-validate` is pending, see note below) | 4 | `contents: read` | any broken internal link or anchor |
+| 7 | `html-links` | internal link and anchor check on the built output and `html-validate` on every built page | 4 | `contents: read` | any broken internal link or anchor, or any HTML validation error |
 | 8 | `deploy-*` | see environments; runs only after 5-7 are green | 4-7 | `contents: read`, `deployments: write`, `pull-requests: write` (preview comment only) | deploy or smoke test fails |
-
-Note: job 7 currently checks internal links and anchors only. HTML validation with `html-validate` is tracked in a follow-up ticket and is not yet enforced.
 
 Jobs 1-3 run in parallel; 5-7 run in parallel after `build`. Target wall time for a PR: under 8 minutes.
 GitHub Actions minutes are unlimited on public repositories; if the repo ever goes private, the Free plan has 2,000 minutes a month, and the concurrency cancel rules above keep usage low.

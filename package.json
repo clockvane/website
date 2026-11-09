@@ -20,7 +20,8 @@
     "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
     "test:components": "playwright test --config tests/e2e/components.config.ts",
     "test:a11y": "playwright test --config tests/e2e/playwright.config.ts pages.spec.ts",
-    "test:lighthouse": "lhci autorun --config tests/e2e/lighthouserc.cjs"
+    "test:lighthouse": "lhci autorun --config tests/e2e/lighthouserc.cjs",
+    "test:html": "html-validate dist"
   },
   "stylelint": {
     "overrides": [
@@ -66,6 +67,7 @@
     "eslint-plugin-astro": "^3.2.1",
     "eslint-plugin-jsx-a11y-x": "^0.2.0",
     "happy-dom": "^21.0.4",
+    "html-validate": "^11.21.0",
     "postcss-html": "^2.0.0",
     "prettier": "^3.0.0",
     "prettier-plugin-astro": "^0.14.0",
