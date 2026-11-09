@@ -7,6 +7,9 @@ const { existsSync } = require('node:fs');
 const { chromium } = require('@playwright/test');
 
 const port = Number(process.env.PORT) || 4411;
+// BASE_URL (deploy-staging.yml) audits an already deployed site instead of a local server.
+const remote = (process.env.BASE_URL || '').replace(/\/$/, '');
+const origin = remote || `http://127.0.0.1:${port}`;
 // In WSL, chrome-launcher finds the Windows Chrome and cannot connect to it ("Unable to connect to
 // Chrome"). Use Playwright's Linux Chromium (installed for the e2e suite) unless CHROME_PATH is set.
 // Where Playwright's browser isn't installed (for example a CI runner with its own Chrome), let
@@ -32,13 +35,20 @@ const paths = [
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: `npm run preview -- --port ${port} --ignore-lock`,
-      startServerReadyPattern: 'astro.*started|Local',
-      url: paths.map((p) => `http://127.0.0.1:${port}${p}`),
+      ...(remote
+        ? {}
+        : {
+            startServerCommand: `npm run preview -- --port ${port} --ignore-lock`,
+            startServerReadyPattern: 'astro.*started|Local',
+          }),
+      url: paths.map((p) => `${origin}${p}`),
       numberOfRuns: 3,
       chromePath,
       settings: {
         chromeFlags: '--headless=new --no-sandbox',
+        // Staging is deliberately noindex (header + robots.txt, ADR-002), which would fail this
+        // audit by design. Production is audited with it on.
+        ...(remote ? { skipAudits: ['is-crawlable'] } : {}),
       },
     },
     assert: {
