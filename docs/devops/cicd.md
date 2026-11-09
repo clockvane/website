@@ -49,6 +49,7 @@ GitHub Actions minutes are unlimited on public repositories; if the repo ever go
 
 Notes:
 - The tag workflow fails closed unless `deploy-staging.yml` succeeded for the tagged SHA and uploaded the artifact `staging-evidence-<sha>` (`evidence.env` with `ci_run_id=<digits>` and `sums_sha256=<sha256 of the artifact's SHA256SUMS>`; produced by the `deploy` job of `deploy-staging.yml`). Production downloads that exact CI run's artifact and rejects it if its `SHA256SUMS` hash differs, so the bytes that reach production are the bytes staging tested.
+- **Enquiry Worker.** `deploy-worker.yml` deploys the single `enquiry` Worker after `ci` succeeds on `main` (environment `staging`, `workflow_run` like `deploy-staging.yml`). Staging and production share it until launch. Before Gate 3 a follow-up ticket splits it: `[env.staging]` (`enquiry-staging`, from main) and `[env.production]` (`enquiry`, deployed by `release.yml` under `environment: production`). Wrangler is a pinned devDependency, so the lockfile integrity applies.
 - `release.yml` attaches `release-record.txt` (tag, sha, `ci_run_id`, `sums_sha256`) to the GitHub Release. `rollback.yml` reads that record, so a rollback redeploys the originally released artifact even if CI was re-run for the commit later. No record, no rollback.
 - Staging headers are generated at deploy time with the enquiry origin taken from `site.config.ts` `contact.endpoint` (`PREPARE_ENQUIRY_FROM_CONFIG=1`), so the CSP lets the contact form reach its endpoint and the E2E contact flows run against the real headers.
 - Only commits reachable from `main` may be released: the first step checks `git merge-base --is-ancestor <tag-sha> origin/main`.
@@ -73,7 +74,8 @@ Target: ≤ 15 minutes (nfr O-4).
 1. **Preferred, 2 min:** run workflow `rollback.yml` (manual `workflow_dispatch`, input: a previous tag; choose a `v*` tag under "Use workflow from", because the `production` environment accepts only tags). It runs under `environment: production`, so the owner approves, downloads that tag's retained artifact and redeploys it. No rebuild.
 2. **Fallback:** in the Cloudflare dashboard, *Deployments → previous production deployment → Rollback*.
 3. **If the artifact has expired** (90 days): use the fallback in step 2 (Cloudflare keeps earlier production deployments, and the redeployed bytes are the original ones). If neither the artifact nor the Cloudflare deployment is retained, there is no byte-identical copy: fix forward with a new patch tag that goes through staging, and record why in the release notes. `release.yml` and `rollback.yml` never rebuild.
-4. After a rollback, open an issue for the cause and fix forward with a patch release. Never delete or move a published tag.
+4. **Enquiry Worker:** it is not part of a Pages release. Roll it back with `npx wrangler rollback` (needs the Cloudflare token) or in the dashboard, *Workers → enquiry → Deployments → Rollback*.
+5. After a rollback, open an issue for the cause and fix forward with a patch release. Never delete or move a published tag.
 
 ## Secrets, variables and where they live
 Secrets are added by the owner, never by agents. Nothing goes in the repo or in `.env*` files.
@@ -84,7 +86,7 @@ Secrets are added by the owner, never by agents. Nothing goes in the repo or in 
 | `CLOUDFLARE_ACCOUNT_ID` | secret | the same three environments | deploy workflows | Not very sensitive, kept as a secret for tidiness |
 | `CF_PAGES_PROJECT` | variable | repository | deploy workflows | Project name, e.g. `clockvane-website` |
 | `SITE_URL_PRODUCTION` | variable | repository | build | Read only by `site.config.ts`, which falls back to the default URL defined in that file; no other code reads it (rule 5). Set it only if the URL must differ from the default |
-| `ENQUIRY_*` (delivery destination, keys) | Worker secrets | Cloudflare, set by the owner via `wrangler secret put` or the dashboard | enquiry worker | Defined after PRD Q4 |
+| `HUBSPOT_PORTAL_ID`, `HUBSPOT_FORM_GUID`, optional `HUBSPOT_REGION` | Worker secrets | Cloudflare dashboard (Workers → enquiry → Settings), set by the owner | enquiry worker | Deploys never overwrite them. Missing or malformed values make the Worker answer 503 |
 | `LHCI_GITHUB_APP_TOKEN` | secret, optional | repository | lighthouse | Only if we adopt the LHCI GitHub app for status checks; not needed for the artifact-based design |
 | `GITHUB_TOKEN` | automatic | per job | all | Permissions narrowed per job as above |
 

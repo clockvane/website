@@ -72,8 +72,8 @@ enquiry handler, using the free `*.pages.dev` / `*.workers.dev` subdomains until
 | production | tag `vX.Y.Z` | `<project>.pages.dev`, later `clockvane.com` | GitHub environment `production` with the owner as required reviewer; Cloudflare production branch |
 
 - **Enquiry handler.** `infra/cloudflare/enquiry-worker/` is a thin wrapper that calls the portable `handleEnquiry`.
-  The destination (PRD Q4) is set by Worker secrets, never in the repo. Until Q4 is answered the handler is a no-op
-  stub that returns the fallback-contact error state. `site.config.ts → contact.endpoint` points at it.
+  The destination (PRD Q4: HubSpot form API) is set by Worker secrets (`HUBSPOT_PORTAL_ID`, `HUBSPOT_FORM_GUID`, optional `HUBSPOT_REGION`), never in the repo. Until they are set the handler answers 503 and the form shows its
+  fallback-contact error state. `deploy-worker.yml` deploys it after ci succeeds on main. `site.config.ts → contact.endpoint` points at it.
   Because both live on different origins, the CSP `connect-src`/`form-action` include that origin (already in `nfr.md`).
 - **Authentication.** Cloudflare does not accept GitHub OIDC for its API, so an **API token** (Pages edit +
   Workers edit, one account) is the exception to the OIDC preference. Cloudflare cannot scope a token to a branch or a
