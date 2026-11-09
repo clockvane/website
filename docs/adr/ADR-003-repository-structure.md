@@ -73,7 +73,8 @@ Agents never get access to it.
 Only three kinds of file:
 1. **Files a tool requires at the root**: `package.json`, `package-lock.json`, `astro.config.mjs`,
    `tsconfig.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `vitest.config.ts`, `.nvmrc`,
-   `.editorconfig`, `.gitignore`. Moving them into a `config/` folder would break tool discovery or need
+   `.editorconfig`, `.gitignore`, `CHANGELOG.md` (generated at release time by `infra/release/changelog.ts`
+   from Conventional Commit titles; tools and GitHub expect it at the root). Moving them into a `config/` folder would break tool discovery or need
    flags on every command — that is not cleaner, only harder to use.
 2. **`site.config.ts`**: one obvious file for the company details (ADR-001, CLAUDE.md rule 5).
 3. **Repository meta files**: `README.md`, `SECURITY.md`, `CLAUDE.md` (Claude Code reads it from the root),

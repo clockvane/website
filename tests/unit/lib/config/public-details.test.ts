@@ -3,9 +3,9 @@ import { siteConfig } from '../../../../site.config';
 import { publicDetails } from '../../../../src/lib/config/public-details';
 
 describe('public footer details', () => {
-  it('omits placeholders and empty contact/social values', () => {
+  it('shows the configured email and omits placeholder/empty phone and socials', () => {
     expect(publicDetails(siteConfig)).toEqual({
-      email: undefined,
+      email: 'clockvane.support@gmail.com',
       phone: undefined,
       socials: [],
     });

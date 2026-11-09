@@ -29,8 +29,9 @@ export type SiteConfig = z.infer<typeof siteConfigSchema>;
 export const siteConfig: SiteConfig = siteConfigSchema.parse({
   brand: 'Clockvane',
   tagline: 'Built by experts. Powered by AI.',
-  domain: '[[PLACEHOLDER: production domain]]',
-  email: '[[PLACEHOLDER: public contact email]]',
+  // Free Cloudflare Pages host until a domain is bought (ADR-002 domain plan step 1).
+  domain: 'clockvane-website.pages.dev',
+  email: 'clockvane.support@gmail.com',
   phone: '[[PLACEHOLDER: public phone number, optional]]',
   socials: {
     linkedin: '[[PLACEHOLDER: LinkedIn URL]]',
@@ -46,7 +47,7 @@ export function isPlaceholder(value: string): boolean {
   return value.startsWith('[[PLACEHOLDER:') && value.endsWith(']]');
 }
 
-/** Reserved, non-live origin until the owner supplies the production domain. */
+/** Absolute origin for canonical, sitemap, OG and robots.txt; a reserved, non-live origin while `domain` is a placeholder. */
 export const siteOrigin = isPlaceholder(siteConfig.domain)
   ? 'https://example.invalid'
   : new URL(

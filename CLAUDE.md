@@ -25,7 +25,8 @@ independent reviewers, CI/CD and human sign-off gates. Speed is never a reason t
    `agentops/bin/post-review`.
 4. Agents never change governance: `CLAUDE.md`, `.claude/settings*.json`, `.claude/agents/`,
    `.claude/skills/`, `agentops/`, `.github/CODEOWNERS`, rulesets, secrets, environments.
-   Propose changes in an issue labeled `governance` + `needs-human`.
+   Propose changes in an issue labeled `governance` only (not `needs-human`): the owner's lead, a
+   maintainer session, reviews these proposals and decides; the owner is not asked.
 5. Brand name, domain, email, phone, socials and analytics IDs live ONLY in the site config file
    chosen in ADR-001 (for example `site.config.ts`) and env vars. Never hard-code them elsewhere.
 6. Portability: the site builds into a host-agnostic artifact (static files and/or an OCI image).
@@ -34,14 +35,20 @@ independent reviewers, CI/CD and human sign-off gates. Speed is never a reason t
 7. No secrets in the repo, ever. Never read or write `.env*` files. Secrets go in GitHub
    secrets/environments, added by the human.
 8. Free tier only until the human approves spend. Agents never create accounts, buy anything,
-   enter credentials or accept terms. Open a `needs-human` issue with exact steps instead.
+   enter credentials or accept terms. Add the exact steps as a checkbox to the ONE open issue titled
+   `Owner checklist` (labeled `needs-human`) instead of opening a new issue (rule 10).
 9. Never invent facts about the company: no fake testimonials, client logos, case studies, team
    members, years in business or statistics. Use `[[PLACEHOLDER: what is needed]]` and list it in
    the PRD open questions.
 10. Keep the owner's interventions rare. `needs-human` is only for what he alone can do or decide:
     spend, accounts, secrets, terms, governance changes, and work that failed 3 review rounds. Then
-    comment with the decision needed, 2-3 options and your recommendation, and stop. Everything else
-    keeps moving without him:
+    comment with the decision needed, 2-3 options and your recommendation, and stop. Before asking:
+    - Setup only he can do (environments, secrets, variables, accounts, settings) goes as a checkbox
+      in the `Owner checklist` issue; never open a separate issue for it. First search open and
+      closed issues: if he already did it or was already asked, don't ask again.
+    - Never ask him to add required checks to the ruleset: the scheduler merges only when every CI
+      check passes, so a new CI job is enforced as soon as it exists.
+    Everything else keeps moving without him:
     - Waiting for another ticket or PR: add a line `Depends on #N` to the issue body, set
       `status:blocked`, comment one line, and stop. The scheduler releases it when #N closes.
     - An open question that doesn't stop the work: follow your recommendation or use a
@@ -85,7 +92,9 @@ owner's comments on that PR say otherwise.
   a trailer line `Agent-Role: <role>`. Never use `--no-verify`.
 - Open PRs with `gh pr create`, fill `.github/pull_request_template.md` completely, include
   `Closes #N`, and add labels `agent:<your-role>` and one `type:*`. Gate PRs also get `gate:N`.
-- A verdict counts only for the commit it was given on. New commits need new reviews.
+- A verdict counts only for the commit it was given on. After a fix commit, the scheduler asks again
+  only the reviewers whose files changed (and anyone who asked for changes); other approvals carry
+  over with a note. Gate PRs are always reviewed again in full.
 
 ## Definition of Done (every PR)
 - Acceptance criteria met and shown with evidence (test output, screenshots, command output).

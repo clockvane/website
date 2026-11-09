@@ -34,8 +34,10 @@ flowchart LR
 | 4 | `build` | `npm run build`; writes `SHA256SUMS`; uploads artifact `site-<sha>`, where `<sha>` is the PR head commit (on `main`, the pushed commit), the SHA `deploy-preview.yml` looks it up by (retention 90 days for `main` runs, 14 for PR runs) | 1-3 | `contents: read` | build error; budget breach (page weight, JS) |
 | 5 | `e2e-a11y` | downloads artifact, serves `dist/` statically, Playwright (Chromium only) plus `@axe-core/playwright` on every page; the header test runs against previews | 4 | `contents: read` | failed flow, any axe WCAG 2.2 AA violation |
 | 6 | `lighthouse` | downloads artifact `site-<sha>`; `npm run test:dist` (no inline `<script>` except JSON-LD, ADR-004) when present; `npm run test:lighthouse` (`lhci autorun`, mobile, 3 runs, pages listed in `tests/e2e/lighthouserc.cjs`); writes scores and per-page JS/CSS/font/total sizes to the job summary; uploads `.lighthouseci/` as `lighthouse-<sha>` (14 days) | 4 | `contents: read` | score ≥ 95 or LCP/CLS/TBT limit not met; inline script found |
-| 7 | `html-links` | `html-validate`, internal link check, sitemap/robots/OG presence | 4 | `contents: read` | any broken link or invalid HTML |
+| 7 | `html-links` | internal link and anchor check on the built output (`html-validate` is pending, see note below) | 4 | `contents: read` | any broken internal link or anchor |
 | 8 | `deploy-*` | see environments; runs only after 5-7 are green | 4-7 | `contents: read`, `deployments: write`, `pull-requests: write` (preview comment only) | deploy or smoke test fails |
+
+Note: job 7 currently checks internal links and anchors only. HTML validation with `html-validate` is tracked in a follow-up ticket and is not yet enforced.
 
 Jobs 1-3 run in parallel; 5-7 run in parallel after `build`. Target wall time for a PR: under 8 minutes.
 GitHub Actions minutes are unlimited on public repositories; if the repo ever goes private, the Free plan has 2,000 minutes a month, and the concurrency cancel rules above keep usage low.
@@ -48,7 +50,8 @@ GitHub Actions minutes are unlimited on public repositories; if the repo ever go
 | production | `push` of tag `v*.*.*` excluding pre-releases (`tags: ['v*.*.*', '!v*-*']`, plus a job `if:` guard that rejects any tag containing `-`) | `release.yml` | **owner, via `environment: production`** | find the successful `main` run for the tagged commit, download its artifact, verify `SHA256SUMS`, deploy to the production branch, smoke test |
 
 Notes:
-- The tag workflow fails closed if no green `main` run exists for the tagged SHA. That guarantees staging tested the exact bytes that reach production.
+- The tag workflow fails closed unless `deploy-staging.yml` succeeded for the tagged SHA and uploaded the artifact `staging-evidence-<sha>` (`evidence.env` with `ci_run_id=<digits>` and `sums_sha256=<sha256 of the artifact's SHA256SUMS>`; to be produced by #150). Production downloads that exact CI run's artifact and rejects it if its `SHA256SUMS` hash differs, so the bytes that reach production are the bytes staging tested.
+- `release.yml` attaches `release-record.txt` (tag, sha, `ci_run_id`, `sums_sha256`) to the GitHub Release. `rollback.yml` reads that record, so a rollback redeploys the originally released artifact even if CI was re-run for the commit later. No record, no rollback.
 - Staging headers are generated at deploy time with the enquiry origin taken from `site.config.ts` `contact.endpoint` (`PREPARE_ENQUIRY_FROM_CONFIG=1`), so the CSP lets the contact form reach its endpoint and the E2E contact flows run against the real headers.
 - Only commits reachable from `main` may be released: the first step checks `git merge-base --is-ancestor <tag-sha> origin/main`.
 - Environment-specific headers and `noindex` are generated at deploy time from `infra/headers`; the artifact has no environment flag (ADR-002).
@@ -69,9 +72,9 @@ no direct pushes; dispatcher merge only. Use the job names above verbatim so the
 
 ## Rollback
 Target: ≤ 15 minutes (nfr O-4).
-1. **Preferred, 2 min:** run workflow `rollback.yml` (manual `workflow_dispatch`, input: a previous tag). It runs under `environment: production`, so the owner approves, downloads that tag's retained artifact and redeploys it. No rebuild.
+1. **Preferred, 2 min:** run workflow `rollback.yml` (manual `workflow_dispatch`, input: a previous tag; choose a `v*` tag under "Use workflow from", because the `production` environment accepts only tags). It runs under `environment: production`, so the owner approves, downloads that tag's retained artifact and redeploys it. No rebuild.
 2. **Fallback:** in the Cloudflare dashboard, *Deployments → previous production deployment → Rollback*.
-3. **If the artifact has expired** (90 days): re-run `release.yml` for the old tag; it rebuilds from the tag, and the checksum differs, so record why in the release notes.
+3. **If the artifact has expired** (90 days): use the fallback in step 2 (Cloudflare keeps earlier production deployments, and the redeployed bytes are the original ones). If neither the artifact nor the Cloudflare deployment is retained, there is no byte-identical copy: fix forward with a new patch tag that goes through staging, and record why in the release notes. `release.yml` and `rollback.yml` never rebuild.
 4. After a rollback, open an issue for the cause and fix forward with a patch release. Never delete or move a published tag.
 
 ## Secrets, variables and where they live
