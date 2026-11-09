@@ -396,6 +396,24 @@ class Dispatch(unittest.TestCase):
         self.assertIn(("unlabel", 9, "needs-human"), gh.calls)
         self.assertEqual((w.role, w.action, w.head_sha), ("code-reviewer", "review", "0e1e009"))
 
+    def test_needs_human_added_later_is_not_stripped_again(self):
+        gh = FakeGH(prs=[pr(9, "0a1d009", ["agent:sde2", "needs-human"])], files={9: ["src/a.ts"]})
+        self.disp(gh).handle_prs(gh.prs)  # seen at A
+        gh.prs = [pr(9, "0e1e009", ["agent:sde2", "needs-human"])]
+        self.disp(gh).handle_prs(gh.prs)  # new head B: flag removed
+        self.assertEqual(gh.calls.count(("unlabel", 9, "needs-human")), 1)
+        # B is handled (flag gone), then a fix commit C lands and the dispatcher flags it again at C
+        gh.prs = [pr(9, "0c1c009", ["agent:sde2"])]
+        self.disp(gh).handle_prs(gh.prs)
+        gh.prs = [pr(9, "0c1c009", ["agent:sde2", "needs-human"])]
+        gh.calls.clear()
+        for _ in range(3):  # the flag at C stays: no label churn
+            self.assertIsNone(self.disp(gh).handle_prs(gh.prs))
+        self.assertEqual(gh.calls, [])
+        # a merged PR's entry is pruned
+        self.disp(gh).handle_prs([])
+        self.assertEqual(self.state.doc("needs_human_sha"), {})
+
     def test_all_approved_merges(self):
         gh = FakeGH(prs=[pr(5, "aaa", ["agent:sde2"])], files={5: ["src/a.tsx"]},
                     statuses={"aaa": [ok("code-reviewer"), ok("qa-engineer")]})
