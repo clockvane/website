@@ -29,7 +29,7 @@ flowchart LR
     CI["Actions: ci.yml, no secrets"]
     DP["Actions: deploy workflows<br/>environment secrets"]
   end
-  A["Optional analytics<br/>PRD Q10"]
+  A["Cloudflare Web Analytics<br/>PRD Q10"]
   Dev["Agents and owner"]
 
   V -->|"HTTPS GET pages"| P
@@ -73,7 +73,7 @@ L = likelihood, I = impact (H/M/L).
 | T8 | Enquiry destination | Destination (webhook URL, chat id) leaks from repo or client bundle | I | L | H | Held only in Worker secrets (ADR-002); `site.config.ts` holds the public endpoint only; secret scanning + push protection; CI check that `dist/` contains no secret-looking strings | NEW-3 |
 | T9 | Hosting | Defacement via a stolen Cloudflare/GitHub credential | T | M | H | 2FA on both accounts (hardware key or passkey for the owner); production deploy needs owner approval in the `production` environment; token rotated every 90 days; owner reviews Cloudflare audit log monthly | NEW-3 |
 | T10 | Hosting | Missing or wrong headers on a host (e.g. Worker responses do not get Pages `_headers`) | T | M | M | `infra/headers` is the single source; header test runs against preview and staging, and against the Worker route; see `headers.md` | NEW-4 |
-| T11 | Third-party scripts | A script supplier is compromised or adds trackers | T/I | M | H | No third-party script at launch. Anything new needs a written justification (NFR-PERF-2), a CSP update in the same PR, security review, and SRI where the supplier serves versioned files. Fonts, images and the form script are self-hosted | NEW-4 |
+| T11 | Third-party scripts | A script supplier is compromised or adds trackers | T/I | M | H | One third-party script: the Cloudflare Web Analytics beacon (#169). It cannot carry SRI because Cloudflare updates `beacon.min.js` in place, so the controls are: CSP allows that exact URL (not the host) and `cloudflareinsights.com` for beacons, only in builds with a token; the first-party loader adds it only on the production origin and never with GPC. Residual risk: a compromised beacon runs on production pages, accepted for a cookieless analytics supplier. Anything new needs a written justification (NFR-PERF-2), a CSP update in the same PR, security review, and SRI where the supplier serves versioned files. Fonts, images and the form script are self-hosted | NEW-4 |
 | T12 | Site content | XSS via content or query strings | T/E | L | H | Static HTML; no `set:html`/`innerHTML` of untrusted data; strict CSP with no `unsafe-inline`; lint rule against `set:html` with non-literal input | NEW-4 |
 | T13 | Dependencies | Malicious or vulnerable npm package (typosquat, hijacked maintainer, install scripts) | T/E | M | H | Committed lockfile, `npm ci`, `npm audit --omit=dev --audit-level=high` in CI (refines nfr.md SEC-9) (reachable issues only), Dependabot weekly grouped, new deps justified in PR, `ignore-scripts=true` in CI install where tooling allows, few deps by design (ADR-001) | NEW-5 |
 | T14 | CI/CD | Untrusted PR code reaches deploy token (e.g. PR edits workflow, `pull_request_target` misuse) | E | M | H | ADR-002 design: `ci.yml` has no credentials; deploys run from `workflow_run` on `main`; artifact treated as data and verified by `SHA256SUMS`; forbid `pull_request_target` checkout of PR code; environments restricted to `main` / tags `v*` | NEW-5 |
@@ -83,7 +83,7 @@ L = likelihood, I = impact (H/M/L).
 | T18 | Agent workflow | A prompt-injected issue/PR text steers an agent to leak data or weaken controls | E | M | M | Agents cannot touch governance files or secrets (CLAUDE.md rules 4, 7); every PR is independently reviewed; security-sensitive label for header, workflow and form changes | — existing process |
 | T19 | Domain and DNS | Registrar or DNS takeover; dangling `*.pages.dev` or CNAME after a host move | S/T | L | H | 2FA and registrar lock on the domain; auto-renew; remove DNS records when a project is deleted (exit plan step 6); HSTS only after HTTPS works everywhere | NEW-6 (post-domain) |
 | T20 | Previews | Preview/staging URLs indexed or used for phishing; previews expose unreleased content | I | M | L | `noindex` + disallow-all robots (ADR-002); previews hold no secrets or real endpoint destination; torn down on PR close | NEW-4 |
-| T21 | Analytics (if added) | Visitor tracking without a legal basis; analytics script becomes a supply-chain entry | I/T | M | M | Cookieless, no cross-site tracking, ID in config; decision gated on PRD Q10; CSP origin added in the same PR as the script | NEW-4 |
+| T21 | Analytics (Cloudflare Web Analytics, #169) | Visitor tracking without a legal basis; analytics script becomes a supply-chain entry | I/T | M | M | Cookieless, no cross-site tracking, token in `site.config.ts`; not loaded with Global Privacy Control or off the production origin; exact-URL CSP added in the same PR (headers.md §Analytics); Pages automatic injection stays off (release checklist). Residual: no SRI possible (see T11) | NEW-4 |
 | T22 | Brand | Phishing mail or sites imitate Clockvane | S | M | M | When email exists: SPF, DKIM, DMARC (`p=none` then `quarantine`); security.txt (see below) | NEW-6 |
 
 ### Proposed tickets

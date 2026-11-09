@@ -16,14 +16,14 @@ flowchart LR
   site["Clockvane website<br/>static HTML/CSS + minimal JS"]
   handler["Enquiry handler<br/>portable TS function"]
   channel[("Enquiry destination<br/>config value — PRD Q4")]
-  analytics[("Privacy-friendly analytics<br/>optional — PRD Q10")]
+  analytics[("Cloudflare Web Analytics<br/>cookieless — PRD Q10")]
   search(["Search engines / social previews"])
 
   visitor -->|HTTPS GET| site
   visitor -->|POST enquiry| handler
   handler -->|notify| channel
   channel --> owner
-  site -. optional deferred script .-> analytics
+  site -. "deferred beacon: production origin only, not with GPC" .-> analytics
   search -->|crawl sitemap.xml, OG tags| site
 ```
 
