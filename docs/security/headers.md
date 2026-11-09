@@ -67,7 +67,7 @@ connect-src 'self' https://<enquiry-worker-origin> https://cloudflareinsights.co
   ([Web Analytics FAQ](https://developers.cloudflare.com/web-analytics/faq/)). `script-src` names the exact script URL, not the whole
   host; no wildcard and no `'unsafe-inline'` (the loader is a bundled first-party module that sets `data-cf-beacon`).
 - `infra/headers` adds them only with `analytics: true` (CLI `--analytics`). `infra/cloudflare/prepare-*.sh` pass that flag only when
-  the verified artifact's HTML contains `data-analytics-token=`, so the CSP always matches the artifact being deployed: a build with a
+  a `<body>` tag in the verified artifact's HTML carries `data-analytics-token=` (page copy cannot trigger it), so the CSP always matches the artifact being deployed: a build with a
   placeholder token gets the self-only policy.
 - The manual snippet is used rather than Cloudflare Pages automatic injection (which reports to `/cdn-cgi/rum` on our own origin) so
   the loader can honour Global Privacy Control (`privacy.md`). Automatic injection must stay off on the Pages project.

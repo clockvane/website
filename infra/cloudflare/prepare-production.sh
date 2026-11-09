@@ -28,7 +28,7 @@ rm -f "$out/SHA256SUMS"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # The CSP allows the analytics origins only when this artifact loads analytics (site.config.ts token).
 analytics=()
-if grep -rq --include='*.html' 'data-analytics-token=' "$out"; then analytics=(--analytics); fi
+if grep -rqE --include='*.html' '<body[^>]*[[:space:]]data-analytics-token=' "$out"; then analytics=(--analytics); fi
 node "$root/infra/headers/cli.ts" "${analytics[@]}" > "$out/_headers"
 if grep -qi 'noindex' "$out/_headers"; then
   echo "::error::production _headers must not contain noindex"

@@ -31,5 +31,5 @@ printf 'User-agent: *\nDisallow: /\n' > "$out/robots.txt"
 # The CSP allows the analytics origins only when this artifact loads analytics (site.config.ts token).
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 analytics=()
-if grep -rq --include='*.html' 'data-analytics-token=' "$out"; then analytics=(--analytics); fi
+if grep -rqE --include='*.html' '<body[^>]*[[:space:]]data-analytics-token=' "$out"; then analytics=(--analytics); fi
 node "$root/infra/headers/cli.ts" --noindex "${analytics[@]}" > "$out/_headers"
