@@ -44,7 +44,7 @@ GitHub Actions minutes are unlimited on public repositories; if the repo ever go
 | Environment | Trigger | Workflow | Approval | What happens |
 |---|---|---|---|---|
 | preview | `pull_request` (same-repo) builds in `ci.yml`; `workflow_run` of `ci.yml` triggers `deploy-preview.yml` (runs the copy on `main`, so PR code never sees the token; the artifact is data only) | `ci.yml` → `deploy-preview.yml` | none | deploy the PR's artifact to branch `pr-<N>`; comment the URL on the PR; run header + smoke test; delete deployment on PR close |
-| staging | `push` to `main` | `ci.yml` → `deploy-staging.yml` | none | rebuild is **not** done: the main-branch run's artifact is deployed to `staging`; E2E and Lighthouse re-run against the live staging URL |
+| staging | `push` to `main` | `ci.yml` → `deploy-staging.yml` | none | rebuild is **not** done: the main-branch run's artifact is deployed to `staging`; E2E and Lighthouse (mobile, plus desktop in job `lighthouse-desktop`, artifact `lighthouse-desktop-staging-<sha>`) re-run against the live staging URL |
 | production | `push` of tag `v*.*.*` excluding pre-releases (`tags: ['v*.*.*', '!v*-*']`, plus a job `if:` guard that rejects any tag containing `-`) | `release.yml` | **owner, via `environment: production`** | find the successful `main` run for the tagged commit, download its artifact, verify `SHA256SUMS`, deploy to the production branch, smoke test |
 
 Notes:

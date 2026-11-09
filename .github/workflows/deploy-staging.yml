@@ -2,7 +2,7 @@ name: deploy-staging
 
 # Staging deploy for every merge to main (ADR-002, docs/devops/cicd.md). Triggered by workflow_run
 # of ci.yml, so the exact artifact the main-branch CI built and tested is deployed: no rebuild.
-# Then E2E and Lighthouse (mobile) run against the live staging URL. Only `deploy` holds the
+# Then E2E and Lighthouse (mobile and desktop) run against the live staging URL. Only `deploy` holds the
 # Cloudflare token; the test jobs get a read-only GITHUB_TOKEN and no secrets.
 on:
   workflow_run:
@@ -193,11 +193,43 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  lighthouse-desktop:
+    name: lighthouse (staging, desktop)
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      BASE_URL: ${{ needs.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Lighthouse CI against staging (desktop preset, same pages and budgets as mobile)
+        run: npm run test:lighthouse:desktop
+      - name: Scores and page weights
+        if: always()
+        run: node tests/e2e/lighthouse-summary.mjs desktop >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: lighthouse-desktop-staging-${{ github.event.workflow_run.head_sha }}
+          path: .lighthouseci/desktop/
+          if-no-files-found: ignore
+          retention-days: 14
+
   # Release evidence (read by infra/cloudflare/find-artifact-run.sh). Runs only when deploy, e2e and
   # lighthouse all succeeded; if any fails or is skipped, no artifact exists and a release fails closed.
   staging-evidence:
     name: staging-evidence
-    needs: [deploy, e2e, lighthouse]
+    needs: [deploy, e2e, lighthouse, lighthouse-desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
