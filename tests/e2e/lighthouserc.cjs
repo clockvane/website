@@ -6,6 +6,8 @@ const { existsSync } = require('node:fs');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { chromium } = require('@playwright/test');
 
+// LH_PRESET=desktop runs the desktop preset (same pages, same NFR assertions; #155).
+const desktop = process.env.LH_PRESET === 'desktop';
 const port = Number(process.env.PORT) || 4411;
 // BASE_URL (deploy-staging.yml) audits an already deployed site instead of a local server.
 const remote = (process.env.BASE_URL || '').replace(/\/$/, '');
@@ -45,6 +47,7 @@ module.exports = {
       numberOfRuns: 3,
       chromePath,
       settings: {
+        ...(desktop ? { preset: 'desktop' } : {}),
         chromeFlags: '--headless=new --no-sandbox',
         // Staging is deliberately noindex (header + robots.txt, ADR-002), which would fail this
         // audit by design. Production is audited with it on.
@@ -70,6 +73,9 @@ module.exports = {
         'offscreen-images': 'warn',
       },
     },
-    upload: { target: 'filesystem', outputDir: '.lighthouseci' },
+    upload: {
+      target: 'filesystem',
+      outputDir: desktop ? '.lighthouseci/desktop' : '.lighthouseci',
+    },
   },
 };
