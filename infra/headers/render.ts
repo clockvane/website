@@ -5,6 +5,7 @@
 //
 // CLI: cli.ts. ENQUIRY_WORKER_ORIGIN (optional https origin of the enquiry Worker) is added
 // to connect-src and form-action. Never `*`. Unset means 'self' only.
+// `analytics: true` (CLI --analytics) adds the Cloudflare Web Analytics script and beacon origins.
 
 export type HeaderRule = { path: string; headers: Record<string, string> };
 
@@ -18,20 +19,29 @@ export const workerSecurityHeaders = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
 };
 
-export function csp(enquiryOrigin?: string): string {
+// Cloudflare Web Analytics, manual snippet (developers.cloudflare.com/web-analytics/faq/):
+// the exact beacon script URL and the origin it reports to (/cdn-cgi/rum).
+// Mirrors BEACON_SRC in src/lib/analytics/beacon.ts.
+export const ANALYTICS_SCRIPT =
+  'https://static.cloudflareinsights.com/beacon.min.js';
+export const ANALYTICS_CONNECT = 'https://cloudflareinsights.com';
+
+export function csp(enquiryOrigin?: string, analytics = false): string {
   if (enquiryOrigin !== undefined && !HTTPS_ORIGIN.test(enquiryOrigin)) {
     throw new Error(
       `ENQUIRY_WORKER_ORIGIN must be a bare https origin, got "${enquiryOrigin}"`,
     );
   }
   const extra = enquiryOrigin ? ` ${enquiryOrigin}` : '';
+  const script = analytics ? ` ${ANALYTICS_SCRIPT}` : '';
+  const beacon = analytics ? ` ${ANALYTICS_CONNECT}` : '';
   return [
     "default-src 'self'",
-    "script-src 'self'",
+    `script-src 'self'${script}`,
     "style-src 'self'",
     "img-src 'self' data:",
     "font-src 'self'",
-    `connect-src 'self'${extra}`,
+    `connect-src 'self'${extra}${beacon}`,
     `form-action 'self'${extra}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
@@ -42,10 +52,14 @@ export function csp(enquiryOrigin?: string): string {
 }
 
 export function rules(
-  opts: { enquiryOrigin?: string | undefined; noindex?: boolean } = {},
+  opts: {
+    enquiryOrigin?: string | undefined;
+    noindex?: boolean;
+    analytics?: boolean;
+  } = {},
 ): HeaderRule[] {
   const all: Record<string, string> = {
-    'Content-Security-Policy': csp(opts.enquiryOrigin),
+    'Content-Security-Policy': csp(opts.enquiryOrigin, opts.analytics),
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -71,7 +85,11 @@ export function rules(
 }
 
 export function renderPagesHeaders(
-  opts: { enquiryOrigin?: string | undefined; noindex?: boolean } = {},
+  opts: {
+    enquiryOrigin?: string | undefined;
+    noindex?: boolean;
+    analytics?: boolean;
+  } = {},
 ): string {
   const out: string[] = [];
   for (const r of rules(opts)) {

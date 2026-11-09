@@ -47,6 +47,30 @@ describe('security headers', () => {
     }
   });
 
+  it('allows no analytics origin unless analytics is requested', () => {
+    expect(csp()).not.toContain('cloudflareinsights');
+    expect(renderPagesHeaders()).not.toContain('cloudflareinsights');
+  });
+
+  it('adds only the exact Cloudflare Web Analytics script and beacon origin', () => {
+    const on = csp('https://enquiry.example.workers.dev', true);
+    const off = csp('https://enquiry.example.workers.dev');
+    expect(on).toContain(
+      "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js;",
+    );
+    expect(on).toContain(
+      "connect-src 'self' https://enquiry.example.workers.dev https://cloudflareinsights.com;",
+    );
+    expect(on).not.toMatch(/unsafe-inline|unsafe-eval|\*/);
+    // Every other directive stays exactly as without analytics.
+    const others = (p: string) =>
+      p.split('; ').filter((d) => !/^(script|connect)-src /.test(d));
+    expect(others(on)).toEqual(others(off));
+    expect(renderPagesHeaders({ analytics: true })).toContain(
+      'https://static.cloudflareinsights.com/beacon.min.js',
+    );
+  });
+
   it('adds X-Robots-Tag only when noindex is requested', () => {
     expect(renderPagesHeaders()).not.toContain('X-Robots-Tag');
     expect(renderPagesHeaders({ noindex: true })).toContain(

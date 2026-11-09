@@ -185,6 +185,29 @@ describe('prepare-production.sh', () => {
     expect(r.stdout).toContain('non-regular');
   });
 
+  it('allows the analytics origins only when the artifact loads analytics', () => {
+    const plain = artifact();
+    run('prepare-production.sh', [plain.src, join(dir, 'o1'), plain.id]);
+    expect(readFileSync(join(dir, 'o1', '_headers'), 'utf8')).not.toContain(
+      'cloudflareinsights',
+    );
+    rmSync(plain.src, { recursive: true });
+    const tracked = artifact({
+      'index.html': '<body data-analytics-token="x"><h1>x</h1></body>',
+    });
+    const r = run('prepare-production.sh', [
+      tracked.src,
+      join(dir, 'o2'),
+      tracked.id,
+    ]);
+    expect(r.status).toBe(0);
+    const headers = readFileSync(join(dir, 'o2', '_headers'), 'utf8');
+    expect(headers).toContain(
+      "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js;",
+    );
+    expect(headers).toContain('https://cloudflareinsights.com;');
+  });
+
   it('refuses to overwrite an existing output directory', () => {
     const { src, id } = artifact();
     mkdirSync(join(dir, 'out'));
