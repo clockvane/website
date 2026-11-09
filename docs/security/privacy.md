@@ -13,7 +13,7 @@ NFR-SEC-2 / SEC-11: collect the minimum, say what and why, no cross-site trackin
 | Message (what they want automated or built) | Enquiry form | Understand and quote the work | Yes | Delivery channel only |
 | Honeypot and form-render time | Browser | Spam control | Technical | Not stored; evaluated in the request and discarded |
 | IP address and user agent | Network | Rate limiting, abuse prevention, delivery | Technical | Processed transiently by Cloudflare (edge logs and rate limiting); **not** written to our logs or delivery message |
-| Page views (aggregate) | Optional analytics | Measure the funnel (success-metrics) | No, only if PRD Q10 approved | Analytics provider, aggregate |
+| Page views, load performance, path, referrer, country, device type, browser, OS (aggregate) | Cloudflare Web Analytics beacon (PRD Q10 approved) | Measure the funnel (success-metrics) | No: not loaded with Global Privacy Control | Cloudflare, aggregate; no cookies or local storage, query strings not logged |
 
 We set **no cookies** and use no local storage at launch (SEC-11). We do not collect special-category data on purpose; the form text
 says not to include sensitive or confidential information. No payment, account or login data exists (PRD A4).
@@ -32,7 +32,8 @@ Proposed (owner to confirm):
   client engagement starts, the data moves into the contract records under their own retention rules.
 - Worker and server logs: metadata only (request id, status, reason code), no contact values, retained per platform defaults and no
   longer than 30 days where configurable.
-- Analytics (if any): aggregate and cookieless; provider retention at most 14 months.
+- Analytics: Cloudflare Web Analytics keeps unsampled beacon data for 7 days, then a roughly 10% aggregate sample; the dashboard
+  shows the last six months (Cloudflare Web Analytics FAQ). Within the 14-month limit.
 - Deletion/correction requests: answered within 30 days (GDPR: one month; DPDP: as per rules once in force). The owner needs a
   documented routine: search the delivery channel by the sender's contact and delete.
 
@@ -47,13 +48,23 @@ Proposed (owner to confirm):
 - Children: the site is business-to-business; the notice says it is not directed at children.
 
 ## Consent, cookies and analytics stance
-- **Launch default: no analytics, no cookies, no banner.** A banner is not shown because nothing needs consent.
-- **If analytics is approved (PRD Q10):** choose a cookieless tool with no cross-site tracking and no fingerprinting, IP not stored
+- **Launch: Cloudflare Web Analytics (PRD Q10, approved), no cookies, no banner.** A banner is not shown because nothing needs
+  consent: Cloudflare states the beacon uses no client-side state (cookies, localStorage) and does not fingerprint visitors by IP
+  address or User-Agent ([product page](https://www.cloudflare.com/web-analytics/)), and query strings are not logged
+  ([FAQ](https://developers.cloudflare.com/web-analytics/faq/)). No custom events and no cross-site tracking.
+- **How it loads** (`src/lib/analytics/beacon.ts`, `src/scripts/analytics.ts`): the public token lives only in `site.config.ts`
+  (validated: 32 lowercase hex or a placeholder, which disables analytics). A 0.6 kB first-party loader adds the one deferred
+  manual-snippet script `https://static.cloudflareinsights.com/beacon.min.js` only when the page is served from the production
+  origin (so previews, staging, CI and local runs are never counted) and Global Privacy Control is not set. The CSP allows that
+  script URL and `https://cloudflareinsights.com` (beacon endpoint) only for artifacts that load analytics (`headers.md`).
+  Automatic injection on the Cloudflare Pages project must stay off, or the GPC control is bypassed.
+- **Criteria the tool was chosen against (PRD Q10):** choose a cookieless tool with no cross-site tracking and no fingerprinting, IP not stored
   or truncated, data not used for the provider's own purposes, free tier, and ID in `site.config.ts`. Load only one deferred script, and
   update the CSP and this document in the same PR. If the tool uses cookies or identifiers for individuals, a consent banner with equal-prominence
   Accept/Reject and no tracking before consent is required instead; the PRD target "conversion" can then only be measured on consenting users.
 - **No third-party embeds** (maps, video, chat widgets, social buttons) at launch; each would add cookies, requests to third parties and CSP changes.
-- Do-Not-Track / Global Privacy Control: honour GPC by not loading analytics if ever added.
+- Global Privacy Control: honoured; with `navigator.globalPrivacyControl === true` the beacon script is never requested and no
+  beacon is sent (`tests/e2e/analytics.spec.ts`). Do-Not-Track is deprecated and not used as a signal.
 
 ## Controls that enforce this (cross-reference)
 - No PII in logs, generic errors, secret destination: threat model T4, T8.
@@ -65,7 +76,7 @@ Proposed (owner to confirm):
 1. **PRD Q4:** which channel receives enquiries (and which provider will therefore hold the data)? Also the promised response time shown to visitors.
 2. **PRD Q9:** legal entity name and registered address for the notice (data fiduciary / controller identity). `[[PLACEHOLDER: legal entity]]`
 3. **PRD Q8:** grievance/privacy contact email or form. `[[PLACEHOLDER: privacy contact]]` The domain email is not live; a temporary contact path is needed because DPDP requires a grievance contact.
-4. **PRD Q10:** is cookieless analytics acceptable, and which tool?
+4. ~~**PRD Q10:** is cookieless analytics acceptable, and which tool?~~ Answered: Cloudflare Web Analytics (#164, enabled in #169).
 5. **PRD Q3:** target regions. If EU/UK visitors are targeted, GDPR applies fully (including a possible EU representative for larger scale; unlikely at this size).
 6. Do you accept the retention proposal (12 months after last contact)?
 7. Who answers deletion requests, and how quickly can they act?
