@@ -271,7 +271,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [ ] **Q25 Company field on the contact form:** copy deck §6 lists an optional company field, but the NFRs (SEC-11, NFR-SEC-2) limit personal data to name, reply contact and message. Should the form ask for a company name? Default: no, leave it out. The form does ask which service is wanted, which is not personal data; the tech lead should add it to SEC-11.
 
 **Carried over and still open:**
-- [ ] **Q4 Booking link (rest answered):** create the Cal.com account and supply the link. Default: CTAs go to the contact form.
+- [ ] **Q4 Booking link (rest answered):** the owner chose HubSpot Meetings (2026-11-09); supply the public Meetings URL for `booking` in the site config. Default: CTAs go to the contact form.
 - [ ] **Q6 Founder roles (rest answered):** the role to show beside each founder's name. Default: names only.
 - [ ] **Q8 Links (rest answered):** the GitHub and Medium URLs for the site config.
 - [ ] **Q17 Testers:** can 3-5 people from the audiences in section 3 try the site on their phones? Default: walkthrough with the founders only.
@@ -280,7 +280,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [x] **Q1 Services:** replaced by change request 3 (section 4).
 - [x] **Q2 Pricing stance:** "from" prices, fixed price for packages, monthly retainer option. Amounts: Q20.
 - [x] **Q3 Target client:** replaced by change request 3: any client, individuals and companies. Clients worldwide, based in India.
-- [x] **Q4 Conversion:** Cal.com plus a short form, WhatsApp or Telegram webhook, Google Sheet backup, reply within 1 business day. The CTA label is replaced by section 6.
+- [x] **Q4 Conversion:** HubSpot free CRM receives each enquiry as a contact with the message (HubSpot emails the owner) and HubSpot Meetings handles booking (owner decision 2026-11-09, replacing Cal.com, Telegram and Google Sheet); short form, reply within 1 business day. The CTA label is replaced by section 6.
 - [x] **Q5 Proof:** no testimonials or logos at launch. Honest proof: this website and its process, public repositories, founders' articles.
 - [x] **Q6 About:** founder-led: Mohammed Farhan, Adnan Sameer, Syed Zoheb Ali. No invented team size. Minimal bios; no name story (change request 3).
 - [x] **Q7 Languages:** English only at launch.

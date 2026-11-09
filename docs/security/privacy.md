@@ -19,10 +19,10 @@ We set **no cookies** and use no local storage at launch (SEC-11). We do not col
 says not to include sensitive or confidential information. No payment, account or login data exists (PRD A4).
 
 ## Where it goes
-1. Browser → Cloudflare Worker (HTTPS) → delivery channel chosen by the owner (PRD Q4, **not yet decided**) held in a Worker secret.
-2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. The delivery channel provider (to be named) is a second
+1. Browser → Cloudflare Worker (HTTPS) → HubSpot form submission API (PRD Q4, owner decision 2026-11-09). The HubSpot portal and form IDs are Worker secrets. HubSpot creates a CRM contact (email, first name, message with the chosen service) and notifies the owner. The browser never contacts HubSpot.
+2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US or EU data centre, depending on the owner's portal region: [[PLACEHOLDER: portal region]]) is a second
    processor and must be listed in the notice.
-3. No sale or sharing for advertising. No CRM, newsletter or ad pixel in v1 (PRD out of scope).
+3. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM: no HubSpot tracking script, newsletter or ad pixel on the site.
 4. Transfers: Cloudflare and likely channel providers process outside India/EU. The notice must say so and name the safeguard
    (standard contractual clauses / provider DPAs). Check each provider's DPA when chosen.
 

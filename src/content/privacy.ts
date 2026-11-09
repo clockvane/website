@@ -39,7 +39,7 @@ export const privacyCopy: {
     {
       heading: 'Who receives it',
       body: [
-        '[[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].',
+        "Your enquiry is passed through our server to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor. [[PLACEHOLDER: HubSpot data-centre region, recipient access and international transfers; confirm against the owner's HubSpot portal before publishing]].",
       ],
     },
     {

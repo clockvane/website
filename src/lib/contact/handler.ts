@@ -3,7 +3,11 @@ import { validateEnquiry, type Enquiry } from './schema.ts';
 export interface EnquiryServices {
   siteOrigin: string;
   allowRequest: () => Promise<boolean>;
-  deliver: (enquiry: Enquiry, requestId: string) => Promise<boolean>;
+  /** `'unconfigured'` (delivery secrets missing) answers 503. */
+  deliver: (
+    enquiry: Enquiry,
+    requestId: string,
+  ) => Promise<boolean | 'unconfigured'>;
   now?: () => number;
 }
 const MAX_BYTES = 10_240;
@@ -97,9 +101,9 @@ export async function handleEnquiry(
           (services.now?.() ?? Date.now()) - Number(started) < 2000))
     )
       return respond(400, { reason: 'spam' });
-    return (await services.deliver(parsed.value, requestId))
-      ? respond(200, { ok: true, requestId })
-      : respond(502);
+    const delivered = await services.deliver(parsed.value, requestId);
+    if (delivered === 'unconfigured') return respond(503);
+    return delivered ? respond(200, { ok: true, requestId }) : respond(502);
   } catch {
     return respond(502);
   }
