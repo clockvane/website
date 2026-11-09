@@ -1,8 +1,9 @@
 ---
-import { siteConfig, siteOrigin } from '../../site.config';
+import { analyticsToken, siteConfig, siteOrigin } from '../../site.config';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import MotionScript from '../components/MotionScript.astro';
+import AnalyticsScript from '../components/AnalyticsScript.astro';
 import { serializeJsonLd } from '../lib/seo/structured-data';
 import '../styles/base.css';
 import '../styles/utilities.css';
@@ -62,12 +63,13 @@ const canonical = new URL(currentPath, siteOrigin).href;
       )
     }
   </head>
-  <body>
+  <body data-analytics-token={analyticsToken}>
     <a class="skip standalone" href="#main">Skip to main content</a>
     <SiteHeader {currentPath} />
     <main id="main" tabindex="-1"><slot /></main>
     <SiteFooter {currentPath} />
     <MotionScript />
+    {analyticsToken && <AnalyticsScript />}
   </body>
 </html>
 

@@ -51,8 +51,26 @@ Rationale per directive:
 - Add `report-to`/`report-uri` only if a free collector is approved by the owner; not at launch.
 
 Changes after launch: a new origin or inline script is a CSP change in the same PR, labelled `security-sensitive`, and reviewed by the
-Security Reviewer. If analytics is approved (PRD Q10), add exactly one `script-src` origin and the matching `connect-src`
-origin, prefer a first-party-proxied or self-hosted script, and document it in `privacy.md`.
+Security Reviewer.
+
+### Analytics (Cloudflare Web Analytics, PRD Q10, #169)
+
+When the artifact loads analytics, exactly two sources are added and every other directive is unchanged:
+
+```
+script-src 'self' https://static.cloudflareinsights.com/beacon.min.js;
+connect-src 'self' https://<enquiry-worker-origin> https://cloudflareinsights.com;
+```
+
+- These are the values Cloudflare documents for the manual (JavaScript snippet) setup: the beacon script URL in `script-src` and
+  `cloudflareinsights.com` in `connect-src`, which receives `/cdn-cgi/rum`
+  ([Web Analytics FAQ](https://developers.cloudflare.com/web-analytics/faq/)). `script-src` names the exact script URL, not the whole
+  host; no wildcard and no `'unsafe-inline'` (the loader is a bundled first-party module that sets `data-cf-beacon`).
+- `infra/headers` adds them only with `analytics: true` (CLI `--analytics`). `infra/cloudflare/prepare-*.sh` pass that flag only when
+  a `<body>` tag in the verified artifact's HTML carries `data-analytics-token=` (page copy cannot trigger it), so the CSP always matches the artifact being deployed: a build with a
+  placeholder token gets the self-only policy.
+- The manual snippet is used rather than Cloudflare Pages automatic injection (which reports to `/cdn-cgi/rum` on our own origin) so
+  the loader can honour Global Privacy Control (`privacy.md`). Automatic injection must stay off on the Pages project.
 
 ## How each ADR-002 host applies them
 

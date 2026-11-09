@@ -24,5 +24,11 @@ Merged PRs since last release (from Conventional Commits).
 ## Rollout and rollback
 Deploy via the `production` environment (owner approves). Rollback: redeploy previous tag.
 
+## After deploy (production)
+- [ ] Lighthouse on production, home + key pages, mobile: the only run that includes the Cloudflare analytics beacon, which never
+      loads on CI or staging origins (nfr.md P-3, P-4). Record TBT and JS transfer next to the CI numbers
+- [ ] Cloudflare Pages automatic Web Analytics injection is off (headers.md §Analytics); `_headers` CSP lists the beacon only if the
+      build has an analytics token
+
 ## Sign-offs
 - [ ] QA  - [ ] Security  - [ ] DevOps lead  - [ ] Owner (merges gate:3 PR and approves deploy)

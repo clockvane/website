@@ -295,7 +295,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - h2: Why we use it. Body: We use enquiry details to respond to your request. [[PLACEHOLDER: Q9 applicable legal basis and any further purposes, including enquiry reporting]].
 - h2: Who receives it. Body: [[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].
 - h2: How long we keep it. Body: [[PLACEHOLDER: Q9 enquiry and technical-log retention periods]].
-- h2: Analytics and cookies. Body: [[PLACEHOLDER: verify the configured Cloudflare Web Analytics data collection and cookie wording against the deployed site]]. Owner Q10 chooses cookieless analytics; do not add a consent banner without an actual requirement.
+- h2: Analytics and cookies. Body: This site uses Cloudflare Web Analytics, privacy-friendly analytics without cookies or local storage. We see totals such as page views, page load speed, referring sites, country, device type and browser, not who you are. Web addresses are recorded without their query part. If your browser sends a Global Privacy Control signal, analytics does not load. We set no cookies of our own. (Checked against Cloudflare's documentation in #169.) Owner Q10 chooses cookieless analytics; do not add a consent banner without an actual requirement.
 - h2: Questions about your information. Body: Contact us through the form if you have a question about information you have shared. [[PLACEHOLDER: Q9 applicable access, correction and deletion rights and request process]].
 - No required email address or unconfirmed legal promises. Resolve every privacy placeholder against the real service before launch.
 

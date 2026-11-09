@@ -185,12 +185,96 @@ describe('prepare-production.sh', () => {
     expect(r.stdout).toContain('non-regular');
   });
 
+  it('allows the analytics origins only when the artifact loads analytics', () => {
+    const plain = artifact();
+    run('prepare-production.sh', [plain.src, join(dir, 'o1'), plain.id]);
+    expect(readFileSync(join(dir, 'o1', '_headers'), 'utf8')).not.toContain(
+      'cloudflareinsights',
+    );
+    rmSync(plain.src, { recursive: true });
+    const tracked = artifact({
+      'index.html': '<body data-analytics-token="x"><h1>x</h1></body>',
+    });
+    const r = run('prepare-production.sh', [
+      tracked.src,
+      join(dir, 'o2'),
+      tracked.id,
+    ]);
+    expect(r.status).toBe(0);
+    const headers = readFileSync(join(dir, 'o2', '_headers'), 'utf8');
+    expect(headers).toContain(
+      "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js;",
+    );
+    expect(headers).toContain('https://cloudflareinsights.com;');
+  });
+
+  it('ignores the marker text when it appears in page copy, not on <body>', () => {
+    const { src, id } = artifact({
+      'index.html': '<body><p>data-analytics-token="x"</p></body>',
+    });
+    const r = run('prepare-production.sh', [src, join(dir, 'out'), id]);
+    expect(r.status).toBe(0);
+    expect(readFileSync(join(dir, 'out', '_headers'), 'utf8')).not.toContain(
+      'cloudflareinsights',
+    );
+  });
+
   it('refuses to overwrite an existing output directory', () => {
     const { src, id } = artifact();
     mkdirSync(join(dir, 'out'));
     expect(
       run('prepare-production.sh', [src, join(dir, 'out'), id]).status,
     ).toBe(1);
+  });
+});
+
+describe('prepare-preview.sh', () => {
+  function artifact(html: string) {
+    const src = join(dir, 'artifact');
+    const files = { 'index.html': html, 'robots.txt': 'Allow: /\n' };
+    mkdirSync(src);
+    for (const [name, body] of Object.entries(files))
+      writeFileSync(join(src, name), body);
+    writeFileSync(
+      join(src, 'SHA256SUMS'),
+      Object.entries(files)
+        .map(([n, b]) => `${sha256(b)}  ${n}`)
+        .join('\n') + '\n',
+    );
+    return src;
+  }
+
+  function prepare(html: string) {
+    const src = artifact(html);
+    const out = join(dir, 'out');
+    const r = run('prepare-preview.sh', [src, out]);
+    expect(r.status).toBe(0);
+    expect(readFileSync(join(src, 'robots.txt'), 'utf8')).toBe('Allow: /\n');
+    expect(readFileSync(join(out, 'robots.txt'), 'utf8')).toContain(
+      'Disallow: /',
+    );
+    const headers = readFileSync(join(out, '_headers'), 'utf8');
+    expect(headers.toLowerCase()).toContain('noindex');
+    return headers;
+  }
+
+  it('allows the analytics origins when the artifact loads analytics', () => {
+    const headers = prepare('<body data-analytics-token="x"><h1>x</h1></body>');
+    expect(headers).toContain(
+      "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js;",
+    );
+    expect(headers).toContain('https://cloudflareinsights.com;');
+  });
+
+  it('keeps the self-only policy without the <body> marker', () => {
+    expect(prepare('<body><h1>x</h1></body>')).not.toContain(
+      'cloudflareinsights',
+    );
+    rmSync(join(dir, 'artifact'), { recursive: true });
+    rmSync(join(dir, 'out'), { recursive: true });
+    expect(
+      prepare('<body><p>data-analytics-token="x"</p></body>'),
+    ).not.toContain('cloudflareinsights');
   });
 });
 

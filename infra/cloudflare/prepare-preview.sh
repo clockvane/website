@@ -28,5 +28,8 @@ printf 'User-agent: *\nDisallow: /\n' > "$out/robots.txt"
 
 # Security headers come from the single source in infra/headers (docs/security/headers.md).
 # ENQUIRY_WORKER_ORIGIN (optional https origin) is added to connect-src and form-action.
+# The CSP allows the analytics origins only when this artifact loads analytics (site.config.ts token).
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-node "$root/infra/headers/cli.ts" --noindex > "$out/_headers"
+analytics=()
+if grep -rqE --include='*.html' '<body[^>]*[[:space:]]data-analytics-token=' "$out"; then analytics=(--analytics); fi
+node "$root/infra/headers/cli.ts" --noindex "${analytics[@]}" > "$out/_headers"
