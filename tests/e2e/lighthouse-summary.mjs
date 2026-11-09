@@ -3,11 +3,12 @@
    reviews can cite CI instead of a local run (#97). */
 import { existsSync, readFileSync } from 'node:fs';
 
-const manifestPath = '.lighthouseci/manifest.json';
+// Optional argument: the preset, `mobile` (default) or `desktop`.
+const preset = process.argv[2] === 'desktop' ? 'desktop' : 'mobile';
+const dir = preset === 'desktop' ? '.lighthouseci/desktop' : '.lighthouseci';
+const manifestPath = `${dir}/manifest.json`;
 if (!existsSync(manifestPath)) {
-  console.log(
-    'No Lighthouse results: `.lighthouseci/manifest.json` is missing.',
-  );
+  console.log(`No Lighthouse results: \`${manifestPath}\` is missing.`);
   process.exit(0);
 }
 
@@ -22,7 +23,7 @@ const num = (value, digits = 0) =>
   typeof value === 'number' ? value.toFixed(digits) : '–';
 
 const lines = [
-  '### Lighthouse — mobile, representative run per page',
+  `### Lighthouse — ${preset}, representative run per page`,
   '',
   '| Page | Perf | A11y | BP | SEO | LCP ms | CLS | TBT ms | JS kB | CSS kB | Font kB | Total kB |',
   '|---|---|---|---|---|---|---|---|---|---|---|---|',
