@@ -1,4 +1,5 @@
-// CLI: node infra/headers/cli.ts [--noindex] [--enquiry-from-config]   (prints the _headers file)
+// CLI: node infra/headers/cli.ts [--noindex] [--analytics] [--enquiry-from-config]   (prints the _headers file)
+// --analytics: the artifact loads Cloudflare Web Analytics (set by infra/cloudflare/prepare-*.sh).
 // Env: ENQUIRY_WORKER_ORIGIN  optional https origin of the enquiry Worker (wins over the config).
 // --enquiry-from-config: use the origin of site.config.ts contact.endpoint, the single source.
 //   Only then is site.config.ts loaded, which needs `npm ci` (zod).
@@ -21,5 +22,6 @@ process.stdout.write(
   renderPagesHeaders({
     enquiryOrigin: process.env['ENQUIRY_WORKER_ORIGIN'] || fromConfig,
     noindex: process.argv.includes('--noindex'),
+    analytics: process.argv.includes('--analytics'),
   }),
 );

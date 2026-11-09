@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analyticsToken,
   isPlaceholder,
   siteConfig,
   siteConfigSchema,
@@ -69,4 +70,33 @@ describe('site config', () => {
       ).toBe(false);
     },
   );
+
+  it('enables analytics with the configured Cloudflare token', () => {
+    expect(isPlaceholder(siteConfig.analyticsId)).toBe(false);
+    expect(analyticsToken).toBe(siteConfig.analyticsId);
+  });
+
+  it('accepts a 32-hex analytics token or a placeholder', () => {
+    for (const analyticsId of [
+      '0123456789abcdef0123456789abcdef',
+      '[[PLACEHOLDER: analytics ID, PRD Q10]]',
+    ]) {
+      expect(
+        siteConfigSchema.safeParse({ ...siteConfig, analyticsId }).success,
+      ).toBe(true);
+    }
+  });
+
+  it.each([
+    '',
+    'abc',
+    '0123456789ABCDEF0123456789ABCDEF',
+    '0123456789abcdef0123456789abcdef0',
+    '0123456789abcdef0123456789abcde"',
+    'UA-12345-1',
+  ])('rejects a malformed analytics token: %j', (analyticsId) => {
+    expect(
+      siteConfigSchema.safeParse({ ...siteConfig, analyticsId }).success,
+    ).toBe(false);
+  });
 });

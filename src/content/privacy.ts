@@ -51,7 +51,7 @@ export const privacyCopy: {
     {
       heading: 'Analytics and cookies',
       body: [
-        '[[PLACEHOLDER: verify the configured Cloudflare Web Analytics data collection and cookie wording against the deployed site]].',
+        'This site uses Cloudflare Web Analytics, privacy-friendly analytics without cookies or local storage. We see totals such as page views, page load speed, referring sites, country, device type and browser, not who you are. Web addresses are recorded without their query part. If your browser sends a Global Privacy Control signal, analytics does not load. We set no cookies of our own.',
       ],
     },
     {

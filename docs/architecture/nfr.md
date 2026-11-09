@@ -4,7 +4,7 @@
 |-------|-------|
 | Owner | tech-lead |
 | Status | v3, Proposed (Gate 2e input) |
-| Last updated | 2026-11-04 (v3 for change request 3: P-1, P-4, P-7, P-8, P-9, P-10, P-11, new P-15, §1.1, L-1, A-7) |
+| Last updated | 2026-11-09 (#169: P-3, P-4, SEC-1 for Cloudflare Web Analytics) · 2026-11-04 (v3 for change request 3: P-1, P-4, P-7, P-8, P-9, P-10, P-11, new P-15, §1.1, L-1, A-7) |
 | Traces to | PRD §7, §8.3–8.7 · BRIEF change request 3 · [ADR-001](../adr/ADR-001-stack.md) · [ADR-004](../adr/ADR-004-motion-and-effects.md) |
 
 Every NFR has an ID, a measurable target and how it is checked. "CI" means the check fails the PR.
@@ -32,8 +32,8 @@ P-14 are retired and not reused.
 |----|--------|--------|-------|
 | P-1 | Largest Contentful Paint | ≤ 2.0 s lab, mobile (≤ 2.5 s p75 field). The LCP element is the HTML headline or an eager image with `fetchpriority="high"`, never an element that is hidden until revealed or inserted by script | CI (LHCI assertion) |
 | P-2 | Cumulative Layout Shift | ≤ 0.05 lab (≤ 0.1 p75 field) | CI |
-| P-3 | Total Blocking Time (lab proxy for INP) | ≤ 150 ms; INP ≤ 200 ms p75 field | CI (TBT), field once analytics exist |
-| P-4 | JavaScript per page (compressed) | ≤ 50 kB, of which motion controller ≤ 5 kB, contact enhancement ≤ 15 kB; 0 third-party JS ([ADR-004](../adr/ADR-004-motion-and-effects.md) §2) | CI (`dist/` size check per chunk and per page) |
+| P-3 | Total Blocking Time (lab proxy for INP) | ≤ 150 ms; INP ≤ 200 ms p75 field | CI (TBT). The analytics beacon (P-4) never loads on CI (`127.0.0.1`) or preview origins, so CI cannot measure it; it is deferred and runs after parse. A production Lighthouse run after each go-live covers it (release checklist, "After deploy"); field data comes from Cloudflare Web Analytics |
+| P-4 | JavaScript per page (compressed) | ≤ 50 kB, of which motion controller ≤ 5 kB, contact enhancement ≤ 15 kB, first-party analytics loader ≤ 1 kB. Third-party JS: only Cloudflare Web Analytics `https://static.cloudflareinsights.com/beacon.min.js`, deferred, injected by the first-party loader only on the production origin and never when Global Privacy Control is on ([headers.md §Analytics](../security/headers.md), #169). Any other third-party script needs an ADR ([ADR-004](../adr/ADR-004-motion-and-effects.md) §2) | CI (`dist/` size check per chunk and per page). The beacon is not in `dist/`; the production Lighthouse run in P-3 covers it |
 | P-5 | CSS per page (compressed) | ≤ 40 kB | CI (`dist/` size check) |
 | P-6 | Fonts | ≤ 3 files, ≤ 120 kB total WOFF2, self-hosted | CI |
 | P-7 | Images | AVIF with WebP fallback only (no PNG, JPEG or GIF in the page); `srcset` and `sizes` on every raster image; `loading="lazy"` below the fold; `width` and `height` always; ≤ 200 kB above the fold; each generated file ≤ 100 kB (§1.1) | CI (§1.1) + review |
@@ -112,7 +112,7 @@ Headers are defined once in `infra/headers` and applied by every host adapter.
 
 | ID | Header / control | Value |
 |----|------------------|-------|
-| SEC-1 | `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' <contact endpoint origin>; form-action 'self' <contact endpoint origin>; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests` (analytics origin added only after PRD Q10) |
+| SEC-1 | `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' <contact endpoint origin>; form-action 'self' <contact endpoint origin>; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests`. Only when the build has an analytics token: `script-src` adds the exact URL `https://static.cloudflareinsights.com/beacon.min.js` and `connect-src` adds `https://cloudflareinsights.com` ([headers.md §Analytics](../security/headers.md)) |
 | SEC-2 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` (add `preload` only once the real domain is final) |
 | SEC-3 | `X-Content-Type-Options` | `nosniff` |
 | SEC-4 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
