@@ -26,8 +26,13 @@ describe('site config', () => {
   });
 
   it('flags placeholder values', () => {
-    expect(isPlaceholder(siteConfig.email)).toBe(true);
+    expect(isPlaceholder(siteConfig.phone)).toBe(true);
     expect(isPlaceholder(siteConfig.brand)).toBe(false);
+  });
+
+  it('holds the owner-approved public contact email', () => {
+    expect(siteConfig.email).toBe('clockvane.support@gmail.com');
+    expect(isPlaceholder(siteConfig.email)).toBe(false);
   });
 
   it('derives the site origin from the configured domain', () => {
