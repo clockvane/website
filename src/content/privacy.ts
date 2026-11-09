@@ -39,7 +39,7 @@ export const privacyCopy: {
     {
       heading: 'Who receives it',
       body: [
-        "Your enquiry is passed through our server to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor. [[PLACEHOLDER: HubSpot data-centre region, recipient access and international transfers; confirm against the owner's HubSpot portal before publishing]].",
+        "Your enquiry is passed through our Cloudflare-hosted form handler to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor. [[PLACEHOLDER: HubSpot data-centre region, recipient access and international transfers; confirm against the owner's HubSpot portal before publishing]].",
       ],
     },
     {

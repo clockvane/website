@@ -280,7 +280,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [x] **Q1 Services:** replaced by change request 3 (section 4).
 - [x] **Q2 Pricing stance:** "from" prices, fixed price for packages, monthly retainer option. Amounts: Q20.
 - [x] **Q3 Target client:** replaced by change request 3: any client, individuals and companies. Clients worldwide, based in India.
-- [x] **Q4 Conversion:** HubSpot free CRM receives each enquiry as a contact with the message (HubSpot emails the owner) and HubSpot Meetings handles booking (owner decision 2026-11-09, replacing Cal.com, Telegram and Google Sheet); short form, reply within 1 business day. The CTA label is replaced by section 6.
+- [x] **Q4 Conversion:** HubSpot free CRM receives each enquiry as a contact with the message (HubSpot emails the owner) and HubSpot Meetings handles booking (owner decision 2026-11-09, replacing Cal.com, Telegram and Google Sheet); short form, reply within 1 business day. Phone-only enquiries need Email set to not required in the HubSpot form (Owner checklist #164 step 6); the staging live check covers a phone-only submission. The CTA label is replaced by section 6.
 - [x] **Q5 Proof:** no testimonials or logos at launch. Honest proof: this website and its process, public repositories, founders' articles.
 - [x] **Q6 About:** founder-led: Mohammed Farhan, Adnan Sameer, Syed Zoheb Ali. No invented team size. Minimal bios; no name story (change request 3).
 - [x] **Q7 Languages:** English only at launch.
