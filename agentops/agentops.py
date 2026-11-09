@@ -1731,7 +1731,21 @@ class Dispatcher:
                                        key))
                 continue
             if "needs-human" in labels:
-                continue
+                # The flag was set for the commit seen back then. A newer commit (a merge of main, a
+                # fix) makes it stale: reviews and CI must run on the new head, so the flag comes off
+                # and the PR is handled again (it is held again once approved, if it needs the owner).
+                seen = self.state.doc("needs_human_sha") or {}
+                if seen.get(str(n)) == sha:
+                    continue
+                if str(n) in seen:
+                    if not self.primary:
+                        continue
+                    self._do(f"PR #{n}: new commit since needs-human, handled again", self.gh.remove_label, n, "needs-human")
+                    labels = [lb for lb in labels if lb != "needs-human"]
+                seen[str(n)] = sha
+                self.state.put("needs_human_sha", seen)
+                if "needs-human" in labels:
+                    continue
             waiting, after = self.pr_waits(pr) if author else (False, "")
             if waiting:
                 continue  # "Depends on #N" is still open: the PR waits, nobody escalates

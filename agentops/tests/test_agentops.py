@@ -383,6 +383,19 @@ class Dispatch(unittest.TestCase):
         self.disp(gh).handle_prs(gh.prs)
         self.assertNotIn("status", [c[0] for c in gh.calls])
 
+    def test_needs_human_goes_stale_when_a_new_commit_arrives(self):
+        gh = FakeGH(prs=[pr(9, "0a1d009", ["agent:sde2", "needs-human"])], files={9: ["src/a.ts"]})
+        # first sight of the flag: left alone, the commit is remembered
+        self.assertIsNone(self.disp(gh).handle_prs(gh.prs))
+        self.assertEqual(gh.calls, [])
+        self.assertIsNone(self.disp(gh).handle_prs(gh.prs))  # same commit, still held
+        self.assertEqual(gh.calls, [])
+        # a new commit (a merge of main): the flag comes off and reviews start again
+        gh.prs = [pr(9, "0e1e009", ["agent:sde2", "needs-human"])]
+        w = self.disp(gh).handle_prs(gh.prs)
+        self.assertIn(("unlabel", 9, "needs-human"), gh.calls)
+        self.assertEqual((w.role, w.action, w.head_sha), ("code-reviewer", "review", "0e1e009"))
+
     def test_all_approved_merges(self):
         gh = FakeGH(prs=[pr(5, "aaa", ["agent:sde2"])], files={5: ["src/a.tsx"]},
                     statuses={"aaa": [ok("code-reviewer"), ok("qa-engineer")]})
