@@ -39,7 +39,7 @@ export const privacyCopy: {
     {
       heading: 'Who receives it',
       body: [
-        '[[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].',
+        'If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call. [[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].',
       ],
     },
     {

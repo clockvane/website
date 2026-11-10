@@ -4,6 +4,8 @@ import PageHeader from '../../components/sections/PageHeader.astro';
 import ContactForm from '../../components/ContactForm.astro';
 import ContactFallback from '../../components/ContactFallback.astro';
 import { contactCopy as copy } from '../../content/contact';
+import { newTabHint, primaryCta } from '../../content/navigation';
+import { newTabAttrs } from '../../lib/config/booking';
 ---
 
 <BaseLayout title={copy.title} description={copy.description}>
@@ -15,6 +17,21 @@ import { contactCopy as copy } from '../../content/contact';
     <meta itemprop="name" content={copy.heading} />
     <meta itemprop="description" content={copy.intro} />
     <PageHeader title={copy.heading} lede={copy.intro} />
+    {
+      primaryCta.newTab && (
+        <p class="booking">
+          <a
+            class="standalone"
+            href={primaryCta.href}
+            {...newTabAttrs(primaryCta)}
+            data-booking-link
+          >
+            {primaryCta.label}
+            <span class="visually-hidden"> ({newTabHint})</span>
+          </a>
+        </p>
+      )
+    }
     <div class="contact-grid">
       <ContactForm />
       <aside class="contact-next" aria-labelledby="contact-next-title">
@@ -27,6 +44,9 @@ import { contactCopy as copy } from '../../content/contact';
 </BaseLayout>
 
 <style>
+  .booking {
+    margin-block: var(--space-6) 0;
+  }
   .contact-grid {
     display: grid;
     gap: var(--space-8);

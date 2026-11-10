@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { primaryCta } from '../../src/content/navigation';
 import { siteConfig, siteOrigin } from '../../site.config';
 import { aboutCopy } from '../../src/content/about';
 import { servicesOverview } from '../../src/content/services';
@@ -54,12 +55,12 @@ test('About follows the copy deck, metadata and sitemap entry', async ({
     main.getByRole('link', { name: aboutCopy.expertise.link.label }),
   ).toHaveAttribute('href', aboutCopy.expertise.link.href);
   await expect(main.locator('.band-wrap')).toHaveCount(1);
-  await expect(main.locator('.band-wrap a')).toHaveText(
+  await expect(main.locator('.band-wrap a')).toContainText(
     siteConfig.primaryCta.label,
   );
   await expect(main.locator('.band-wrap a')).toHaveAttribute(
     'href',
-    siteConfig.primaryCta.href,
+    primaryCta.href,
   );
   const sitemap = await (await page.request.get('/sitemap-0.xml')).text();
   expect(sitemap).toContain(`${siteOrigin}/about/</loc>`);
@@ -110,8 +111,10 @@ for (const width of [320, 768, 1280]) {
     await expect(
       page.getByRole('link', { name: aboutCopy.expertise.link.label }),
     ).toBeFocused();
-    await page.locator('main .band-wrap a').click();
-    await expect(page).toHaveURL(/\/contact\/$/);
+    await expect(page.locator('main .band-wrap a')).toHaveAttribute(
+      'href',
+      primaryCta.href,
+    );
     await page.goto('/about/');
     await page.evaluate(() => {
       document.documentElement.style.fontSize = '200%';

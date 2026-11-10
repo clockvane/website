@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { primaryCta } from '../../src/content/navigation';
 import { aiDemo } from '../../src/content/ai-demo';
 import { closingCta } from '../../src/content/sections';
 import {
@@ -80,7 +81,7 @@ test('the four services link to their pages, and CTAs go where the deck says', a
     main.locator('.hero').getByRole('link', {
       name: siteConfig.primaryCta.label,
     }),
-  ).toHaveAttribute('href', siteConfig.primaryCta.href);
+  ).toHaveAttribute('href', primaryCta.href);
   await context.close();
 });
 

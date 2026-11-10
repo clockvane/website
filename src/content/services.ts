@@ -4,6 +4,7 @@
  * deck (Q18, Q19, Q20, Q21) are deliberately not rendered: the deck says to omit them until confirmed.
  */
 import { siteConfig } from '../../site.config';
+import { bookingDestination, type CtaLink } from '../lib/config/booking';
 import type { ExampleId } from './examples';
 
 // Spelled out, not inferred from the data below, because examples.ts types its entries with these.
@@ -278,7 +279,10 @@ const entries: ServiceEntry[] = [
 export const services = entries.map((service) => ({
   ...service,
   href: `/services/${service.slug}/`,
-  cta: { label: service.ctaLabel, href: siteConfig.primaryCta.href },
+  cta: {
+    label: service.ctaLabel,
+    ...bookingDestination(siteConfig),
+  } satisfies CtaLink,
 }));
 
 export type Service = (typeof services)[number];

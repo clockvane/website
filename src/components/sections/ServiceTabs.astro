@@ -2,6 +2,8 @@
 import ExampleScreen from '../ui/ExampleScreen.astro';
 import ServiceToken from '../ui/ServiceToken.astro';
 import type { ServiceTab } from '../../content/service-tabs';
+import { newTabHint } from '../../content/navigation';
+import { newTabAttrs } from '../../lib/config/booking';
 
 /**
  * Service tabs (docs/design/components.md). Without JavaScript the tablist stays hidden and all
@@ -45,8 +47,9 @@ const thumbSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 30vw, 44vw';
           </p>
         </div>
         <div class="panel-cta">
-          <a class="pill pill--primary" href={cta.href}>
+          <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}>
             {cta.label}
+            {cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>}
           </a>
           <a class="pill pill--secondary" href={link.href}>
             {link.label}
