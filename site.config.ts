@@ -24,6 +24,10 @@ export const siteConfigSchema = z.object({
     label: z.string().min(1),
     href: z.string().regex(/^\/(?![\/\\])/),
   }),
+  /** Public booking page (opened as a link, never embedded) or a placeholder, which keeps the CTA on `primaryCta.href`. */
+  booking: z
+    .string()
+    .refine((value) => isPlaceholder(value) || isHttpsUrl(value)),
   contact: z.object({
     endpoint: z.url().refine((value) => value.startsWith('https://')),
   }),
@@ -45,6 +49,8 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
   // Cloudflare Web Analytics, approved in PRD Q10; public token from Owner checklist #164.
   analyticsId: 'd47b9f640c8147eea23e26e989fe5d4a',
   primaryCta: { label: 'Book a call', href: '/contact/' },
+  // HubSpot Meetings "Intro call" page, owner decision 2026-11-10 (PRD Q4, #177).
+  booking: 'https://meetings-na2.hubspot.com/clockvane',
   contact: { endpoint: 'https://example.invalid/enquiry' },
 });
 
@@ -52,6 +58,27 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
 export function isPlaceholder(value: string): boolean {
   return value.startsWith('[[PLACEHOLDER:') && value.endsWith(']]');
 }
+
+/** True for an absolute `https://` URL with a host and no credentials. */
+function isHttpsUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  return (
+    url.protocol === 'https:' &&
+    url.hostname !== '' &&
+    url.username === '' &&
+    url.password === ''
+  );
+}
+
+/** Booking page URL, or `undefined` while booking is not configured. */
+export const bookingUrl = isPlaceholder(siteConfig.booking)
+  ? undefined
+  : siteConfig.booking;
 
 /** Analytics token to load, or `undefined` while analytics is not configured. */
 export const analyticsToken = isPlaceholder(siteConfig.analyticsId)

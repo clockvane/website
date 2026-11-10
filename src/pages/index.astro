@@ -15,7 +15,8 @@ import {
   stories,
   wideScreens,
 } from '../content/home';
-import { primaryCta } from '../content/navigation';
+import { newTabHint, primaryCta } from '../content/navigation';
+import { newTabAttrs } from '../lib/config/booking';
 import { serviceTabs } from '../content/service-tabs';
 import { homeSeo } from '../content/site';
 import { organizationJsonLd } from '../lib/seo/structured-data';
@@ -30,7 +31,15 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
     <TokenHeadline animate lines={hero.lines} />
     <p class="lead hero-lede">{hero.lede}</p>
     <div class="cta-row">
-      <a class="pill pill--primary" href={primaryCta.href}>{primaryCta.label}</a
+      <a
+        class="pill pill--primary"
+        href={primaryCta.href}
+        {...newTabAttrs(primaryCta)}
+        >{primaryCta.label}{
+          primaryCta.newTab && (
+            <span class="visually-hidden"> ({newTabHint})</span>
+          )
+        }</a
       >
       <a class="pill pill--secondary" href={hero.secondary.href}
         >{hero.secondary.label}</a

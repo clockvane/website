@@ -1,7 +1,13 @@
 ---
 import { siteConfig } from '../../site.config';
 import ServiceToken from './ui/ServiceToken.astro';
-import { allServices, company, primaryCta } from '../content/navigation';
+import {
+  allServices,
+  company,
+  newTabHint,
+  primaryCta,
+} from '../content/navigation';
+import { newTabAttrs } from '../lib/config/booking';
 import { services } from '../content/services';
 interface Props {
   currentPath: string;
@@ -46,7 +52,13 @@ const current = (href: string) => (currentPath === href ? 'page' : undefined);
     <a
       class="pill pill--primary pill--small cta"
       href={primaryCta.href}
-      aria-current={current(primaryCta.href)}>{primaryCta.label}</a
+      {...newTabAttrs(primaryCta)}
+      aria-current={current(primaryCta.href)}
+      >{primaryCta.label}{
+        primaryCta.newTab && (
+          <span class="visually-hidden"> ({newTabHint})</span>
+        )
+      }</a
     >
     <details class="menu" data-disc>
       <summary
