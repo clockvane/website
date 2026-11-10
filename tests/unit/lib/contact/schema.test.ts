@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as z from 'zod/mini';
 import {
   serviceOptions,
   validateEnquiry,
@@ -102,4 +103,8 @@ describe('enquiry validation', () => {
       expect(validateEnquiry({ ...valid, [field]: corrected }).ok).toBe(true);
     },
   );
+});
+
+it('runs Zod without eval so the strict CSP reports no violation (#180)', () => {
+  expect(z.config().jitless).toBe(true);
 });
