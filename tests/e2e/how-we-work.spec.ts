@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { primaryCta } from '../../src/content/navigation';
 import { howWeWork as copy } from '../../src/content/how-we-work';
 import { siteConfig, siteOrigin } from '../../site.config';
 import {
@@ -38,8 +39,9 @@ test('process, working models, FAQ and unresolved facts follow the copy deck', a
   ])
     await expect(main).toContainText(text);
   await expect(main.locator('.band-wrap')).toHaveCount(1);
-  await main.getByRole('link', { name: siteConfig.primaryCta.label }).click();
-  await expect(page).toHaveURL(/\/contact\/$/);
+  await expect(
+    main.getByRole('link', { name: siteConfig.primaryCta.label }),
+  ).toHaveAttribute('href', primaryCta.href);
 });
 
 test('has distinct SEO metadata and a sitemap entry', async ({ page }) => {
@@ -83,8 +85,8 @@ for (const width of [320, 768, 1280]) {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('main')).toBeFocused();
     const cta = page.locator('main .band-wrap a');
-    await expect(cta).toHaveText(siteConfig.primaryCta.label);
-    await expect(cta).toHaveAttribute('href', siteConfig.primaryCta.href);
+    await expect(cta).toContainText(siteConfig.primaryCta.label);
+    await expect(cta).toHaveAttribute('href', primaryCta.href);
     await cta.focus();
     await expect(cta).toBeFocused();
     expect(
@@ -102,8 +104,10 @@ for (const width of [320, 768, 1280]) {
     const noJsPage = await noJs.newPage();
     await noJsPage.goto('/how-we-work/');
     await expect(noJsPage.getByRole('main')).toContainText(copy.pricing.body);
-    await noJsPage.locator('main .band-wrap a').click();
-    await expect(noJsPage).toHaveURL(/\/contact\/$/);
+    await expect(noJsPage.locator('main .band-wrap a')).toHaveAttribute(
+      'href',
+      primaryCta.href,
+    );
     await noJs.close();
   });
 }

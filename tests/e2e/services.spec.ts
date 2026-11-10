@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { primaryCta } from '../../src/content/navigation';
 import { services, servicesOverview } from '../../src/content/services';
 import { helpChoose } from '../../src/content/sections';
 import { siteConfig, siteOrigin } from '../../site.config';
@@ -75,7 +76,7 @@ test('overview presents the four services in one place with thumbnails', async (
     await expect(block.locator('.stage img')).toHaveCount(2);
     await expect(
       block.getByRole('link', { name: service.cta.label }),
-    ).toHaveAttribute('href', siteConfig.primaryCta.href);
+    ).toHaveAttribute('href', primaryCta.href);
     await expect(
       block.getByRole('link', { name: service.linkLabel }),
     ).toHaveAttribute('href', service.href);
@@ -126,9 +127,9 @@ for (const service of services) {
       main.getByRole('region', { name: service.example.heading, exact: true }),
     ).toHaveCount(1);
     const cta = main.locator('.band-wrap a');
-    await expect(cta).toHaveText(service.cta.label);
-    await cta.click();
-    await expect(page).toHaveURL(/\/contact\/$/);
+    await expect(cta).toContainText(service.cta.label);
+    await expect(cta).toHaveAttribute('href', service.cta.href);
+    await expect(cta).toHaveAttribute('target', '_blank');
   });
 }
 

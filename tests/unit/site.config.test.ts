@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   analyticsToken,
+  bookingUrl,
   isPlaceholder,
   siteConfig,
   siteConfigSchema,
@@ -43,18 +44,18 @@ describe('site config', () => {
   });
 
   it('shares the configured CTA with navigation and rejects an empty label', () => {
-    expect(primaryCta).toBe(siteConfig.primaryCta);
+    expect(primaryCta.label).toBe(siteConfig.primaryCta.label);
     expect(primaryCta.label).toBe('Book a call');
     expect(
       siteConfigSchema.safeParse({
         ...siteConfig,
-        primaryCta: { ...primaryCta, label: '' },
+        primaryCta: { ...siteConfig.primaryCta, label: '' },
       }).success,
     ).toBe(false);
     expect(
       siteConfigSchema.safeParse({
         ...siteConfig,
-        primaryCta: { ...primaryCta, href: 'javascript:alert(1)' },
+        primaryCta: { ...siteConfig.primaryCta, href: 'javascript:alert(1)' },
       }).success,
     ).toBe(false);
   });
@@ -65,11 +66,40 @@ describe('site config', () => {
       expect(
         siteConfigSchema.safeParse({
           ...siteConfig,
-          primaryCta: { ...primaryCta, href },
+          primaryCta: { ...siteConfig.primaryCta, href },
         }).success,
       ).toBe(false);
     },
   );
+
+  it('holds the owner-approved HubSpot Meetings booking URL', () => {
+    expect(siteConfig.booking).toBe(
+      'https://meetings-na2.hubspot.com/clockvane',
+    );
+    expect(bookingUrl).toBe(siteConfig.booking);
+  });
+
+  it.each([
+    'https://meetings.example.test/team',
+    '[[PLACEHOLDER: booking URL, PRD Q4]]',
+  ])('accepts an https booking URL or a placeholder: %s', (booking) => {
+    expect(siteConfigSchema.safeParse({ ...siteConfig, booking }).success).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    '',
+    'meetings.example.test/team',
+    'http://meetings.example.test/team',
+    'javascript:alert(1)',
+    '/contact/',
+    'https://user:pass@meetings.example.test/',
+  ])('rejects a booking URL that is not plain https: %j', (booking) => {
+    expect(siteConfigSchema.safeParse({ ...siteConfig, booking }).success).toBe(
+      false,
+    );
+  });
 
   it('enables analytics with the configured Cloudflare token', () => {
     expect(isPlaceholder(siteConfig.analyticsId)).toBe(false);

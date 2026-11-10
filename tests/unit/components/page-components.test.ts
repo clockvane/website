@@ -65,6 +65,25 @@ describe('shared page components', () => {
     });
     expect(html).toContain('Book an expert');
     expect(html).not.toContain('Book a call');
+    expect(html).not.toContain('target=');
+  });
+
+  it('marks a booking-page CTA as opening in a new tab', async () => {
+    const html = await container.renderToString(CtaBand, {
+      props: {
+        cta: {
+          label: 'Book a call',
+          href: 'https://example.test/book',
+          newTab: true,
+        },
+      },
+    });
+    expect(html).toMatch(
+      /<a[^>]*href="https:\/\/example\.test\/book"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/,
+    );
+    expect(html).toMatch(
+      /<span class="visually-hidden"[^>]*> \(Opens in a new tab\)<\/span>/,
+    );
   });
 
   it('shares service order with navigation, changes heading levels and work lists by variant', async () => {
