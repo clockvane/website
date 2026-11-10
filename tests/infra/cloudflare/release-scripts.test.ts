@@ -81,6 +81,28 @@ describe('find-artifact-run.sh (staging evidence)', () => {
     expect(r.stdout.trim()).toBe(`1234 ${sums}`);
   });
 
+  it('accepts the evidence written by write-staging-evidence.sh', () => {
+    const out = join(dir, 'out');
+    const w = run('write-staging-evidence.sh', ['4321', sums, out]);
+    expect(w.status).toBe(0);
+    const evidence = readFileSync(join(out, 'evidence.env'), 'utf8');
+    expect(evidence).toBe(`ci_run_id=4321\nsums_sha256=${sums}\n`);
+    const r = run(
+      'find-artifact-run.sh',
+      [SHA],
+      fakeGh({ stagingRun: '99', evidence }),
+    );
+    expect(r.status).toBe(0);
+    expect(r.stdout.trim()).toBe(`4321 ${sums}`);
+  });
+
+  it('refuses to write evidence from malformed values', () => {
+    const out = join(dir, 'out');
+    expect(run('write-staging-evidence.sh', ['12a', sums, out]).status).toBe(1);
+    expect(run('write-staging-evidence.sh', ['12', 'abc', out]).status).toBe(1);
+    expect(existsSync(join(out, 'evidence.env'))).toBe(false);
+  });
+
   it('fails closed when staging has no successful run', () => {
     const r = run('find-artifact-run.sh', [SHA], fakeGh({}));
     expect(r.status).toBe(1);
