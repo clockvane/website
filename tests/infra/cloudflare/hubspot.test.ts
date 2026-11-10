@@ -96,6 +96,20 @@ describe('HubSpot delivery', () => {
       expect((await workerFetch(post(), e, fetcher)).status).toBe(503);
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it('uses redirect "manual" (workerd rejects "error") and treats a redirect as a failure', async () => {
+    const ok = vi.fn(async () => new Response('{}'));
+    expect((await workerFetch(post(), env(), ok)).status).toBe(200);
+    const init = (ok.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(init.redirect).toBe('manual');
+    const redirect = vi.fn(
+      async () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: 'https://x.example' },
+        }),
+    );
+    expect((await workerFetch(post(), env(), redirect)).status).toBe(502);
+  });
   it('answers 502 without echoing HubSpot on non-2xx, network error or timeout, with no retry', async () => {
     for (const fetcher of [
       vi.fn(async () => new Response('secret hubspot detail', { status: 400 })),

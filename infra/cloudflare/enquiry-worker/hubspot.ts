@@ -58,12 +58,16 @@ export async function deliverToHubSpot(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(hubspotPayload(enquiry, pageUri)),
-        redirect: 'error',
+        // workerd accepts only "follow" and "manual"; "error" throws a TypeError.
+        redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),
       },
     );
     await response.body?.cancel();
-    return response.ok ? 'ok' : 'failed';
+    const redirected =
+      response.type === 'opaqueredirect' ||
+      (response.status >= 300 && response.status < 400);
+    return response.ok && !redirected ? 'ok' : 'failed';
   } catch {
     return 'failed';
   }

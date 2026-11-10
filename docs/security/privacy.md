@@ -23,8 +23,8 @@ says not to include sensitive or confidential information. No payment, account o
 2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US or EU data centre, depending on the owner's portal region: [[PLACEHOLDER: portal region]]) is a second
    processor and must be listed in the notice.
 3. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM: no HubSpot tracking script, newsletter or ad pixel on the site.
-4. Transfers: Cloudflare and likely channel providers process outside India/EU. The notice must say so and name the safeguard
-   (standard contractual clauses / provider DPAs). Check each provider's DPA when chosen.
+4. Transfers: Cloudflare and HubSpot process outside India/EU. The notice must say so and name the safeguard
+   (standard contractual clauses / provider DPAs). [[PLACEHOLDER: owner confirms HubSpot DPA and SCCs are accepted in the portal]]
 
 ## Retention
 Proposed (owner to confirm):

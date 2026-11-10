@@ -134,9 +134,9 @@ Section order: hero, tools strip, problem and solution, the four services, the A
   - The form button on Contact reads "Send message".
 - **Decision:** the earlier label "Book a free audit call" is retired, because the audit package is gone with change request 3 and the first call may or may not stay free. Copy does not say "free" until the owner confirms it (Q23).
 - **Destination:** both CTAs lead to the contact path, with the service already chosen where possible. An enquiry records which service it is about (FR-9), which is how we count conversions per service.
-- **Booking:** the owner chose Cal.com plus a short contact form (Q4). The booking link is a config value and opens as a link, not an embedded script. Until the owner creates the account [[PLACEHOLDER: Cal.com booking link, Q4]], CTAs go to the contact form.
+- **Booking:** the owner chose HubSpot Meetings plus a short contact form (Q4). The booking link is a config value and opens as a link, not an embedded script. Until the owner creates the meeting page [[PLACEHOLDER: HubSpot Meetings URL, Q4]], CTAs go to the contact form.
 - **Secondary:** read a service page or How we work; open our public repositories and articles (Q5, Q8).
-- **No-mailbox path:** enquiries notify the owner by WhatsApp or Telegram webhook, with a Google Sheet backup (Q4). The destination is configuration, so switching to a mailbox is a config change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
+- **No-mailbox path:** enquiries go through the Worker to the HubSpot free CRM, which notifies the owner by email (Q4). The destination is configuration, so switching to a mailbox is a config change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
 
 ## 7. Success metrics
 Detail: `docs/product/success-metrics.md`. There is no baseline yet. The only owner-set business target is Q11; we set per-service targets from real data three months after launch and invent none before then.
@@ -298,5 +298,6 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 |------|--------|-----|
 | 2026-10-22 | Initial draft | Ticket #3, Gate 1 input |
 | 2026-10-26 | Primary CTA label "Book a free audit call", form button "Send message" | Owner answer Q4; ticket #32 |
+| 2026-11-09 | Q4 delivery and booking moved to HubSpot CRM + Meetings | Owner decision, #156 |
 | 2026-10-29 | Redesign change request: new positioning, three buyer audiences, AI cost optimization, size limits, Gate 2b sign-off, Q13-Q17 | Owner change request in BRIEF.md; ticket #78 |
 | 2026-11-04 | PRD v3. Name-independent positioning and tagline; four services, each with goal, audience, what the client gets and CTA; any client, professional tone; Mobbin-style home and imagery (5.1); limits from change request 3 (7.2). CTAs now "Book a call" and "Book an expert". Added FR-9 (enquiry records the service, needed for conversions per service), CR-7 to CR-9, Q18-Q24; owner answers Q1-Q12 recorded. Removed the unsupported 2% and 20% conversion hypotheses, the 3D and glow requirements, and NFR-PERF-5 (visitor's own load time); NFR-A11Y-4 rewritten. The later "Proof" page is replaced by the stories section on Home; case studies stay future | Owner change request 3; ticket #122 |
