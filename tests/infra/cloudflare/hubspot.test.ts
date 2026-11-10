@@ -56,6 +56,20 @@ describe('HubSpot delivery', () => {
     ]);
     expect(body.context.pageUri).toBe(`${siteOrigin}/contact/`);
   });
+  it('uses the default US host for an na2 portal (region unset or na2)', async () => {
+    for (const region of [undefined, 'na2']) {
+      const fetcher = vi.fn(async () => new Response('{}'));
+      await workerFetch(
+        post({ reply: 'alex@example.test' }),
+        env(region ? { HUBSPOT_REGION: region } : {}),
+        fetcher,
+      );
+      const [url] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe(
+        `https://api.hsforms.com/submissions/v3/integration/submit/12345/${GUID}`,
+      );
+    }
+  });
   it('uses the EU host when configured and keeps a phone reply in the message', async () => {
     const fetcher = vi.fn(async () => new Response('{}'));
     await workerFetch(

@@ -39,7 +39,7 @@ export const privacyCopy: {
     {
       heading: 'Who receives it',
       body: [
-        "Your enquiry is passed through our Cloudflare-hosted form handler to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor. [[PLACEHOLDER: HubSpot data-centre region, recipient access and international transfers; confirm against the owner's HubSpot portal before publishing]].",
+        'Your enquiry is passed through our Cloudflare-hosted form handler to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor and stores the data in its US data centre. [[PLACEHOLDER: recipient access and the international-transfer safeguard (SCCs/DPA); confirm before publishing]].',
         'If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call.',
       ],
     },

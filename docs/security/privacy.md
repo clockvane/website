@@ -20,7 +20,7 @@ says not to include sensitive or confidential information. No payment, account o
 
 ## Where it goes
 1. Browser → Cloudflare Worker (HTTPS) → HubSpot form submission API (PRD Q4, owner decision 2026-11-09). The HubSpot portal and form IDs are Worker secrets. HubSpot creates a CRM contact (reply contact: an email, or a phone number inside the message; first name; message with the chosen service) and notifies the owner. The browser never contacts HubSpot.
-2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US or EU data centre, depending on the owner's portal region: [[PLACEHOLDER: portal region]]) is a second
+2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US data centre (the account's portal is on HubSpot's na2 region)) is a second
    processor and must be listed in the notice.
 3. Bookings (#177): "Book a call" opens the owner's HubSpot Meetings page (`booking` in `site.config.ts`) as a plain link in a
    new tab with `rel="noopener noreferrer"`. HubSpot is a processor for what visitors enter on that page (name, email, chosen

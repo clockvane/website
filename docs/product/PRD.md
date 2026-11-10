@@ -136,7 +136,7 @@ Section order: hero, tools strip, problem and solution, the four services, the A
 - **Destination:** both CTAs lead to the contact path, with the service already chosen where possible. An enquiry records which service it is about (FR-9), which is how we count conversions per service.
 - **Booking:** the owner chose HubSpot Meetings plus a short contact form (Q4). The booking link is a config value and opens as a link, not an embedded script. Until the owner creates the meeting page [[PLACEHOLDER: HubSpot Meetings URL, Q4]], CTAs go to the contact form.
 - **Secondary:** read a service page or How we work; open our public repositories and articles (Q5, Q8).
-- **No-mailbox path:** enquiries go through the Worker to the HubSpot free CRM, which notifies the owner by email (Q4). The destination is configuration, so switching to a mailbox is a config change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
+- **No-mailbox path:** enquiries go through the Worker to the HubSpot free CRM, which notifies the owner by email (Q4). Delivery is isolated in the Worker's HubSpot adapter, so switching destination is a small Worker change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
 
 ## 7. Success metrics
 Detail: `docs/product/success-metrics.md`. There is no baseline yet. The only owner-set business target is Q11; we set per-service targets from real data three months after launch and invent none before then.

@@ -6,7 +6,11 @@ import {
 export interface HubSpotEnv {
   HUBSPOT_PORTAL_ID?: string;
   HUBSPOT_FORM_GUID?: string;
-  /** Optional: `eu1` for a portal hosted in HubSpot's EU data centre. */
+  /**
+   * Optional: `eu1` for a portal hosted in HubSpot's EU data centre, which uses a regional
+   * submission host. US data centres (na1, na2, …) all use the default `api.hsforms.com`, so
+   * this stays unset for them. See docs/devops/cicd.md (Enquiry Worker).
+   */
   HUBSPOT_REGION?: string;
 }
 
@@ -47,6 +51,8 @@ export async function deliverToHubSpot(
   const guid = env.HUBSPOT_FORM_GUID?.trim();
   if (!portal || !guid || !PORTAL_ID.test(portal) || !FORM_GUID.test(guid))
     return 'unconfigured';
+  // Only EU-hosted portals (eu1) use a regional host; every US data centre, na2 included, uses
+  // the default host. HubSpot Forms API: https://developers.hubspot.com/docs/api-reference/legacy/marketing/forms/v3-legacy
   const host =
     env.HUBSPOT_REGION?.trim() === 'eu1'
       ? 'api-eu1.hsforms.com'
