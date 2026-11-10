@@ -1,13 +1,29 @@
+# Two Workers from one source (ADR-002, docs/devops/cicd.md):
+#   --env staging     -> enquiry-staging, deployed by deploy-worker.yml from main
+#   --env production  -> enquiry, deployed by release.yml under environment: production at the release tag
+# Always pass --env; the top-level block is not deployed. Rate limits and secrets are per Worker
+# (the HUBSPOT_* secrets are set by the owner for each Worker in the dashboard).
 name = "enquiry"
 main = "index.ts"
 compatibility_date = "2026-10-27"
 workers_dev = true
 keep_vars = true
 
-[[ratelimits]]
+[observability]
+enabled = false
+
+[env.staging]
+name = "enquiry-staging"
+
+[[env.staging.ratelimits]]
+name = "ENQUIRY_RATE_LIMIT"
+namespace_id = "1002"
+simple = { limit = 5, period = 60 }
+
+[env.production]
+name = "enquiry"
+
+[[env.production.ratelimits]]
 name = "ENQUIRY_RATE_LIMIT"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
-
-[observability]
-enabled = false

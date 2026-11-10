@@ -107,6 +107,10 @@ jobs:
             --branch "$CF_PAGES_PRODUCTION_BRANCH" \
             --commit-hash "$SHA" \
             --commit-dirty=true
+      - name: Deploy production enquiry Worker (tag source)
+        run: |
+          npm ci --ignore-scripts
+          npx wrangler deploy --env production --config infra/cloudflare/enquiry-worker/wrangler.toml
       - name: Smoke test
         run: |
           health=""
