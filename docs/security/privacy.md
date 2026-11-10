@@ -19,15 +19,16 @@ We set **no cookies** and use no local storage at launch (SEC-11). We do not col
 says not to include sensitive or confidential information. No payment, account or login data exists (PRD A4).
 
 ## Where it goes
-1. Browser → Cloudflare Worker (HTTPS) → delivery channel chosen by the owner (PRD Q4, **not yet decided**) held in a Worker secret.
-2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. The delivery channel provider (to be named) is a second
+1. Browser → Cloudflare Worker (HTTPS) → HubSpot form submission API (PRD Q4, owner decision 2026-11-09). The HubSpot portal and form IDs are Worker secrets. HubSpot creates a CRM contact (reply contact: an email, or a phone number inside the message; first name; message with the chosen service) and notifies the owner. The browser never contacts HubSpot.
+2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US data centre (the account's portal is on HubSpot's na2 region)) is a second
    processor and must be listed in the notice.
 3. Bookings (#177): "Book a call" opens the owner's HubSpot Meetings page (`booking` in `site.config.ts`) as a plain link in a
    new tab with `rel="noopener noreferrer"`. HubSpot is a processor for what visitors enter on that page (name, email, chosen
    time). Nothing from HubSpot is embedded or loaded by this site, so the CSP is unchanged and no HubSpot cookie is set here.
-4. No sale or sharing for advertising. No CRM, newsletter or ad pixel in v1 (PRD out of scope).
-5. Transfers: Cloudflare, HubSpot and likely channel providers process outside India/EU. The notice must say so and name the safeguard
-   (standard contractual clauses / provider DPAs). Check each provider's DPA when chosen.
+4. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM and for bookings: no HubSpot tracking script,
+   newsletter or ad pixel on the site.
+5. Transfers: Cloudflare and HubSpot process outside India/EU. The notice must say so and name the safeguard
+   (standard contractual clauses / provider DPAs). [[PLACEHOLDER: owner confirms HubSpot DPA and SCCs are accepted in the portal]]
 
 ## Retention
 Proposed (owner to confirm):

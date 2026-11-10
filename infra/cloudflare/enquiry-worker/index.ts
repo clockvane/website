@@ -1,8 +1,9 @@
 import { siteOrigin } from '../../../site.config.ts';
 import { handleEnquiry } from '../../../src/lib/contact/handler.ts';
 import { workerSecurityHeaders } from '../../headers/render.ts';
+import { deliverToHubSpot, type HubSpotEnv } from './hubspot.ts';
 
-interface Bindings {
+interface Bindings extends HubSpotEnv {
   ENQUIRY_RATE_LIMIT?: {
     limit: (options: { key: string }) => Promise<{ success: boolean }>;
   };
@@ -11,6 +12,7 @@ interface Bindings {
 export async function workerFetch(
   request: Request,
   env: Bindings,
+  fetcher: typeof fetch = fetch,
 ): Promise<Response> {
   const origin = request.headers.get('origin');
   const headers = new Headers(workerSecurityHeaders);
@@ -40,8 +42,16 @@ export async function workerFetch(
           (await env.ENQUIRY_RATE_LIMIT.limit({ key: ip })).success,
         );
       },
-      // ADR-002: fail visibly until the owner selects the delivery channel (Q4).
-      deliver: async () => false,
+      // HubSpot free CRM (PRD Q4). Missing secrets answer 503, HubSpot failure 502.
+      deliver: async (enquiry) => {
+        const result = await deliverToHubSpot(
+          enquiry,
+          env,
+          new URL('/contact/', siteOrigin).href,
+          fetcher,
+        );
+        return result === 'unconfigured' ? result : result === 'ok';
+      },
     });
   for (const [name, value] of response.headers) headers.set(name, value);
   return new Response(response.body, { status: response.status, headers });

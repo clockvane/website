@@ -134,9 +134,9 @@ Section order: hero, tools strip, problem and solution, the four services, the A
   - The form button on Contact reads "Send message".
 - **Decision:** the earlier label "Book a free audit call" is retired, because the audit package is gone with change request 3 and the first call may or may not stay free. Copy does not say "free" until the owner confirms it (Q23).
 - **Destination:** both CTAs lead to the contact path, with the service already chosen where possible. An enquiry records which service it is about (FR-9), which is how we count conversions per service.
-- **Booking:** the owner chose Cal.com plus a short contact form (Q4). The booking link is a config value and opens as a link, not an embedded script. Until the owner creates the account [[PLACEHOLDER: Cal.com booking link, Q4]], CTAs go to the contact form.
+- **Booking:** the owner chose HubSpot Meetings plus a short contact form (Q4). The booking link is a config value and opens as a link, not an embedded script. Until the owner creates the meeting page [[PLACEHOLDER: HubSpot Meetings URL, Q4]], CTAs go to the contact form.
 - **Secondary:** read a service page or How we work; open our public repositories and articles (Q5, Q8).
-- **No-mailbox path:** enquiries notify the owner by WhatsApp or Telegram webhook, with a Google Sheet backup (Q4). The destination is configuration, so switching to a mailbox is a config change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
+- **No-mailbox path:** enquiries go through the Worker to the HubSpot free CRM, which notifies the owner by email (Q4). Delivery is isolated in the Worker's HubSpot adapter, so switching destination is a small Worker change. Visitors always get an on-page confirmation and the promised response: within 1 business day (Q4).
 
 ## 7. Success metrics
 Detail: `docs/product/success-metrics.md`. There is no baseline yet. The only owner-set business target is Q11; we set per-service targets from real data three months after launch and invent none before then.
@@ -271,7 +271,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [ ] **Q25 Company field on the contact form:** copy deck §6 lists an optional company field, but the NFRs (SEC-11, NFR-SEC-2) limit personal data to name, reply contact and message. Should the form ask for a company name? Default: no, leave it out. The form does ask which service is wanted, which is not personal data; the tech lead should add it to SEC-11.
 
 **Carried over and still open:**
-- [ ] **Q4 Booking link (rest answered):** create the Cal.com account and supply the link. Default: CTAs go to the contact form.
+- [ ] **Q4 Booking link (rest answered):** the owner chose HubSpot Meetings (2026-11-09); supply the public Meetings URL for `booking` in the site config. Default: CTAs go to the contact form.
 - [ ] **Q6 Founder roles (rest answered):** the role to show beside each founder's name. Default: names only.
 - [ ] **Q8 Links (rest answered):** the GitHub and Medium URLs for the site config.
 - [ ] **Q17 Testers:** can 3-5 people from the audiences in section 3 try the site on their phones? Default: walkthrough with the founders only.
@@ -280,7 +280,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [x] **Q1 Services:** replaced by change request 3 (section 4).
 - [x] **Q2 Pricing stance:** "from" prices, fixed price for packages, monthly retainer option. Amounts: Q20.
 - [x] **Q3 Target client:** replaced by change request 3: any client, individuals and companies. Clients worldwide, based in India.
-- [x] **Q4 Conversion:** Cal.com plus a short form, WhatsApp or Telegram webhook, Google Sheet backup, reply within 1 business day. The CTA label is replaced by section 6.
+- [x] **Q4 Conversion:** HubSpot free CRM receives each enquiry as a contact with the message (HubSpot emails the owner) and HubSpot Meetings handles booking (owner decision 2026-11-09, replacing Cal.com, Telegram and Google Sheet); short form, reply within 1 business day. Phone-only enquiries need Email set to not required in the HubSpot form (Owner checklist #164 step 6); the staging live check covers a phone-only submission. The CTA label is replaced by section 6.
 - [x] **Q5 Proof:** no testimonials or logos at launch. Honest proof: this website and its process, public repositories, founders' articles.
 - [x] **Q6 About:** founder-led: Mohammed Farhan, Adnan Sameer, Syed Zoheb Ali. No invented team size. Minimal bios; no name story (change request 3).
 - [x] **Q7 Languages:** English only at launch.
@@ -298,5 +298,6 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 |------|--------|-----|
 | 2026-10-22 | Initial draft | Ticket #3, Gate 1 input |
 | 2026-10-26 | Primary CTA label "Book a free audit call", form button "Send message" | Owner answer Q4; ticket #32 |
+| 2026-11-09 | Q4 delivery and booking moved to HubSpot CRM + Meetings | Owner decision, #156 |
 | 2026-10-29 | Redesign change request: new positioning, three buyer audiences, AI cost optimization, size limits, Gate 2b sign-off, Q13-Q17 | Owner change request in BRIEF.md; ticket #78 |
 | 2026-11-04 | PRD v3. Name-independent positioning and tagline; four services, each with goal, audience, what the client gets and CTA; any client, professional tone; Mobbin-style home and imagery (5.1); limits from change request 3 (7.2). CTAs now "Book a call" and "Book an expert". Added FR-9 (enquiry records the service, needed for conversions per service), CR-7 to CR-9, Q18-Q24; owner answers Q1-Q12 recorded. Removed the unsupported 2% and 20% conversion hypotheses, the 3D and glow requirements, and NFR-PERF-5 (visitor's own load time); NFR-A11Y-4 rewritten. The later "Proof" page is replaced by the stories section on Home; case studies stay future | Owner change request 3; ticket #122 |

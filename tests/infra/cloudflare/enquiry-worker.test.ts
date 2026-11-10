@@ -34,7 +34,7 @@ describe('Worker boundary', () => {
       ).toBeNull();
     }
   });
-  it('uses the edge IP limiter and fails closed without delivery configuration', async () => {
+  it('uses the edge IP limiter and answers 503 without delivery secrets', async () => {
     const limit = vi.fn(async () => ({ success: true }));
     const request = () =>
       new Request('https://worker.example.test/enquiry', {
@@ -54,7 +54,7 @@ describe('Worker boundary', () => {
       });
     expect(
       (await workerFetch(request(), { ENQUIRY_RATE_LIMIT: { limit } })).status,
-    ).toBe(502);
+    ).toBe(503);
     expect(limit).toHaveBeenCalledWith({ key: '192.0.2.1' });
     expect((await workerFetch(request(), {})).status).toBe(429);
   });
