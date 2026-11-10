@@ -26,4 +26,17 @@ describe('enquiry Worker environments', () => {
     );
     expect(read('.github/workflows/release.yml')).toContain('--env production');
   });
+
+  it('keeps the top-level name from colliding with a real Worker', () => {
+    expect(toml).toMatch(/^name = "enquiry-local"$/m);
+  });
+
+  it('passes --env on every deploy command in the workflows', () => {
+    for (const f of ['deploy-worker.yml', 'release.yml', 'rollback.yml']) {
+      const lines = read(`.github/workflows/${f}`)
+        .split('\n')
+        .filter((l) => /wrangler (deploy|rollback)\b/.test(l));
+      for (const l of lines) expect(l).toContain('--env');
+    }
+  });
 });
