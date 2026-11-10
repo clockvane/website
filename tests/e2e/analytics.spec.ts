@@ -12,6 +12,13 @@ const STUB = `fetch(${JSON.stringify(RUM)}, { method: 'POST', body: '{}', mode: 
 
 test.skip(!analyticsToken, 'analytics is not configured in site.config.ts');
 
+// Against a deployed origin (BASE_URL) some proxied requests are still in flight when the
+// assertions pass; closing the page disposes their fetched responses and route.fulfill throws
+// "Fetch response has been disposed" (#180). Drop the handlers first and ignore those late errors.
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+});
+
 async function serveProductionLocally(page: Page, baseURL: string) {
   await page.route(`${siteOrigin}/**`, async (route) => {
     const { pathname, search } = new URL(route.request().url());

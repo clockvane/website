@@ -2,6 +2,11 @@ import * as z from 'zod/mini';
 import { contactCopy } from '../../content/contact';
 import { services } from '../../content/services';
 
+// The CSP has no 'unsafe-eval' (ADR-002 headers). Without jitless, Zod probes `new Function('')`
+// on the first parse; the browser reports that as a CSP violation even though Zod catches it,
+// which fails the Lighthouse best-practices audit on /contact/ (#180).
+z.config({ jitless: true });
+
 export const limits = { name: 100, reply: 254, message: 3000 } as const;
 export const fieldNames = ['name', 'reply', 'service', 'message'] as const;
 export const serviceOptions = [
