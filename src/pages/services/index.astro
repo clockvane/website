@@ -6,6 +6,8 @@ import ExampleScreen from '../../components/ui/ExampleScreen.astro';
 import ServiceToken from '../../components/ui/ServiceToken.astro';
 import { helpChoose, sectionLabels } from '../../content/sections';
 import { services, servicesOverview as copy } from '../../content/services';
+import { newTabHint, primaryCta } from '../../content/navigation';
+import { newTabAttrs } from '../../lib/config/booking';
 import { breadcrumbJsonLd } from '../../lib/seo/breadcrumbs';
 import { siteConfig, siteOrigin } from '../../../site.config';
 
@@ -67,8 +69,15 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
             <h3>{copy.labels.who}</h3>
             <p>{service.audience}</p>
             <div class="service-cta">
-              <a class="pill pill--primary" href={service.cta.href}>
+              <a
+                class="pill pill--primary"
+                href={service.cta.href}
+                {...newTabAttrs(service.cta)}
+              >
                 {service.cta.label}
+                {service.cta.newTab && (
+                  <span class="visually-hidden"> ({newTabHint})</span>
+                )}
               </a>
               <a class="pill pill--secondary" href={service.href}>
                 {service.linkLabel}
@@ -89,8 +98,17 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
         <h2 id="help-title">{helpChoose.heading}</h2>
         <p>{helpChoose.body}</p>
       </div>
-      <a class="pill pill--primary" href={siteConfig.primaryCta.href}>
-        {siteConfig.primaryCta.label}
+      <a
+        class="pill pill--primary"
+        href={primaryCta.href}
+        {...newTabAttrs(primaryCta)}
+      >
+        {primaryCta.label}
+        {
+          primaryCta.newTab && (
+            <span class="visually-hidden"> ({newTabHint})</span>
+          )
+        }
       </a>
     </section>
   </div>

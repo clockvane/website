@@ -1,6 +1,7 @@
 /** Copy deck `services.shared`: the four services as the "one place" tabs present them. */
 import type { ExampleId } from './examples';
 import type { ServiceKey } from './services';
+import type { CtaLink } from '../lib/config/booking';
 import { services } from './services';
 
 export interface ServiceTab {
@@ -8,7 +9,7 @@ export interface ServiceTab {
   name: string;
   summary: string;
   audience: string;
-  cta: { label: string; href: string };
+  cta: CtaLink;
   link: { label: string; href: string };
   thumbs: [ExampleId, ExampleId, ExampleId];
 }

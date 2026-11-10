@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { primaryCta } from '../../src/content/navigation';
 
 for (const width of [320, 768, 1024, 1440]) {
   test(`page components reflow, expose links and pass axe at ${width}px`, async ({
@@ -71,6 +72,9 @@ test('fixture remains readable without JavaScript', async ({ browser }) => {
   await page.goto('/__components/');
   await expect(page.locator('main h1')).toHaveText('Services');
   await expect(page.locator('.service-row')).toHaveCount(8);
-  await expect(page.locator('.band a')).toHaveAttribute('href', '/contact/');
+  await expect(page.locator('.band a')).toHaveAttribute(
+    'href',
+    primaryCta.href,
+  );
   await context.close();
 });

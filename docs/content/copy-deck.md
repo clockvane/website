@@ -248,7 +248,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - `meta_description`: Tell us about the technical help or project you need. Choose a service or ask for guidance. We reply within 1 business day.
 - `contact.intro` h1: Tell us what you need
 - lede: Describe the problem or the work you have in mind. We reply within 1 business day.
-- Optional booking link: Book a call → `{booking_url}`. [[PLACEHOLDER: Q4 booking URL]]. Hide until configured; do not link back to this page as if a booking exists.
+- Optional booking link: Book a call → `{booking_url}` (config `booking`, opens in a new tab; HubSpot Meetings, Q4 answered in #177). Hide while the config holds a placeholder; do not link back to this page as if a booking exists.
 - `contact.form` h2: Send a message
 
 | Field | Label | Helper / options |
@@ -293,7 +293,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - h2: Who we are. Body: {brand}, India (Telangana). Contact us about this notice through our contact form → `/contact/`. [[PLACEHOLDER: Q9 confirmed operator identity and address; no registration number until registered]].
 - h2: What we collect. Body: When you enquire, we collect your name, reply contact, selected service and message, plus your company name if you provide it. [[PLACEHOLDER: confirm technical logs and spam-prevention data against the implemented contact flow]].
 - h2: Why we use it. Body: We use enquiry details to respond to your request. [[PLACEHOLDER: Q9 applicable legal basis and any further purposes, including enquiry reporting]].
-- h2: Who receives it. Body: [[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].
+- h2: Who receives it. Body: If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call. [[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].
 - h2: How long we keep it. Body: [[PLACEHOLDER: Q9 enquiry and technical-log retention periods]].
 - h2: Analytics and cookies. Body: This site uses Cloudflare Web Analytics, privacy-friendly analytics without cookies or local storage. We see totals such as page views, page load speed, referring sites, country, device type and browser, not who you are. Web addresses are recorded without their query part. If your browser sends a Global Privacy Control signal, analytics does not load. We set no cookies of our own. (Checked against Cloudflare's documentation in #169.) Owner Q10 chooses cookieless analytics; do not add a consent banner without an actual requirement.
 - h2: Questions about your information. Body: Contact us through the form if you have a question about information you have shared. [[PLACEHOLDER: Q9 applicable access, correction and deletion rights and request process]].

@@ -22,8 +22,12 @@ says not to include sensitive or confidential information. No payment, account o
 1. Browser → Cloudflare Worker (HTTPS) → HubSpot form submission API (PRD Q4, owner decision 2026-11-09). The HubSpot portal and form IDs are Worker secrets. HubSpot creates a CRM contact (reply contact: an email, or a phone number inside the message; first name; message with the chosen service) and notifies the owner. The browser never contacts HubSpot.
 2. Cloudflare (hosting, edge, Worker) is a processor for traffic data. HubSpot, Inc. (free CRM; data stored in its US or EU data centre, depending on the owner's portal region: [[PLACEHOLDER: portal region]]) is a second
    processor and must be listed in the notice.
-3. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM: no HubSpot tracking script, newsletter or ad pixel on the site.
-4. Transfers: Cloudflare and HubSpot process outside India/EU. The notice must say so and name the safeguard
+3. Bookings (#177): "Book a call" opens the owner's HubSpot Meetings page (`booking` in `site.config.ts`) as a plain link in a
+   new tab with `rel="noopener noreferrer"`. HubSpot is a processor for what visitors enter on that page (name, email, chosen
+   time). Nothing from HubSpot is embedded or loaded by this site, so the CSP is unchanged and no HubSpot cookie is set here.
+4. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM and for bookings: no HubSpot tracking script,
+   newsletter or ad pixel on the site.
+5. Transfers: Cloudflare and HubSpot process outside India/EU. The notice must say so and name the safeguard
    (standard contractual clauses / provider DPAs). [[PLACEHOLDER: owner confirms HubSpot DPA and SCCs are accepted in the portal]]
 
 ## Retention

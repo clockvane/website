@@ -37,6 +37,7 @@ jobs:
       actions: read
     outputs:
       url: ${{ steps.url.outputs.url }}
+      sums_sha256: ${{ steps.sums.outputs.sums_sha256 }}
     env:
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
       RUN_ID: ${{ github.event.workflow_run.id }}
@@ -88,22 +89,13 @@ jobs:
           PREPARE_ENQUIRY_FROM_CONFIG: "1"
         run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/staging"
 
-      # Release evidence (read by infra/cloudflare/find-artifact-run.sh). Hash the ORIGINAL artifact's
-      # SHA256SUMS. The run only succeeds if deploy, e2e and lighthouse all pass, so the artifact
-      # existing on a successful run means staging tested these bytes.
-      - name: Write staging evidence
+      # Release evidence input: hash of the ORIGINAL artifact's SHA256SUMS. The evidence artifact is
+      # only written by the final `staging-evidence` job, after deploy, e2e and lighthouse all pass.
+      - id: sums
         run: |
-          mkdir -p "$RUNNER_TEMP/evidence"
           sums="$(sha256sum "$RUNNER_TEMP/artifact/SHA256SUMS" | cut -d' ' -f1)"
-          [[ "$RUN_ID" =~ ^[0-9]+$ && "$sums" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::bad evidence values"; exit 1; }
-          printf 'ci_run_id=%s\nsums_sha256=%s\n' "$RUN_ID" "$sums" > "$RUNNER_TEMP/evidence/evidence.env"
-
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: staging-evidence-${{ env.HEAD_SHA }}
-          path: ${{ runner.temp }}/evidence/evidence.env
-          if-no-files-found: error
-          retention-days: 90
+          [[ "$sums" =~ ^[0-9a-f]{64}$ ]] || { echo "::error::bad SHA256SUMS hash"; exit 1; }
+          echo "sums_sha256=$sums" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Cloudflare Pages (branch staging)
         env:
@@ -232,3 +224,32 @@ jobs:
           path: .lighthouseci/desktop/
           if-no-files-found: ignore
           retention-days: 14
+
+  # Release evidence (read by infra/cloudflare/find-artifact-run.sh). Runs only when deploy, e2e and
+  # lighthouse all succeeded; if any fails or is skipped, no artifact exists and a release fails closed.
+  staging-evidence:
+    name: staging-evidence
+    needs: [deploy, e2e, lighthouse, lighthouse-desktop]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      SUMS_SHA256: ${{ needs.deploy.outputs.sums_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Write evidence.env
+        run: |
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad SHA"; exit 1; }
+          infra/cloudflare/write-staging-evidence.sh "$RUN_ID" "$SUMS_SHA256" "$RUNNER_TEMP/evidence"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staging-evidence-${{ env.HEAD_SHA }}
+          path: ${{ runner.temp }}/evidence/evidence.env
+          if-no-files-found: error
+          retention-days: 90

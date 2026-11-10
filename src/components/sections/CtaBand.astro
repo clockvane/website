@@ -1,11 +1,12 @@
 ---
 import ServiceToken from '../ui/ServiceToken.astro';
-import { primaryCta } from '../../content/navigation';
+import { newTabHint, primaryCta } from '../../content/navigation';
 import { closingCta } from '../../content/sections';
 import { services } from '../../content/services';
+import { newTabAttrs, type CtaLink } from '../../lib/config/booking';
 interface Props {
   content?: { heading: string; body: string };
-  cta?: { label: string; href: string };
+  cta?: CtaLink;
 }
 const { content = closingCta, cta = primaryCta } = Astro.props;
 ---
@@ -17,7 +18,11 @@ const { content = closingCta, cta = primaryCta } = Astro.props;
     </div>
     <h2>{content.heading}</h2>
     <p class="lead">{content.body}</p>
-    <a class="pill pill--primary" href={cta.href}>{cta.label}</a>
+    <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}
+      >{cta.label}{
+        cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>
+      }</a
+    >
   </div>
 </section>
 
