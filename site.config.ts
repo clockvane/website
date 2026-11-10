@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// Before any schema runs: the CSP has no 'unsafe-eval', and Zod's first parse probes
+// `new Function('')` unless jitless is on. This file parses at import time and the contact
+// script imports it (via the services content) before src/lib/contact/schema.ts can switch
+// jitless on, so the probe ran and the browser logged a CSP violation on /contact/ (#180).
+z.config({ jitless: true });
+
 /**
  * The ONLY place for brand name, domain, email, phone, socials and analytics IDs
  * (CLAUDE.md rule 5, ADR-001). Values are placeholders until the owner supplies them.

@@ -10,6 +10,19 @@ import {
 import { primaryCta } from '../../src/content/navigation';
 
 describe('site config', () => {
+  it('switches Zod to jitless before its own parse runs (CSP has no unsafe-eval)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(
+      new URL('../../site.config.ts', import.meta.url),
+      'utf8',
+    );
+    const jitless = source.indexOf('z.config({ jitless: true })');
+    expect(jitless).toBeGreaterThan(-1);
+    expect(jitless).toBeLessThan(source.indexOf('.parse('));
+    const { z } = await import('zod');
+    expect(z.config().jitless).toBe(true);
+  });
+
   it('matches its schema and holds a name-independent tagline', () => {
     const parsed = siteConfigSchema.parse(siteConfig);
     expect(parsed.brand).not.toBe('');
