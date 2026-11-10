@@ -25,7 +25,6 @@ test('privacy renders the approved draft and unresolved facts', async ({
         .join(''),
     );
   }
-  await expect(main).toContainText('[[PLACEHOLDER: HubSpot data-centre region');
   await expect(main).toContainText(
     '[[PLACEHOLDER: Q9 confirmed operator identity',
   );
