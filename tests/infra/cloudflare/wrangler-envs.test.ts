@@ -27,6 +27,14 @@ describe('enquiry Worker environments', () => {
     expect(read('.github/workflows/release.yml')).toContain('--env production');
   });
 
+  it('stops a release that has no production Worker origin', () => {
+    const release = read('.github/workflows/release.yml');
+    const check = release.indexOf('case "$ENQUIRY_WORKER_ORIGIN" in');
+    expect(check).toBeGreaterThan(-1);
+    expect(check).toBeLessThan(release.indexOf('pages deploy'));
+    expect(release).toMatch(/https:\/\/enquiry-staging\.\*\).*exit 1/);
+  });
+
   it('keeps the top-level name from colliding with a real Worker', () => {
     expect(toml).toMatch(/^name = "enquiry-local"$/m);
   });
