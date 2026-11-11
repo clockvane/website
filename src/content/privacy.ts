@@ -1,8 +1,22 @@
 import { siteConfig } from '../../site.config';
 
-type Part = string | { label: string; href: `/${string}` };
+type Part = string | { label: string; href: `/${string}` | `mailto:${string}` };
 
-/** Approved copy-deck.md §9; unresolved facts remain placeholders. */
+/**
+ * The one date shown as "Last updated". Change it whenever this notice changes
+ * (set to the copy date, #198; the release PR moves it if the text changes again).
+ */
+export const PRIVACY_UPDATED = '11 November 2026';
+
+const email: Part = {
+  label: siteConfig.email,
+  href: `mailto:${siteConfig.email}`,
+};
+
+/**
+ * Copy deck §9. Recommended defaults from #198, pending owner approval at Gate 3
+ * (docs/releases/v1.0.0.md, "Defaults the owner approves at Gate 3").
+ */
 export const privacyCopy: {
   title: string;
   description: string;
@@ -14,39 +28,45 @@ export const privacyCopy: {
   description:
     'Read what information this site collects through enquiries and visits, why it is used and how to contact us about your data.',
   heading: 'Privacy notice',
-  updated: 'Last updated: [[PLACEHOLDER: publication date]].',
+  updated: `Last updated: ${PRIVACY_UPDATED}.`,
   sections: [
     {
       heading: 'Who we are',
       body: [
-        `${siteConfig.brand}, India (Telangana). Contact us about this notice through our `,
+        `${siteConfig.brand} runs this website and is based in Telangana, India. For questions about this notice or your information, email us at `,
+        email,
+        ' or use our ',
         { label: 'contact form', href: '/contact/' },
-        '. [[PLACEHOLDER: Q9 confirmed operator identity and address; no registration number until registered]].',
+        '.',
       ],
     },
     {
       heading: 'What we collect',
       body: [
-        'When you enquire, we collect your name, reply contact, selected service and message. [[PLACEHOLDER: confirm technical logs and spam-prevention data against the implemented contact flow]].',
+        'When you enquire, we collect your name, how to reply to you (an email address or phone number), the service you choose and your message. ',
+        'To block spam, the form has a hidden field that people leave empty and checks that it was not sent too quickly. We do not store the results of these checks. ',
+        'Our form handler also limits how many messages can come from one IP address each minute. It uses your IP address only for that check, and logging is switched off for the handler, so we keep no record of your request. ',
+        'Cloudflare, which hosts this site and runs the form handler, keeps its own technical logs of requests, such as IP addresses, to deliver pages and protect its network.',
       ],
     },
     {
       heading: 'Why we use it',
       body: [
-        'We use enquiry details to respond to your request. [[PLACEHOLDER: Q9 applicable legal basis and any further purposes, including enquiry reporting]].',
+        'We use the details you send only to answer your enquiry and to arrange the work you ask about. We do not use them for marketing or newsletters. We never sell them or share them for advertising.',
       ],
     },
     {
       heading: 'Who receives it',
       body: [
-        'Your enquiry is passed through our Cloudflare-hosted form handler to HubSpot, which stores it as a contact in our CRM and notifies us. HubSpot acts as our processor and stores the data in its US data centre. [[PLACEHOLDER: recipient access and the international-transfer safeguard (SCCs/DPA); confirm before publishing]].',
-        'If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call.',
+        'Your enquiry passes through our form handler, run by Cloudflare, to HubSpot, the customer relationship management (CRM) service we use. HubSpot stores it as a contact, notes that it came from our contact page and lets us know it has arrived. HubSpot keeps this data in its US data centre. ',
+        'If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call. ',
+        'HubSpot and Cloudflare process this data for us. Each publishes data processing terms for its customers, which use standard contractual clauses for transfers between countries.',
       ],
     },
     {
       heading: 'How long we keep it',
       body: [
-        '[[PLACEHOLDER: Q9 enquiry and technical-log retention periods]].',
+        'We keep enquiries for up to 24 months after our last contact with you, then delete them. If you ask, we delete them sooner.',
       ],
     },
     {
@@ -58,9 +78,9 @@ export const privacyCopy: {
     {
       heading: 'Questions about your information',
       body: [
-        'Contact us through the ',
-        { label: 'form', href: '/contact/' },
-        ' if you have a question about information you have shared. [[PLACEHOLDER: Q9 applicable access, correction and deletion rights and request process]].',
+        'To see, correct or delete the details you have sent us, email us at ',
+        email,
+        '. We reply within 30 days.',
       ],
     },
   ],

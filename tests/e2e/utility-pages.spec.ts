@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { privacyCopy } from '../../src/content/privacy';
 import { notFoundCopy } from '../../src/content/not-found';
-import { siteOrigin } from '../../site.config';
+import { siteConfig, siteOrigin } from '../../site.config';
 import {
   expectNoAxeViolations,
   expectNoHorizontalScroll,
   expectPageMetadata,
 } from './helpers/page-checks';
 
-test('privacy renders the approved draft and unresolved facts', async ({
+test('privacy renders the approved copy with no placeholders', async ({
   page,
 }) => {
   await page.goto('/privacy/');
@@ -25,12 +25,18 @@ test('privacy renders the approved draft and unresolved facts', async ({
         .join(''),
     );
   }
-  await expect(main).toContainText(
-    '[[PLACEHOLDER: Q9 confirmed operator identity',
-  );
+  await expect(page.locator('body')).not.toContainText('PLACEHOLDER');
+  // Rendered sentences keep their spaces (innerText separates blocks with newlines).
+  await expect(main).not.toContainText(/[.!?][A-Z]/, { useInnerText: true });
   await expect(
     main.getByRole('link', { name: 'contact form' }),
   ).toHaveAttribute('href', '/contact/');
+  const emailLinks = main.getByRole('link', { name: siteConfig.email });
+  await expect(emailLinks).toHaveCount(2);
+  await expect(emailLinks.first()).toHaveAttribute(
+    'href',
+    `mailto:${siteConfig.email}`,
+  );
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await expect(
     main.getByRole('heading', { name: 'What would you like to get done?' }),

@@ -28,11 +28,22 @@ says not to include sensitive or confidential information. No payment, account o
 4. No sale or sharing for advertising. HubSpot is used only as the enquiry inbox/CRM and for bookings: no HubSpot tracking script,
    newsletter or ad pixel on the site.
 5. Transfers: Cloudflare and HubSpot process outside India/EU. The notice must say so and name the safeguard
-   (standard contractual clauses / provider DPAs). [[PLACEHOLDER: owner confirms HubSpot DPA and SCCs are accepted in the portal]]
+   (standard contractual clauses / provider DPAs). The notice states only what the providers publish ([HubSpot DPA](https://legal.hubspot.com/dpa), last modified 2026-09-16; [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/), v6.4, 2026-04-03). Neither page says it applies to free accounts without acceptance, so the owner confirms it in each account (Owner checklist #164).
+
+## Defaults in the public notice (#198)
+Recommended, pending owner approval at Gate 3 (listed in `docs/releases/v1.0.0.md`). The notice (`src/content/privacy.ts`) says:
+- **Operator:** the brand from `site.config.ts`, based in Telangana, India; contact by the `email` in `site.config.ts` or the contact
+  form. No street address and no registration number (not registered yet).
+- **Purpose:** only to answer the enquiry and arrange the work asked about; no marketing or newsletters; never sold or shared for advertising.
+- **Retention:** enquiries kept up to **24 months after the last contact**, then deleted; sooner on request.
+- **Rights:** email to see, correct or delete; reply within 30 days.
+- **Technical data:** honeypot and timing check (not stored), per-IP rate limit at the Worker (5 per minute, IP used only for that
+  check), Worker observability off (`wrangler.toml`), Cloudflare's own edge logs.
+- **Recipients:** HubSpot (CRM, US data centre) and Cloudflare (hosting, form handler), with the DPA wording described in "Where it goes" 5.
 
 ## Retention
-Proposed (owner to confirm):
-- Enquiries: keep while the conversation is active, then delete **12 months after the last contact** if no engagement began. If a
+Recommended, pending owner approval at Gate 3 (#198; supersedes the earlier 12-month proposal):
+- Enquiries: keep up to **24 months after the last contact**, then delete; sooner on request. If a
   client engagement starts, the data moves into the contract records under their own retention rules.
 - Worker and server logs: metadata only (request id, status, reason code), no contact values, retained per platform defaults and no
   longer than 30 days where configurable.
@@ -78,11 +89,11 @@ Proposed (owner to confirm):
 
 ## Open questions for the owner
 1. **PRD Q4:** which channel receives enquiries (and which provider will therefore hold the data)? Also the promised response time shown to visitors.
-2. **PRD Q9:** legal entity name and registered address for the notice (data fiduciary / controller identity). `[[PLACEHOLDER: legal entity]]`
-3. **PRD Q8:** grievance/privacy contact email or form. `[[PLACEHOLDER: privacy contact]]` The domain email is not live; a temporary contact path is needed because DPDP requires a grievance contact.
+2. **PRD Q9:** operator identity. Recommended, pending owner approval at Gate 3 (#198): brand from config, Telangana, India; no address or registration number until registered.
+3. **PRD Q8:** grievance/privacy contact. Recommended, pending owner approval at Gate 3 (#198): the public `email` in `site.config.ts`, plus the contact form.
 4. ~~**PRD Q10:** is cookieless analytics acceptable, and which tool?~~ Answered: Cloudflare Web Analytics (#164, enabled in #169).
 5. **PRD Q3:** target regions. If EU/UK visitors are targeted, GDPR applies fully (including a possible EU representative for larger scale; unlikely at this size).
-6. Do you accept the retention proposal (12 months after last contact)?
+6. Retention: recommended 24 months after last contact, sooner on request (#198), pending owner approval at Gate 3.
 7. Who answers deletion requests, and how quickly can they act?
 8. Can a qualified person review the final notice before Gate 3?
 

@@ -37,7 +37,7 @@ test('process, working models, FAQ and unresolved facts follow the copy deck', a
     ...copy.faq.items.map((item) => item.body),
   ])
     await expect(main).toContainText(text);
-  await expect(main).not.toContainText(/PLACEHOLDER: Q20/);
+  await expect(main).not.toContainText('PLACEHOLDER');
   await expect(main.locator('#how-pricing + p')).toContainText(
     'Every project is quoted after a free first call.',
   );

@@ -28,7 +28,7 @@ export const howWeWork = {
   },
   support: {
     heading: 'If you need an expert',
-    body: 'Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements]].',
+    body: 'Tell us about the technical work you need help with. We discuss the request with you and agree the session details and price before it starts. Once you book, we confirm the expert, the time and the format (a video call) by email.',
   },
   models: {
     heading: 'Choose how to work together',
