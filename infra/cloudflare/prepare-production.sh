@@ -25,6 +25,9 @@ mkdir -p "$out"
 cp -r "$src"/. "$out"/
 rm -f "$out/SHA256SUMS"
 
+# Forms post to the production `enquiry` Worker (no-op when ENQUIRY_WORKER_ORIGIN is unset).
+"$(dirname "${BASH_SOURCE[0]}")/set-enquiry-origin.sh" "$out" "${ENQUIRY_WORKER_ORIGIN:-}"
+
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # The CSP allows the analytics origins only when this artifact loads analytics (site.config.ts token).
 analytics=()
