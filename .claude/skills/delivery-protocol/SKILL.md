@@ -55,9 +55,12 @@ synced `main` and set the issue to `status:in-progress`. Do not change status la
 2. Read what failed:
    - Reviews: `gh pr view <PR> --json reviews --jq '.reviews[-6:][] | .body'`
    - CI: `gh pr checks <PR>`, then `gh run view <run-id> --log-failed | tail -n 150`
-3. Fix every BLOCKER and MAJOR. Fix MINORs when cheap. If you disagree with a finding, reply once
-   in a PR comment with a concrete technical reason instead of changing the code.
-4. Verify (steps 4 and 5 above — including your role's self-check), commit with the trailer, `git push`.
+3. Fix every BLOCKER and MAJOR from **every** reviewer whose latest verdict is "changes", not only
+   the newest review, plus any failing check. Fix MINORs when cheap. If you disagree with a finding,
+   reply once in a PR comment with a concrete technical reason instead of changing the code.
+4. Verify (steps 4 and 5 above — including your role's self-check), commit with the trailer, and
+   `git push` **once** for the whole round. Every push asks reviewers again, so one push per round
+   keeps review panels small (retro 3, #188).
 5. `gh pr comment <PR> --body "Addressed: <bullets of what changed> — <ROLE>"`. Stop.
 
 ## Never
