@@ -10,21 +10,20 @@ const Heading = inline ? 'h2' : 'h1';
 ---
 
 <div class="result-panel">
-  <Heading tabindex={inline ? '-1' : undefined} data-result-heading
-    >{title}</Heading
-  >
-  <p>{body}</p><slot />
-  {
-    actions.length > 0 && (
-      <div class="actions">
-        {actions.map((action) => (
-          <a class="standalone" href={action.href}>
-            {action.label}
-          </a>
-        ))}
-      </div>
-    )
-  }
+  <Heading tabindex={inline ? '-1' : undefined} data-result-heading>
+    {title}
+  </Heading>
+  <p>{body}</p>
+  <slot />
+  {actions.length > 0 && (
+    <div class="actions">
+      {actions.map((action) => (
+        <a class="standalone" href={action.href}>
+          {action.label}
+        </a>
+      ))}
+    </div>
+  )}
 </div>
 
 <style>

@@ -30,14 +30,12 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
     <h1>{copy.heading}</h1>
     <p class="lead">{copy.lede}</p>
     <nav class="cta-row" aria-label={copy.jumpLabel}>
-      {
-        services.map(({ key, slug, label }) => (
-          <a class="pill pill--secondary jump" href={`#${slug}`}>
-            <ServiceToken service={key} size="sm" />
-            <span>{label}</span>
-          </a>
-        ))
-      }
+      {services.map(({ key, slug, label }) => (
+        <a class="pill pill--secondary jump" href={`#${slug}`}>
+          <ServiceToken service={key} size="sm" />
+          <span>{label}</span>
+        </a>
+      ))}
     </nav>
   </div>
 
@@ -51,47 +49,45 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
   </div>
 
   <div class="container section">
-    {
-      services.map((service) => (
-        <section
-          class="service"
-          id={service.slug}
-          aria-labelledby={`${service.slug}-title`}
-        >
-          <div class="service-copy">
-            <ServiceToken service={service.key} size="lg" />
-            <h2 id={`${service.slug}-title`}>{service.label}</h2>
-            <p class="lead">{service.summary}</p>
-            <h3>{copy.labels.what}</h3>
-            <p>{service.overview.what}</p>
-            <h3>{copy.labels.how}</h3>
-            <p>{service.overview.how}</p>
-            <h3>{copy.labels.who}</h3>
-            <p>{service.audience}</p>
-            <div class="service-cta">
-              <a
-                class="pill pill--primary"
-                href={service.cta.href}
-                {...newTabAttrs(service.cta)}
-              >
-                {service.cta.label}
-                {service.cta.newTab && (
-                  <span class="visually-hidden"> ({newTabHint})</span>
-                )}
-              </a>
-              <a class="pill pill--secondary" href={service.href}>
-                {service.linkLabel}
-              </a>
-            </div>
+    {services.map((service) => (
+      <section
+        class="service"
+        id={service.slug}
+        aria-labelledby={`${service.slug}-title`}
+      >
+        <div class="service-copy">
+          <ServiceToken service={service.key} size="lg" />
+          <h2 id={`${service.slug}-title`}>{service.label}</h2>
+          <p class="lead">{service.summary}</p>
+          <h3>{copy.labels.what}</h3>
+          <p>{service.overview.what}</p>
+          <h3>{copy.labels.how}</h3>
+          <p>{service.overview.how}</p>
+          <h3>{copy.labels.who}</h3>
+          <p>{service.audience}</p>
+          <div class="service-cta">
+            <a
+              class="pill pill--primary"
+              href={service.cta.href}
+              {...newTabAttrs(service.cta)}
+            >
+              {service.cta.label}
+              {service.cta.newTab && (
+                <span class="visually-hidden"> ({newTabHint})</span>
+              )}
+            </a>
+            <a class="pill pill--secondary" href={service.href}>
+              {service.linkLabel}
+            </a>
           </div>
-          <div class="stage">
-            {service.thumbs.slice(0, 2).map((id) => (
-              <ExampleScreen {id} sizes={thumbSizes} lift />
-            ))}
-          </div>
-        </section>
-      ))
-    }
+        </div>
+        <div class="stage">
+          {service.thumbs.slice(0, 2).map((id) => (
+            <ExampleScreen {id} sizes={thumbSizes} lift />
+          ))}
+        </div>
+      </section>
+    ))}
 
     <section class="help" aria-labelledby="help-title">
       <div>
@@ -104,11 +100,9 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
         {...newTabAttrs(primaryCta)}
       >
         {primaryCta.label}
-        {
-          primaryCta.newTab && (
-            <span class="visually-hidden"> ({newTabHint})</span>
-          )
-        }
+        {primaryCta.newTab && (
+          <span class="visually-hidden"> ({newTabHint})</span>
+        )}
       </a>
     </section>
   </div>

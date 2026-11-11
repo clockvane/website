@@ -14,15 +14,16 @@ const { content = closingCta, cta = primaryCta } = Astro.props;
 <section class="band-wrap">
   <div class="band">
     <div class="tokens">
-      {services.map(({ key }) => <ServiceToken service={key} size="closing" />)}
+      {services.map(({ key }) => (
+        <ServiceToken service={key} size="closing" />
+      ))}
     </div>
     <h2>{content.heading}</h2>
     <p class="lead">{content.body}</p>
-    <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}
-      >{cta.label}{
-        cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>
-      }</a
-    >
+    <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}>
+      {cta.label}
+      {cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>}
+    </a>
   </div>
 </section>
 

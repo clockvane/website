@@ -23,19 +23,21 @@ const sizes =
 ---
 
 <div class="toolbar container">
-  <p class="note" id={noteId}>{marqueeCopy.note}</p>
+  <p class="note" id={noteId}>
+    {marqueeCopy.note}
+  </p>
   <button
     class="pill pill--secondary pill--small"
     type="button"
     data-pause
     data-pause-label={marqueeCopy.pause}
     data-resume-label={marqueeCopy.resume}
-    hidden>{marqueeCopy.pause}</button
+    hidden
   >
+    {marqueeCopy.pause}
+  </button>
 </div>
-{
-  /* eslint-disable astro/jsx-a11y/no-noninteractive-tabindex -- the stopped layout scrolls, so keyboard users must be able to focus it (components.md) */
-}
+{/* eslint-disable astro/jsx-a11y/no-noninteractive-tabindex -- the stopped layout scrolls, so keyboard users must be able to focus it (components.md) */}
 <div
   class:list={['stage', `stage--${variant}`]}
   data-marquee
@@ -46,19 +48,17 @@ const sizes =
 >
   {/* eslint-enable astro/jsx-a11y/no-noninteractive-tabindex */}
   <div class="tracks">
-    {
-      tracks.map((ids, index) => (
-        <div class={`col col-${index + 1}`}>
-          <div class="track">
-            <div class="group">
-              {ids.map((shot) => (
-                <ExampleScreen id={shot} {sizes} />
-              ))}
-            </div>
+    {tracks.map((ids, index) => (
+      <div class={`col col-${index + 1}`}>
+        <div class="track">
+          <div class="group">
+            {ids.map((shot) => (
+              <ExampleScreen id={shot} {sizes} />
+            ))}
           </div>
         </div>
-      ))
-    }
+      </div>
+    ))}
   </div>
 </div>
 

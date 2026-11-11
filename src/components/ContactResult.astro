@@ -11,29 +11,27 @@ const NextHeading = inline ? 'h3' : 'h2';
 const result = copy[kind];
 ---
 
-{
-  kind === 'thanks' ? (
-    <ResultPanel
-      title={result.heading}
-      body={result.body}
-      {inline}
-      actions={[
-        { label: copy.how, href: '/how-we-work/' },
-        { label: copy.home, href: '/' },
-      ]}
-    >
-      <NextHeading class="next">{copy.next}</NextHeading>
-      <p>{copy.thanks.nextBody}</p>
-    </ResultPanel>
-  ) : (
-    <ResultPanel title={result.heading} body={result.body} {inline}>
-      <ContactFallback />
-      <a class="pill pill--primary back" href="/contact/">
-        {copy.back}
-      </a>
-    </ResultPanel>
-  )
-}
+{kind === 'thanks' ? (
+  <ResultPanel
+    title={result.heading}
+    body={result.body}
+    {inline}
+    actions={[
+      { label: copy.how, href: '/how-we-work/' },
+      { label: copy.home, href: '/' },
+    ]}
+  >
+    <NextHeading class="next">{copy.next}</NextHeading>
+    <p>{copy.thanks.nextBody}</p>
+  </ResultPanel>
+) : (
+  <ResultPanel title={result.heading} body={result.body} {inline}>
+    <ContactFallback />
+    <a class="pill pill--primary back" href="/contact/">
+      {copy.back}
+    </a>
+  </ResultPanel>
+)}
 
 <style>
   .next,
