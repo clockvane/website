@@ -79,8 +79,12 @@ describe('About and How we work', () => {
     );
   });
 
-  it('keep the deck placeholder for unanswered Q19', () => {
-    expect(howWeWork.support.body).toContain('[[PLACEHOLDER: Q19');
+  it('render no placeholders and state the Q19 default (#198)', () => {
+    const text = copyStrings(howWeWork).join(' ');
+    expect(text).not.toContain('PLACEHOLDER');
+    expect(howWeWork.support.body).toContain(
+      'we confirm the expert, the time and the format (a video call) by email',
+    );
   });
 
   it('show no price amounts or old package timelines', () => {
