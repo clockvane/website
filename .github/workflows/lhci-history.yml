@@ -1,0 +1,123 @@
+name: lhci-history
+
+# Weekly Lighthouse run against PRODUCTION only (docs/devops/cicd.md, Observability).
+# Scores are appended to metrics/lighthouse.json on the `lhci-history` branch; an issue is opened
+# when any score is under 95. While production is not live (variable unset or no response) the
+# run skips cleanly. No secrets and no environment: the default token writes the branch and issues.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: lhci-history
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  record:
+    name: record
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+    env:
+      PORT: '4413'
+      GH_TOKEN: ${{ github.token }}
+      CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+    steps:
+      - name: Find production
+        id: prod
+        run: |
+          if [ -z "$CF_PAGES_PROJECT" ]; then
+            echo "Variable CF_PAGES_PROJECT is not set: production is not live, skipping."
+            echo "live=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          url="https://${CF_PAGES_PROJECT}.pages.dev"
+          if curl -fsS -o /dev/null --max-time 20 --retry 2 "$url/"; then
+            echo "live=true" >> "$GITHUB_OUTPUT"
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+          else
+            echo "No successful response from $url/: production is not live, skipping."
+            echo "live=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.prod.outputs.live == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.prod.outputs.live == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --ignore-scripts
+        if: steps.prod.outputs.live == 'true'
+      - name: Lighthouse CI against production
+        id: lhci
+        if: steps.prod.outputs.live == 'true'
+        continue-on-error: true
+        env:
+          BASE_URL: ${{ steps.prod.outputs.url }}
+        run: npm run test:lighthouse
+      - name: Check out history branch
+        if: steps.prod.outputs.live == 'true'
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          git init -q history
+          cd history
+          git remote add origin "https://github.com/${REPO}.git"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          if git ls-remote --exit-code --heads origin lhci-history > /dev/null; then
+            git fetch -q --depth 1 origin lhci-history
+            git switch -q -c lhci-history FETCH_HEAD
+          else
+            git switch -q --orphan lhci-history
+          fi
+      - name: Record scores
+        if: steps.prod.outputs.live == 'true'
+        env:
+          PROD_URL: ${{ steps.prod.outputs.url }}
+          SHA: ${{ github.sha }}
+        run: |
+          node infra/release/lhci-record.ts \
+            --manifest .lighthouseci/manifest.json \
+            --history history/metrics/lighthouse.json \
+            --url "$PROD_URL" --sha "$SHA" --date "$(date -u +%F)" \
+            --failures "$RUNNER_TEMP/failures.md"
+          cd history
+          git add metrics/lighthouse.json
+          git commit -q -m "chore: record Lighthouse scores $(date -u +%F)" -m "Agent-Role: devops-engineer"
+          git push -q origin lhci-history
+      - name: Open issue when a score is under 95
+        if: steps.prod.outputs.live == 'true' && always()
+        env:
+          PROD_URL: ${{ steps.prod.outputs.url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LHCI_OUTCOME: ${{ steps.lhci.outcome }}
+        run: |
+          failures="$RUNNER_TEMP/failures.md"
+          [ -s "$failures" ] || [ "$LHCI_OUTCOME" = "failure" ] || exit 0
+          title="Lighthouse: production scores under 95"
+          {
+            echo "The weekly Lighthouse run against $PROD_URL found scores under 95 or a failed budget."
+            echo
+            [ -s "$failures" ] && cat "$failures"
+            echo
+            echo "Run: $RUN_URL"
+            echo "History: branch \`lhci-history\`, \`metrics/lighthouse.json\`."
+          } > "$RUNNER_TEMP/body.md"
+          existing="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh issue create --title "$title" --body-file "$RUNNER_TEMP/body.md" --label "type:bug"
+          fi
