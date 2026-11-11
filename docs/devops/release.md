@@ -52,18 +52,18 @@ they become the entries. Each release also gets GitHub Release notes with the sa
 - Environment secrets as listed in cicd.md.
 
 ## First go-live (`v1.0.0`)
-The current candidate is recorded in [`docs/releases/v0.1.0.md`](../releases/v0.1.0.md). Its open items O-1 to O-7 come first.
+The candidate is recorded in [`docs/releases/v1.0.0.md`](../releases/v1.0.0.md) (renamed from `v0.1.0.md` in #190; no
+`v0.1.0` tag is pushed). Its open items come first.
 Steps marked **needs-human** are for the owner only. Agents never create accounts, add secrets or change rulesets.
 
 **Before Gate 3**
-1. **needs-human: Required checks.** Once O-3 is merged, go to Settings → Rules → the `main` ruleset → Require status
-   checks. Add `e2e-a11y` and `html-links` next to `lint`, `typecheck`, `unit`, `build`, `lighthouse`, using the exact job names.
-2. **needs-human: Enquiry destination** (after the PRD Q4 channel is final). Create the WhatsApp or Telegram webhook and the
-   Google Sheet backup. Then go to Cloudflare → Workers & Pages → the enquiry Worker → Settings → Variables and Secrets →
-   **Add secret**, once for each `ENQUIRY_*` name that the Worker ticket lists. Paste the values only there, never in an issue
-   or PR. Then send one test enquiry on staging.
-3. The agents close O-1 to O-7, and QA and security sign off on staging. The EM then opens the `gate:3` PR. It renames the
-   checklist to `v1.0.0.md` and includes the release PR (version and changelog).
+1. Required checks: no owner step. The scheduler merges only when every CI check passes, so new CI jobs are enforced
+   as soon as they exist.
+2. **needs-human: Enquiry destination.** The steps (HubSpot form, Worker secrets, `ENQUIRY_WORKER_ORIGIN`,
+   `ENQUIRY_STAGING_WORKER_ORIGIN`) are in the `Owner checklist` issue (#164). Paste secret values only in Cloudflare or
+   GitHub, never in an issue or PR. Then QA sends one test enquiry on staging.
+3. The agents close the open items, and QA and security sign off on staging. The EM then opens the `gate:3` PR with the
+   checklist and the release PR (version and changelog).
 
 **Production deploy**
 4. **needs-human:** merge the `gate:3` PR. The release automation pushes tag `v1.0.0` on that commit.
