@@ -1,10 +1,5 @@
 import { siteConfig } from '../../site.config';
-import { publicDetails } from '../lib/config/public-details';
 import { allServices } from './navigation';
-
-const github = publicDetails(siteConfig).socials.find(
-  ({ label }) => label === 'github',
-);
 
 /** Verbatim copy deck v3 §5. Editorial notes in the deck are not page copy. */
 export const aboutCopy = {
@@ -25,10 +20,5 @@ export const aboutCopy = {
   proof: {
     heading: 'See how we work',
     body: 'This website is built through written requirements, reviews and tests. Its repository records the process.',
-    // Unconfigured links stay hidden (deck §5); the marker stays until Q8 is answered.
-    links: github
-      ? [{ label: 'Explore our public repositories', href: github.href }]
-      : [],
-    linksPlaceholder: '[[PLACEHOLDER: Q8 approved public URLs]].',
   },
 };

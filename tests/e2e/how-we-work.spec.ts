@@ -32,12 +32,15 @@ test('process, working models, FAQ and unresolved facts follow the copy deck', a
   for (const text of [
     copy.lede,
     copy.support.body,
-    copy.models.placeholder,
     copy.pricing.body,
     copy.handover.body,
     ...copy.faq.items.map((item) => item.body),
   ])
     await expect(main).toContainText(text);
+  await expect(main).not.toContainText(/PLACEHOLDER: Q20/);
+  await expect(main.locator('#how-pricing + p')).toContainText(
+    'Every project is quoted after a free first call.',
+  );
   await expect(main.locator('.band-wrap')).toHaveCount(1);
   await expect(
     main.getByRole('link', { name: siteConfig.primaryCta.label }),

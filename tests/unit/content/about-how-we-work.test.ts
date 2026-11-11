@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { siteConfig } from '../../../site.config';
-import { publicDetails } from '../../../src/lib/config/public-details';
 import { aboutCopy } from '../../../src/content/about';
 import { howWeWork } from '../../../src/content/how-we-work';
 
@@ -67,21 +66,21 @@ describe('About and How we work', () => {
     );
   });
 
-  it('shows the public repositories link if and only if GitHub is configured', () => {
-    const github = publicDetails(siteConfig).socials.find(
-      ({ label }) => label === 'github',
-    );
-    expect(aboutCopy.proof.links).toEqual(
-      github
-        ? [{ label: 'Explore our public repositories', href: github.href }]
-        : [],
-    );
-    expect(aboutCopy.proof.linksPlaceholder).toMatch(/^\[\[PLACEHOLDER: Q8/);
+  it('show no public links and no placeholders for answered Q5, Q8 and Q20', () => {
+    const text = [aboutCopy, howWeWork].flatMap(copyStrings).join(' ');
+    expect(text).not.toMatch(/PLACEHOLDER: (Q5|Q8|Q20)\b/);
+    expect(text).not.toMatch(/github|medium|public repositories|articles/i);
+    expect(aboutCopy.proof).not.toHaveProperty('links');
   });
 
-  it('keep the deck placeholders for unanswered questions', () => {
+  it('state quote-per-project pricing after a free first call', () => {
+    expect(howWeWork.pricing.body).toContain(
+      'Every project is quoted after a free first call.',
+    );
+  });
+
+  it('keep the deck placeholder for unanswered Q19', () => {
     expect(howWeWork.support.body).toContain('[[PLACEHOLDER: Q19');
-    expect(howWeWork.models.placeholder).toContain('[[PLACEHOLDER: Q20');
   });
 
   it('show no price amounts or old package timelines', () => {
