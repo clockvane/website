@@ -4,9 +4,23 @@ import { workerSecurityHeaders } from '../../headers/render.ts';
 import { deliverToHubSpot, type HubSpotEnv } from './hubspot.ts';
 
 interface Bindings extends HubSpotEnv {
+  /** `staging` on the enquiry-staging Worker (wrangler.toml [env.staging.vars]); unset in production. */
+  SITE_ENV?: string;
   ENQUIRY_RATE_LIMIT?: {
     limit: (options: { key: string }) => Promise<{ success: boolean }>;
   };
+}
+
+/**
+ * The one site origin this Worker serves: production accepts only the configured site, the
+ * staging Worker only the Pages `staging` branch alias of that same domain. Derived from
+ * site.config.ts (rule 5) and never read from the request, so CORS and the no-JS redirects
+ * stay fixed per environment.
+ */
+export function allowedOrigin(env: Pick<Bindings, 'SITE_ENV'>): string {
+  if (env.SITE_ENV?.trim() !== 'staging') return siteOrigin;
+  const site = new URL(siteOrigin);
+  return `${site.protocol}//staging.${site.host}`;
 }
 
 export async function workerFetch(
@@ -14,11 +28,12 @@ export async function workerFetch(
   env: Bindings,
   fetcher: typeof fetch = fetch,
 ): Promise<Response> {
+  const site = allowedOrigin(env);
   const origin = request.headers.get('origin');
   const headers = new Headers(workerSecurityHeaders);
   headers.set('Vary', 'Origin');
-  if (origin === siteOrigin) {
-    headers.set('Access-Control-Allow-Origin', siteOrigin);
+  if (origin === site) {
+    headers.set('Access-Control-Allow-Origin', site);
     headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Content-Type');
   }
@@ -29,11 +44,11 @@ export async function workerFetch(
   else if (path !== '/enquiry') response = new Response(null, { status: 404 });
   else if (request.method === 'OPTIONS')
     response = new Response(null, {
-      status: origin === siteOrigin ? 204 : 403,
+      status: origin === site ? 204 : 403,
     });
   else
     response = await handleEnquiry(request, {
-      siteOrigin,
+      siteOrigin: site,
       allowRequest: async () => {
         const ip = request.headers.get('CF-Connecting-IP');
         return Boolean(
@@ -47,7 +62,7 @@ export async function workerFetch(
         const result = await deliverToHubSpot(
           enquiry,
           env,
-          new URL('/contact/', siteOrigin).href,
+          new URL('/contact/', site).href,
           fetcher,
         );
         return result === 'unconfigured' ? result : result === 'ok';

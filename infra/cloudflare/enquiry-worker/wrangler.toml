@@ -16,6 +16,10 @@ enabled = false
 [env.staging]
 name = "enquiry-staging"
 
+# Accept the staging site (the Pages `staging` alias of the configured domain), see index.ts allowedOrigin.
+[env.staging.vars]
+SITE_ENV = "staging"
+
 [[env.staging.ratelimits]]
 name = "ENQUIRY_RATE_LIMIT"
 namespace_id = "1002"

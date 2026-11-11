@@ -4,8 +4,19 @@ import { siteConfig } from '../../site.config';
 import { handleEnquiry } from '../../src/lib/contact/handler';
 import { csp } from '../../infra/headers/render';
 
+// The deployed form posts to whichever endpoint the deploy wrote into the page (the config's
+// placeholder locally, the enquiry-staging Worker on staging), so mock any `/enquiry` URL
+// instead of the config value; otherwise staging runs would hit the real Worker.
+const ENQUIRY = '**/enquiry';
+
+/** The origin the page's form actually posts to (read from the served HTML). */
+function formOrigin(html: string): string {
+  const action = /<form\b[^>]*\saction="([^"]+)"/i.exec(html)?.[1];
+  return new URL(action ?? siteConfig.contact.endpoint).origin;
+}
+
 async function endpoint(page: Page, status = 200) {
-  await page.route(siteConfig.contact.endpoint, async (route) => {
+  await page.route(ENQUIRY, async (route) => {
     const incoming = route.request();
     const origin = new URL(page.url()).origin;
     const response = await handleEnquiry(
@@ -70,7 +81,7 @@ test('service choice is validated, linked from the summary and sent', async ({
   page,
 }) => {
   let posted = '';
-  await page.route(siteConfig.contact.endpoint, async (route) => {
+  await page.route(ENQUIRY, async (route) => {
     posted = route.request().postData() ?? '';
     await route.fulfill({
       json: { ok: true },
@@ -121,13 +132,13 @@ test('success replaces form and moves focus under the strict CSP', async ({
   });
   await page.route('**/contact/', async (route) => {
     const response = await route.fetch();
+    const body = await response.text();
     await route.fulfill({
       response,
+      body,
       headers: {
         ...response.headers(),
-        'Content-Security-Policy': csp(
-          new URL(siteConfig.contact.endpoint).origin,
-        ),
+        'Content-Security-Policy': csp(formOrigin(body)),
       },
     });
   });
@@ -218,7 +229,7 @@ for (const status of [502, 429])
   });
 
 test('network failure retains text and restores controls', async ({ page }) => {
-  await page.route(siteConfig.contact.endpoint, (route) => route.abort());
+  await page.route(ENQUIRY, (route) => route.abort());
   await page.goto('/contact/');
   await fill(page);
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
@@ -235,7 +246,7 @@ test('sending locks fields, announces status and prevents duplicate requests', a
   const pending = new Promise<void>((resolve) => {
     release = resolve;
   });
-  await page.route(siteConfig.contact.endpoint, async (route) => {
+  await page.route(ENQUIRY, async (route) => {
     submissions++;
     await pending;
     await route.fulfill({
@@ -263,7 +274,7 @@ test('sending locks fields, announces status and prevents duplicate requests', a
 test('server field errors are linked and focused even after client validation passed', async ({
   page,
 }) => {
-  await page.route(siteConfig.contact.endpoint, (route) =>
+  await page.route(ENQUIRY, (route) =>
     route.fulfill({
       status: 400,
       json: {

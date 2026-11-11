@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { workerFetch } from '../../../infra/cloudflare/enquiry-worker';
+import {
+  allowedOrigin,
+  workerFetch,
+} from '../../../infra/cloudflare/enquiry-worker';
 import { siteOrigin } from '../../../site.config';
 
 describe('Worker boundary', () => {
@@ -33,6 +36,26 @@ describe('Worker boundary', () => {
         response.headers.get('access-control-allow-credentials'),
       ).toBeNull();
     }
+  });
+  it('the staging Worker serves only the staging site, production only the live site', async () => {
+    const staging = `https://staging.${new URL(siteOrigin).host}`;
+    expect(allowedOrigin({ SITE_ENV: 'staging' })).toBe(staging);
+    expect(allowedOrigin({})).toBe(siteOrigin);
+    const preflight = (origin: string, env: { SITE_ENV?: string }) =>
+      workerFetch(
+        new Request('https://worker.example.test/enquiry', {
+          method: 'OPTIONS',
+          headers: { Origin: origin },
+        }),
+        env,
+      );
+    const ok = await preflight(staging, { SITE_ENV: 'staging' });
+    expect(ok.status).toBe(204);
+    expect(ok.headers.get('access-control-allow-origin')).toBe(staging);
+    expect((await preflight(siteOrigin, { SITE_ENV: 'staging' })).status).toBe(
+      403,
+    );
+    expect((await preflight(staging, {})).status).toBe(403);
   });
   it('uses the edge IP limiter and answers 503 without delivery secrets', async () => {
     const limit = vi.fn(async () => ({ success: true }));
