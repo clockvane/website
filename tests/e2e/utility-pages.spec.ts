@@ -26,6 +26,8 @@ test('privacy renders the approved copy with no placeholders', async ({
     );
   }
   await expect(page.locator('body')).not.toContainText('PLACEHOLDER');
+  // Rendered sentences keep their spaces (innerText separates blocks with newlines).
+  await expect(main).not.toContainText(/[.!?][A-Z]/, { useInnerText: true });
   await expect(
     main.getByRole('link', { name: 'contact form' }),
   ).toHaveAttribute('href', '/contact/');

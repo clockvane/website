@@ -44,7 +44,7 @@ export const privacyCopy: {
       heading: 'What we collect',
       body: [
         'When you enquire, we collect your name, how to reply to you (an email address or phone number), the service you choose and your message. ',
-        'To block spam, the form has a hidden field that people leave empty and checks that it was not sent too quickly. We do not store the results of these checks.',
+        'To block spam, the form has a hidden field that people leave empty and checks that it was not sent too quickly. We do not store the results of these checks. ',
         'Our form handler also limits how many messages can come from one IP address each minute. It uses your IP address only for that check, and logging is switched off for the handler, so we keep no record of your request. ',
         'Cloudflare, which hosts this site and runs the form handler, keeps its own technical logs of requests, such as IP addresses, to deliver pages and protect its network.',
       ],
