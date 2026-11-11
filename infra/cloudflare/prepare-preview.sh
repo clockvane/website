@@ -23,6 +23,9 @@ mkdir -p "$out"
 cp -r "$src"/. "$out"/
 rm -f "$out/SHA256SUMS"
 
+# Forms post to this environment's Worker (no-op when ENQUIRY_WORKER_ORIGIN is unset, e.g. previews).
+"$(dirname "${BASH_SOURCE[0]}")/set-enquiry-origin.sh" "$out" "${ENQUIRY_WORKER_ORIGIN:-}"
+
 # Previews are never indexed (NFR-SEO-2): header and robots.txt, in the deployed copy only.
 printf 'User-agent: *\nDisallow: /\n' > "$out/robots.txt"
 

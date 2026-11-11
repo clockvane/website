@@ -86,6 +86,9 @@ jobs:
       # Staging is not indexed either (NFR-SEO-2): same adapter as previews.
       - name: Verify artifact; add staging-only files and headers (CSP allows the configured enquiry origin)
         env:
+          # Staging Worker origin (environment variable): rewrites the form action and sets the CSP.
+          # Unset: the baked contact.endpoint is kept (CSP from the config).
+          ENQUIRY_WORKER_ORIGIN: ${{ vars.ENQUIRY_STAGING_WORKER_ORIGIN }}
           PREPARE_ENQUIRY_FROM_CONFIG: "1"
         run: infra/cloudflare/prepare-preview.sh "$RUNNER_TEMP/artifact" "$RUNNER_TEMP/staging"
 
