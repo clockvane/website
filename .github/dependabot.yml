@@ -1,0 +1,27 @@
+# Dependency automation (docs/devops/cicd.md, Dependencies). Weekly, minor and patch updates
+# grouped into one PR per ecosystem. Security updates are raised immediately and are not
+# subject to the schedule. Major upgrades arrive as separate PRs outside the groups and
+# get their own ticket; they are not ignored, so a security fix in a major is never hidden.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci(deps)'
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
