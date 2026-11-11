@@ -53,20 +53,22 @@ const canonical = new URL(currentPath, siteOrigin).href;
       type="font/woff2"
       crossorigin
     />
-    {
-      structuredData && (
-        <script
-          is:inline
-          type="application/ld+json"
-          set:html={serializeJsonLd(structuredData)}
-        />
-      )
-    }
+    {structuredData && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={serializeJsonLd(structuredData)}
+      />
+    )}
   </head>
   <body data-analytics-token={analyticsToken}>
-    <a class="skip standalone" href="#main">Skip to main content</a>
+    <a class="skip standalone" href="#main">
+      Skip to main content
+    </a>
     <SiteHeader {currentPath} />
-    <main id="main" tabindex="-1"><slot /></main>
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
     <SiteFooter {currentPath} />
     <MotionScript />
     {analyticsToken && <AnalyticsScript />}

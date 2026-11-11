@@ -17,24 +17,22 @@ const details = publicDetails(siteConfig);
       <a
         class="wordmark standalone"
         href="/"
-        aria-label={`${siteConfig.brand} home`}>{siteConfig.brand}</a
+        aria-label={`${siteConfig.brand} home`}
       >
+        {siteConfig.brand}
+      </a>
       <p>{siteConfig.tagline}</p>
       <p>{footerLine}</p>
-      {
-        details.email && (
-          <a class="standalone" href={`mailto:${details.email}`}>
-            {details.email}
-          </a>
-        )
-      }
-      {
-        details.phone && (
-          <a class="standalone" href={`tel:${details.phone}`}>
-            {details.phone}
-          </a>
-        )
-      }
+      {details.email && (
+        <a class="standalone" href={`mailto:${details.email}`}>
+          {details.email}
+        </a>
+      )}
+      {details.phone && (
+        <a class="standalone" href={`tel:${details.phone}`}>
+          {details.phone}
+        </a>
+      )}
     </div>
     <nav aria-labelledby="footer-services">
       <h2 id="footer-services">Services</h2>
@@ -53,21 +51,21 @@ const details = publicDetails(siteConfig);
     </nav>
   </div>
   <div class="container footer-base">
-    <p>© {new Date().getUTCFullYear()} {siteConfig.brand}</p>
+    <p>
+      © {new Date().getUTCFullYear()} {siteConfig.brand}
+    </p>
     <p>{footerLocation}</p>
-    {
-      details.socials.length > 0 && (
-        <nav aria-label="Social links">
-          <NavLinks
-            links={details.socials.map(({ label, href }) => ({
-              label: label === 'github' ? 'GitHub' : 'LinkedIn',
-              href,
-            }))}
-            {currentPath}
-          />
-        </nav>
-      )
-    }
+    {details.socials.length > 0 && (
+      <nav aria-label="Social links">
+        <NavLinks
+          links={details.socials.map(({ label, href }) => ({
+            label: label === 'github' ? 'GitHub' : 'LinkedIn',
+            href,
+          }))}
+          {currentPath}
+        />
+      </nav>
+    )}
   </div>
 </footer>
 

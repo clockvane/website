@@ -16,24 +16,22 @@ interface Props {
 const { heading, stories } = Astro.props;
 ---
 
-{
-  stories.length > 0 && (
-    <section class="stories section" aria-labelledby="stories-heading">
-      <div class="container">
-        <h2 id="stories-heading">{heading}</h2>
-        <ul class="story-grid">
-          {stories.map(({ title, body, placeholder }) => (
-            <li class:list={['story', { 'story--placeholder': placeholder }]}>
-              {placeholder && <p class="tag">Placeholder</p>}
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  )
-}
+{stories.length > 0 && (
+  <section class="stories section" aria-labelledby="stories-heading">
+    <div class="container">
+      <h2 id="stories-heading">{heading}</h2>
+      <ul class="story-grid">
+        {stories.map(({ title, body, placeholder }) => (
+          <li class:list={['story', { 'story--placeholder': placeholder }]}>
+            {placeholder && <p class="tag">Placeholder</p>}
+            <h3>{title}</h3>
+            <p>{body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
 
 <style>
   h2 {

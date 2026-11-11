@@ -12,35 +12,31 @@ const { title, lede, breadcrumbs = [], current = title, action } = Astro.props;
 ---
 
 <header class="page-header measure">
-  {
-    breadcrumbs.length > 0 && (
-      <nav aria-label={sectionLabels.breadcrumb}>
-        <ol>
-          {breadcrumbs.map((item) => (
-            <li>
-              <a class="standalone" href={item.href}>
-                {item.label}
-              </a>
-              <span aria-hidden="true">/</span>
-            </li>
-          ))}
-          <li aria-current="page">{current}</li>
-        </ol>
-      </nav>
-    )
-  }
+  {breadcrumbs.length > 0 && (
+    <nav aria-label={sectionLabels.breadcrumb}>
+      <ol>
+        {breadcrumbs.map((item) => (
+          <li>
+            <a class="standalone" href={item.href}>
+              {item.label}
+            </a>
+            <span aria-hidden="true">/</span>
+          </li>
+        ))}
+        <li aria-current="page">{current}</li>
+      </ol>
+    </nav>
+  )}
   <slot name="before-title" />
   <h1>{title}</h1>
   {lede && <p class="lede">{lede}</p>}
-  {
-    action && (
-      <div class="actions">
-        <a class="pill pill--primary" href={action.href}>
-          {action.label}
-        </a>
-      </div>
-    )
-  }
+  {action && (
+    <div class="actions">
+      <a class="pill pill--primary" href={action.href}>
+        {action.label}
+      </a>
+    </div>
+  )}
 </header>
 
 <style>

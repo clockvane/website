@@ -18,52 +18,48 @@ const thumbSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 30vw, 44vw';
 ---
 
 <div class="tablist" role="tablist" aria-label={label} data-tabs hidden>
-  {
-    tabs.map(({ key, name }, index) => (
-      <button
-        class="tab"
-        type="button"
-        role="tab"
-        id={`tab-${key}`}
-        aria-controls={`panel-${key}`}
-        aria-selected={index === 0}
-        tabindex={index === 0 ? 0 : -1}
-      >
-        <ServiceToken service={key} size="sm" />
-        <span>{name}</span>
-      </button>
-    ))
-  }
+  {tabs.map(({ key, name }, index) => (
+    <button
+      class="tab"
+      type="button"
+      role="tab"
+      id={`tab-${key}`}
+      aria-controls={`panel-${key}`}
+      aria-selected={index === 0}
+      tabindex={index === 0 ? 0 : -1}
+    >
+      <ServiceToken service={key} size="sm" />
+      <span>{name}</span>
+    </button>
+  ))}
 </div>
-{
-  tabs.map(({ key, name, summary, audience, cta, link, thumbs }) => (
-    <section class="panel" id={`panel-${key}`} aria-labelledby={`h-${key}`}>
-      <div class="panel-head">
-        <div>
-          <h3 id={`h-${key}`}>{name}</h3>
-          <p>{summary}</p>
-          <p class="for">
-            <strong>For:</strong> {audience}
-          </p>
-        </div>
-        <div class="panel-cta">
-          <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}>
-            {cta.label}
-            {cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>}
-          </a>
-          <a class="pill pill--secondary" href={link.href}>
-            {link.label}
-          </a>
-        </div>
+{tabs.map(({ key, name, summary, audience, cta, link, thumbs }) => (
+  <section class="panel" id={`panel-${key}`} aria-labelledby={`h-${key}`}>
+    <div class="panel-head">
+      <div>
+        <h3 id={`h-${key}`}>{name}</h3>
+        <p>{summary}</p>
+        <p class="for">
+          <strong>For:</strong> {audience}
+        </p>
       </div>
-      <div class="thumbs">
-        {thumbs.map((id) => (
-          <ExampleScreen {id} sizes={thumbSizes} lift />
-        ))}
+      <div class="panel-cta">
+        <a class="pill pill--primary" href={cta.href} {...newTabAttrs(cta)}>
+          {cta.label}
+          {cta.newTab && <span class="visually-hidden"> ({newTabHint})</span>}
+        </a>
+        <a class="pill pill--secondary" href={link.href}>
+          {link.label}
+        </a>
       </div>
-    </section>
-  ))
-}
+    </div>
+    <div class="thumbs">
+      {thumbs.map((id) => (
+        <ExampleScreen {id} sizes={thumbSizes} lift />
+      ))}
+    </div>
+  </section>
+))}
 
 <style>
   .tablist {

@@ -22,68 +22,61 @@ const current = (href: string) => (currentPath === href ? 'page' : undefined);
       class="wordmark"
       href="/"
       aria-label={`${siteConfig.brand} home`}
-      aria-current={current('/')}>{siteConfig.brand}</a
+      aria-current={current('/')}
     >
+      {siteConfig.brand}
+    </a>
     <nav class="nav-wide" aria-label="Main">
       <details class="disc" data-disc>
         <summary>Services</summary>
         <div class="disc-panel">
-          <a href={allServices.href} aria-current={current(allServices.href)}
-            >{allServices.label}</a
-          >
-          {
-            services.map(({ key, href, label }) => (
-              <a {href} aria-current={current(href)}>
-                <ServiceToken service={key} size="sm" />
-                {label}
-              </a>
-            ))
-          }
+          <a href={allServices.href} aria-current={current(allServices.href)}>
+            {allServices.label}
+          </a>
+          {services.map(({ key, href, label }) => (
+            <a {href} aria-current={current(href)}>
+              <ServiceToken service={key} size="sm" />
+              {label}
+            </a>
+          ))}
         </div>
       </details>
-      {
-        company.map(({ href, label }) => (
-          <a class="nav-link" {href} aria-current={current(href)}>
-            {label}
-          </a>
-        ))
-      }
+      {company.map(({ href, label }) => (
+        <a class="nav-link" {href} aria-current={current(href)}>
+          {label}
+        </a>
+      ))}
     </nav>
     <a
       class="pill pill--primary pill--small cta"
       href={primaryCta.href}
       {...newTabAttrs(primaryCta)}
       aria-current={current(primaryCta.href)}
-      >{primaryCta.label}{
-        primaryCta.newTab && (
-          <span class="visually-hidden"> ({newTabHint})</span>
-        )
-      }</a
     >
+      {primaryCta.label}
+      {primaryCta.newTab && (
+        <span class="visually-hidden"> ({newTabHint})</span>
+      )}
+    </a>
     <details class="menu" data-disc>
-      <summary
-        ><span class="menu-icon" aria-hidden="true"></span><span
-          class="visually-hidden">Menu</span
-        ></summary
-      >
+      <summary>
+        <span class="menu-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Menu</span>
+      </summary>
       <nav class="menu-panel" aria-label="Menu">
-        <a href={allServices.href} aria-current={current(allServices.href)}
-          >{allServices.label}</a
-        >
-        {
-          services.map(({ href, label }) => (
-            <a class="sub" {href} aria-current={current(href)}>
-              {label}
-            </a>
-          ))
-        }
-        {
-          company.map(({ href, label }) => (
-            <a {href} aria-current={current(href)}>
-              {label}
-            </a>
-          ))
-        }
+        <a href={allServices.href} aria-current={current(allServices.href)}>
+          {allServices.label}
+        </a>
+        {services.map(({ href, label }) => (
+          <a class="sub" {href} aria-current={current(href)}>
+            {label}
+          </a>
+        ))}
+        {company.map(({ href, label }) => (
+          <a {href} aria-current={current(href)}>
+            {label}
+          </a>
+        ))}
       </nav>
     </details>
   </div>

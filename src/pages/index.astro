@@ -35,15 +35,15 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
         class="pill pill--primary"
         href={primaryCta.href}
         {...newTabAttrs(primaryCta)}
-        >{primaryCta.label}{
-          primaryCta.newTab && (
-            <span class="visually-hidden"> ({newTabHint})</span>
-          )
-        }</a
       >
-      <a class="pill pill--secondary" href={hero.secondary.href}
-        >{hero.secondary.label}</a
-      >
+        {primaryCta.label}
+        {primaryCta.newTab && (
+          <span class="visually-hidden"> ({newTabHint})</span>
+        )}
+      </a>
+      <a class="pill pill--secondary" href={hero.secondary.href}>
+        {hero.secondary.label}
+      </a>
     </div>
   </section>
   <Marquee id="hero-screens" {...heroScreens} />
@@ -55,9 +55,9 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
         <span class="statement-muted">{problemSolution.body}</span>{' '}
         {problemSolution.solution}
       </p>
-      <a class="standalone" href={problemSolution.link.href}
-        >{problemSolution.link.label}</a
-      >
+      <a class="standalone" href={problemSolution.link.href}>
+        {problemSolution.link.label}
+      </a>
     </div>
     <Marquee id="wide-screens" variant="row" {...wideScreens} />
   </section>
