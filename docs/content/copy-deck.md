@@ -209,7 +209,8 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - `how.steps` h2: From first conversation to delivery
 - h3s and body: **Talk about the need.** Tell us what you want to achieve and what is getting in the way. **Agree the work.** We set out the scope, price and review steps before work starts. **Build and review.** You see progress and check it against the agreed requirements. **Prepare the handover.** We agree what you need to use and maintain the result.
 - `how.support` h2: If you need an expert
-- body: Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements]].
+- body: Tell us about the technical work you need help with. We discuss the request with you and agree the session details and price before it starts. Once you book, we confirm the expert, the time and the format (a video call) by email.
+- Editorial: Q19 recommended default (#198), pending owner approval at Gate 3. No promise on session length or price beyond the pricing section.
 - `how.models` h2: Choose how to work together
 - bullets: Fixed price for defined project work · A monthly option for ongoing work.
 - `how.pricing` h2: How pricing works
@@ -288,16 +289,17 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - `seo_title`: Privacy notice: enquiries and site visits
 - `meta_description`: Read what information this site collects through enquiries and visits, why it is used and how to contact us about your data.
 - `legal.privacy` h1: Privacy notice
-- Editorial status: draft content structure; reconcile with the implemented data flow and owner review before launch. Existing privacy questions are carried forward, not answered here.
-- Last updated: [[PLACEHOLDER: publication date]].
-- h2: Who we are. Body: {brand}, India (Telangana). Contact us about this notice through our contact form → `/contact/`. [[PLACEHOLDER: Q9 confirmed operator identity and address; no registration number until registered]].
-- h2: What we collect. Body: When you enquire, we collect your name, reply contact, selected service and message, plus your company name if you provide it. [[PLACEHOLDER: confirm technical logs and spam-prevention data against the implemented contact flow]].
-- h2: Why we use it. Body: We use enquiry details to respond to your request. [[PLACEHOLDER: Q9 applicable legal basis and any further purposes, including enquiry reporting]].
-- h2: Who receives it. Body: If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call. [[PLACEHOLDER: Q4 final notification channel and backup store, recipient access and any transfers; match actual delivery setup before publishing]].
-- h2: How long we keep it. Body: [[PLACEHOLDER: Q9 enquiry and technical-log retention periods]].
+- Editorial status: recommended defaults (#198), checked against the implemented data flow (`infra/cloudflare/enquiry-worker/`, `src/lib/contact/`), pending owner approval at Gate 3 (`docs/releases/v1.0.0.md`). Not legal advice.
+- Last updated: {privacy_updated} (one constant, `PRIVACY_UPDATED` in `src/content/privacy.ts`; change it whenever this notice changes).
+- h2: Who we are. Body: {brand} runs this website and is based in Telangana, India. For questions about this notice or your information, email us at {email} → `mailto:` or use our contact form → `/contact/`. No street address or registration number (not registered yet).
+- h2: What we collect. Body: When you enquire, we collect your name, how to reply to you (an email address or phone number), the service you choose and your message. To block spam, the form has a hidden field that people leave empty and checks that it was not sent too quickly. We do not store the results of these checks. Our form handler also limits how many messages can come from one IP address each minute. It uses your IP address only for that check, and logging is switched off for the handler, so we keep no record of your request. Cloudflare, which hosts this site and runs the form handler, keeps its own technical logs of requests, such as IP addresses, to deliver pages and protect its network.
+- h2: Why we use it. Body: We use the details you send only to answer your enquiry and to arrange the work you ask about. We do not use them for marketing or newsletters. We never sell them or share them for advertising.
+- h2: Who receives it. Body: Your enquiry passes through our form handler, run by Cloudflare, to HubSpot, the customer relationship management (CRM) service we use. HubSpot stores it as a contact, notes that it came from our contact page and lets us know it has arrived. HubSpot keeps this data in its US data centre. If you book a call, you use a booking page run by HubSpot Meetings, which receives the details you enter there to schedule the call. HubSpot and Cloudflare process this data for us. Each publishes data processing terms for its customers, which use standard contractual clauses for transfers between countries.
+- Editorial: the last sentence states only what the providers publish ([HubSpot DPA](https://legal.hubspot.com/dpa), [Cloudflare DPA](https://www.cloudflare.com/cloudflare-customer-dpa/)). Neither page says it applies to free accounts without acceptance, so do not claim our accounts are covered until the owner confirms it (Owner checklist #164).
+- h2: How long we keep it. Body: We keep enquiries for up to 24 months after our last contact with you, then delete them. If you ask, we delete them sooner.
 - h2: Analytics and cookies. Body: This site uses Cloudflare Web Analytics, privacy-friendly analytics without cookies or local storage. We see totals such as page views, page load speed, referring sites, country, device type and browser, not who you are. Web addresses are recorded without their query part. If your browser sends a Global Privacy Control signal, analytics does not load. We set no cookies of our own. (Checked against Cloudflare's documentation in #169.) Owner Q10 chooses cookieless analytics; do not add a consent banner without an actual requirement.
-- h2: Questions about your information. Body: Contact us through the form if you have a question about information you have shared. [[PLACEHOLDER: Q9 applicable access, correction and deletion rights and request process]].
-- No required email address or unconfirmed legal promises. Resolve every privacy placeholder against the real service before launch.
+- h2: Questions about your information. Body: To see, correct or delete the details you have sent us, email us at {email} → `mailto:`. We reply within 30 days.
+- No unconfirmed legal promises. If the owner changes a default at Gate 3, update this section, `src/content/privacy.ts` and `PRIVACY_UPDATED` together.
 
 ## 10. 404 `404.html`
 - `seo_title`: Page not found: find your next step
@@ -324,5 +326,5 @@ Use PRD §12's working defaults; none block this draft. Carry these into the PR 
 - Q22: genuine stories, attribution, outcomes and media permissions. Q24: confirmed tools and logo permissions. Default: omit stories/tools sections.
 - Q23 (answered 2026-11-11): the first call is free.
 - Q4: booking link and final notification/backup setup. Q8 (answered 2026-11-11): no public links at launch; fallback email only if configured. Q6: founder roles; names only until answered.
-- Carried-forward items to reopen/extend under Q9: privacy review, operator identity/address, actual data and purposes, recipients/transfers, retention, rights, analytics wording and publication date.
+- Q9 privacy details and Q19 session arrangements: recommended defaults in §4 and §9 (#198), pending owner approval at Gate 3. Still open: a qualified review of the notice.
 - Carry-forward ownership/handover question: agreed ownership, licensing, documentation, access removal and ongoing support terms. Recommend recording alongside Q20/Q21; no contractual promises invented here.

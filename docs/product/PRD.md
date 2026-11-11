@@ -262,7 +262,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 
 **Priority for change request 3:**
 - [ ] **Q18 Areas of expertise:** which areas can expert support cover? Default: draft from the brief (software development, cloud, DevOps, AI automation), for you to confirm.
-- [ ] **Q19 How a support session works:** format, length, channel, who the expert is and how soon it can start? How many experts can we name, and is it the three founders or a wider group? Default: describe only "book, then we arrange it".
+- [ ] **Q19 How a support session works:** format, length, channel, who the expert is and how soon it can start? How many experts can we name, and is it the three founders or a wider group? Default: describe only "book, then we arrange it". **Recommended, pending owner approval at Gate 3 (#198):** after you book, we confirm the expert, the time and the format (a video call) by email; no promise on length or price beyond "quoted after a free first call".
 - [ ] **Q21 Scope of solutions:** what do "solutions for companies" include and exclude? Default: "tailored software and technical solutions", the brief's words, with software, cloud and DevOps as examples.
 - [ ] **Q22 Real stories or proof:** any past projects, clients (with permission to name), testimonials, certifications or results we may publish? Default: launch without the stories section, showing this site and its process (Q5).
 - [ ] **Q24 Tools strip:** which tools do we really work with, and may we show their logos? Default: text names only, confirmed by you, or leave the strip out.
@@ -282,7 +282,7 @@ Only the owner can answer these. Each has a working default, so no work waits fo
 - [x] **Q6 About:** founder-led: Mohammed Farhan, Adnan Sameer, Syed Zoheb Ali. No invented team size. Minimal bios; no name story (change request 3).
 - [x] **Q7 Languages:** English only at launch.
 - [x] **Q8 Contact:** no GitHub or Medium links at launch (owner answer 2026-11-11; `socials` stay placeholders and hidden); show "India · working with clients worldwide"; phone and others deferred.
-- [x] **Q9 Legal:** name from config, India (Telangana) jurisdiction, contact path; no registered-entity number until registered.
+- [x] **Q9 Legal:** name from config, India (Telangana) jurisdiction, contact path; no registered-entity number until registered. **Privacy details recommended, pending owner approval at Gate 3 (#198):** operator = brand from config, based in Telangana, India, contact by the config email (no street address or registration number); purpose = answer the enquiry and arrange the requested work only, no marketing, never sold or shared for advertising; retention = up to 24 months after last contact, sooner on request; rights = email to see, correct or delete, reply within 30 days; recipients = HubSpot (CRM, US) and Cloudflare (hosting, form handler) under their published DPAs (owner confirms they apply, #164). Still open: a qualified review of the notice.
 - [x] **Q10 Analytics:** Cloudflare Web Analytics (free, cookieless, no banner).
 - [x] **Q11 Target:** 3–5 qualified enquiries per month in the first quarter, growing after.
 - [x] **Q12 Tone:** plain, confident, specific, no buzzwords. Change request 3 adds a professional tone for any client. **Decision:** the line "we automate the boring stuff" is retired, because it no longer covers all four services.
