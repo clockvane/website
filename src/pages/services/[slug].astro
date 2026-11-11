@@ -62,13 +62,21 @@ const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
       <h2 id="what-title">{service.what.heading}</h2>
       <div class="row-body">
         <p>{service.what.body}</p>
-        <ul>{service.what.bullets.map((item) => <li>{item}</li>)}</ul>
+        <ul>
+          {service.what.bullets.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
       </div>
     </section>
     <section class="row" aria-labelledby="process-title">
       <h2 id="process-title">{service.process.heading}</h2>
       <div class="row-body">
-        <ol>{service.process.steps.map((step) => <li>{step}</li>)}</ol>
+        <ol>
+          {service.process.steps.map((step) => (
+            <li>{step}</li>
+          ))}
+        </ol>
       </div>
     </section>
     <section class="row" aria-labelledby="for-title">
@@ -87,15 +95,15 @@ const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
     aria-labelledby={example.demo ? 'example-caption' : 'example-title'}
   >
     {!example.demo && <h2 id="example-title">{example.heading}</h2>}
-    <p class="caption" id="example-caption">{example.caption}</p>
+    <p class="caption" id="example-caption">
+      {example.caption}
+    </p>
     {example.proof && <p>{example.proof}</p>}
     <p class="note">{marqueeCopy.note}</p>
     <div class="gallery">
-      {
-        example.screens.map((id) => (
-          <ExampleScreen {id} sizes={shotSizes} lift />
-        ))
-      }
+      {example.screens.map((id) => (
+        <ExampleScreen {id} sizes={shotSizes} lift />
+      ))}
     </div>
   </section>
 

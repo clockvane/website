@@ -17,26 +17,28 @@ import { newTabAttrs } from '../../lib/config/booking';
     <meta itemprop="name" content={copy.heading} />
     <meta itemprop="description" content={copy.intro} />
     <PageHeader title={copy.heading} lede={copy.intro} />
-    {
-      primaryCta.newTab && (
-        <p class="booking">
-          <a
-            class="standalone"
-            href={primaryCta.href}
-            {...newTabAttrs(primaryCta)}
-            data-booking-link
-          >
-            {primaryCta.label}
-            <span class="visually-hidden"> ({newTabHint})</span>
-          </a>
-        </p>
-      )
-    }
+    {primaryCta.newTab && (
+      <p class="booking">
+        <a
+          class="standalone"
+          href={primaryCta.href}
+          {...newTabAttrs(primaryCta)}
+          data-booking-link
+        >
+          {primaryCta.label}
+          <span class="visually-hidden"> ({newTabHint})</span>
+        </a>
+      </p>
+    )}
     <div class="contact-grid">
       <ContactForm />
       <aside class="contact-next" aria-labelledby="contact-next-title">
         <h2 id="contact-next-title">{copy.next}</h2>
-        <ol>{copy.steps.map((step) => <li>{step}</li>)}</ol>
+        <ol>
+          {copy.steps.map((step) => (
+            <li>{step}</li>
+          ))}
+        </ol>
         <ContactFallback />
       </aside>
     </div>

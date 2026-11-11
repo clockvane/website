@@ -15,22 +15,20 @@ const { lines, level: Heading = 'h1', animate = false } = Astro.props;
 ---
 
 <Heading class:list={['headline', { 'headline--animate': animate }]}>
-  {
-    lines.map((parts, index) => (
-      <>
-        {index > 0 && <br class="wide-break" />}
-        {parts.map((part) =>
-          typeof part === 'string' ? (
-            part
-          ) : (
-            <span class="keep">
-              {part.text} <ServiceToken service={part.service} />
-            </span>
-          ),
-        )}
-      </>
-    ))
-  }
+  {lines.map((parts, index) => (
+    <>
+      {index > 0 && <br class="wide-break" />}
+      {parts.map((part) =>
+        typeof part === 'string' ? (
+          part
+        ) : (
+          <span class="keep">
+            {part.text} <ServiceToken service={part.service} />
+          </span>
+        ),
+      )}
+    </>
+  ))}
 </Heading>
 
 <style>

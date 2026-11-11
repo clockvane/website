@@ -22,15 +22,17 @@ import { contactCopy } from '../../src/content/contact';
       breadcrumbs={[{ label: 'Home', href: '/' }]}
       action={{ label: 'Book a call', href: '/contact/' }}
     />
-    <section class="section"><h2>What we do</h2><ServiceRows /></section>
     <section class="section">
-      <h2>How an engagement runs</h2><ProcessSteps
-        steps={homeProcess}
-        variant="home"
-      />
+      <h2>What we do</h2>
+      <ServiceRows />
     </section>
     <section class="section">
-      <h2>From first call to delivery</h2><ProcessSteps
+      <h2>How an engagement runs</h2>
+      <ProcessSteps steps={homeProcess} variant="home" />
+    </section>
+    <section class="section">
+      <h2>From first call to delivery</h2>
+      <ProcessSteps
         steps={[
           {
             ...homeProcess[0]!,
@@ -53,6 +55,8 @@ import { contactCopy } from '../../src/content/contact';
       actions={[{ label: contactCopy.home, href: '/' }]}
     />
   </div>
-  <div class="container section"><ServiceRows variant="overview" /></div>
+  <div class="container section">
+    <ServiceRows variant="overview" />
+  </div>
   <CtaBand content={helpChoose} />
 </BaseLayout>

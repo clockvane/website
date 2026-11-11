@@ -9,31 +9,29 @@ const Heading = variant === 'home' ? 'h3' : 'h2';
 ---
 
 <div class:list={['service-list', `services-${variant}`]}>
-  {
-    services.map((service, index) => (
-      <section
-        id={variant === 'overview' ? service.slug : undefined}
-        class="service-row"
-      >
-        <p class="label">{String(index + 1).padStart(2, '0')}</p>
-        <Heading>{service.label}</Heading>
-        <p>{service.summary}</p>
-        {variant === 'overview' && (
-          <div class="service-work">
-            <h3>{sectionLabels.typicalWork}</h3>
-            <ul>
-              {service.what.bullets.map((item) => (
-                <li>{item}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <a class="standalone" href={service.href}>
-          {service.linkLabel}
-        </a>
-      </section>
-    ))
-  }
+  {services.map((service, index) => (
+    <section
+      id={variant === 'overview' ? service.slug : undefined}
+      class="service-row"
+    >
+      <p class="label">{String(index + 1).padStart(2, '0')}</p>
+      <Heading>{service.label}</Heading>
+      <p>{service.summary}</p>
+      {variant === 'overview' && (
+        <div class="service-work">
+          <h3>{sectionLabels.typicalWork}</h3>
+          <ul>
+            {service.what.bullets.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <a class="standalone" href={service.href}>
+        {service.linkLabel}
+      </a>
+    </section>
+  ))}
 </div>
 
 <style>

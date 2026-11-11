@@ -37,73 +37,71 @@ import ContactResult from './ContactResult.astro';
       method="post"
       enctype="application/x-www-form-urlencoded"
     >
-      {
-        fieldNames.map((field) =>
-          field === 'service' ? (
-            <fieldset
-              class="field"
-              role="radiogroup"
-              aria-required="true"
-              aria-describedby="service-hint"
-              data-field="service"
-            >
-              <legend class="field-label">{copy.fields.service.label}</legend>
-              <p class="hint" id="service-hint">
-                {copy.fields.service.hint}
-              </p>
-              <div class="options">
-                {serviceOptions.map(({ value, label }, index) => (
-                  <label class="option">
-                    <input
-                      id={index === 0 ? 'contact-service' : undefined}
-                      name="service"
-                      type="radio"
-                      value={value}
-                      required
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-              <p class="field-error" id="service-error" hidden />
-            </fieldset>
-          ) : (
-            <div class="field">
-              <label class="field-label" for={`contact-${field}`}>
-                {copy.fields[field].label}
-              </label>
-              <p class="hint" id={`${field}-hint`}>
-                {copy.fields[field].hint}
-              </p>
-              {field === 'message' ? (
-                <textarea
-                  class="control"
-                  id={`contact-${field}`}
-                  name={field}
-                  required
-                  minlength="10"
-                  maxlength={limits[field]}
-                  aria-describedby={`${field}-hint`}
-                  data-field={field}
-                />
-              ) : (
-                <input
-                  class="control"
-                  id={`contact-${field}`}
-                  name={field}
-                  type="text"
-                  autocomplete={field === 'name' ? 'name' : undefined}
-                  required
-                  maxlength={limits[field]}
-                  aria-describedby={`${field}-hint`}
-                  data-field={field}
-                />
-              )}
-              <p class="field-error" id={`${field}-error`} hidden />
+      {fieldNames.map((field) =>
+        field === 'service' ? (
+          <fieldset
+            class="field"
+            role="radiogroup"
+            aria-required="true"
+            aria-describedby="service-hint"
+            data-field="service"
+          >
+            <legend class="field-label">{copy.fields.service.label}</legend>
+            <p class="hint" id="service-hint">
+              {copy.fields.service.hint}
+            </p>
+            <div class="options">
+              {serviceOptions.map(({ value, label }, index) => (
+                <label class="option">
+                  <input
+                    id={index === 0 ? 'contact-service' : undefined}
+                    name="service"
+                    type="radio"
+                    value={value}
+                    required
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
-          ),
-        )
-      }
+            <p class="field-error" id="service-error" hidden />
+          </fieldset>
+        ) : (
+          <div class="field">
+            <label class="field-label" for={`contact-${field}`}>
+              {copy.fields[field].label}
+            </label>
+            <p class="hint" id={`${field}-hint`}>
+              {copy.fields[field].hint}
+            </p>
+            {field === 'message' ? (
+              <textarea
+                class="control"
+                id={`contact-${field}`}
+                name={field}
+                required
+                minlength="10"
+                maxlength={limits[field]}
+                aria-describedby={`${field}-hint`}
+                data-field={field}
+              />
+            ) : (
+              <input
+                class="control"
+                id={`contact-${field}`}
+                name={field}
+                type="text"
+                autocomplete={field === 'name' ? 'name' : undefined}
+                required
+                maxlength={limits[field]}
+                aria-describedby={`${field}-hint`}
+                data-field={field}
+              />
+            )}
+            <p class="field-error" id={`${field}-error`} hidden />
+          </div>
+        ),
+      )}
       <div hidden aria-hidden="true">
         <input
           name="website"
@@ -114,14 +112,21 @@ import ContactResult from './ContactResult.astro';
         />
         <input name="started" type="hidden" value="" />
       </div>
-      <button class="pill pill--primary" type="submit">{copy.send}</button>
+      <button class="pill pill--primary" type="submit">
+        {copy.send}
+      </button>
       <p class="hint">
         {copy.privacy}{' '}
-        <a class="standalone" href="/privacy/">{copy.privacyLink}</a>.
+        <a class="standalone" href="/privacy/">
+          {copy.privacyLink}
+        </a>
+        .
       </p>
     </form>
   </div>
-  <div data-contact-success hidden><ContactResult kind="thanks" inline /></div>
+  <div data-contact-success hidden>
+    <ContactResult kind="thanks" inline />
+  </div>
 </div>
 
 <script>

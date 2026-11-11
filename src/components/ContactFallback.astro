@@ -5,14 +5,12 @@ import { contactCopy as copy } from '../content/contact';
 const { email } = publicDetails(siteConfig);
 ---
 
-{
-  email && (
-    <p>
-      {copy.fallback}{' '}
-      <a class="standalone" href={`mailto:${email}`}>
-        {email}
-      </a>
-      .
-    </p>
-  )
-}
+{email && (
+  <p>
+    {copy.fallback}{' '}
+    <a class="standalone" href={`mailto:${email}`}>
+      {email}
+    </a>
+    .
+  </p>
+)}

@@ -30,15 +30,17 @@ const { copy = aiDemo } = Astro.props;
           type="button"
           data-demo-toggle
           aria-label={`Pause example: ${copy.controlName}`}
-          >Pause example</button
         >
+          Pause example
+        </button>
         <button
           class="pill pill--secondary pill--small"
           type="button"
           data-demo-replay
           aria-label={`Replay example: ${copy.controlName}`}
-          >Replay example</button
         >
+          Replay example
+        </button>
       </div>
       <p class="visually-hidden">{copy.textAlternative}</p>
       <p class="visually-hidden" aria-live="polite" data-demo-status></p>
@@ -48,33 +50,31 @@ const { copy = aiDemo } = Astro.props;
         <p class="label">{copy.inputLabel}</p>
         <p class="input">{copy.input}</p>
         <p class="label">{copy.promptLabel}</p>
-        <p class="prompt" data-demo-prompt>{copy.prompt}</p>
+        <p class="prompt" data-demo-prompt>
+          {copy.prompt}
+        </p>
         <ol class="steps">
-          {
-            copy.steps.map((step) => (
-              <li class="step is-done" data-step>
-                <span class="dot" aria-hidden="true">
-                  <svg viewBox="0 0 20 20" focusable="false">
-                    <path d="M4.5 10.5 8.2 14l7.3-8" />
-                  </svg>
-                </span>
-                {step}
-              </li>
-            ))
-          }
+          {copy.steps.map((step) => (
+            <li class="step is-done" data-step>
+              <span class="dot" aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M4.5 10.5 8.2 14l7.3-8" />
+                </svg>
+              </span>
+              {step}
+            </li>
+          ))}
         </ol>
         <div class="result" data-demo-result>
           <p class="label label--strong">{copy.resultLabel}</p>
           <p>{copy.result}</p>
           <dl class="facts">
-            {
-              copy.resultFacts.map(({ label, value }) => (
-                <div>
-                  <dt>{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))
-            }
+            {copy.resultFacts.map(({ label, value }) => (
+              <div>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
           </dl>
         </div>
       </div>

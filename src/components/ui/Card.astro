@@ -9,24 +9,22 @@ const { title, body, link, headingLevel: Heading = 'h3' } = Astro.props;
 const hasContent = title || body || link || Astro.slots.has('default');
 ---
 
-{
-  hasContent && (
-    <div class="card">
-      <div class="card-stack">
-        {title && <Heading>{title}</Heading>}
-        {body && <p>{body}</p>}
-        <slot />
-        {link && (
-          <div>
-            <a class="standalone" href={link.href}>
-              {link.label}
-            </a>
-          </div>
-        )}
-      </div>
+{hasContent && (
+  <div class="card">
+    <div class="card-stack">
+      {title && <Heading>{title}</Heading>}
+      {body && <p>{body}</p>}
+      <slot />
+      {link && (
+        <div>
+          <a class="standalone" href={link.href}>
+            {link.label}
+          </a>
+        </div>
+      )}
     </div>
-  )
-}
+  </div>
+)}
 
 <style>
   .card {

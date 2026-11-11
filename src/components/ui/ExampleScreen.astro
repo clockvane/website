@@ -32,7 +32,7 @@ const { src, alt, label } = example(id);
     widths={[320, 480, 640, 960]}
     loading={eager ? 'eager' : 'lazy'}
     decoding="async"
-    {...priority ? { fetchpriority: 'high' as const } : {}}
+    {...(priority ? { fetchpriority: 'high' as const } : {})}
   />
   <figcaption>{label}</figcaption>
 </figure>

@@ -12,7 +12,9 @@ import { howWeWork as copy } from '../../content/how-we-work';
     <PageHeader title={copy.heading} lede={copy.lede} />
     <section aria-labelledby="how-steps">
       <h2 id="how-steps">{copy.steps.heading}</h2>
-      <div class="content"><ProcessSteps steps={copy.steps.items} /></div>
+      <div class="content">
+        <ProcessSteps steps={copy.steps.items} />
+      </div>
     </section>
     <section class="measure" aria-labelledby="how-support">
       <h2 id="how-support">{copy.support.heading}</h2>
@@ -20,7 +22,11 @@ import { howWeWork as copy } from '../../content/how-we-work';
     </section>
     <section class="measure" aria-labelledby="how-models">
       <h2 id="how-models">{copy.models.heading}</h2>
-      <ul>{copy.models.items.map((item) => <li>{item}</li>)}</ul>
+      <ul>
+        {copy.models.items.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
     </section>
     <section class="measure" aria-labelledby="how-pricing">
       <h2 id="how-pricing">{copy.pricing.heading}</h2>
@@ -33,7 +39,9 @@ import { howWeWork as copy } from '../../content/how-we-work';
     <section aria-labelledby="how-faq">
       <h2 id="how-faq">{copy.faq.heading}</h2>
       <div class="content faq">
-        {copy.faq.items.map((item) => <Card {...item} />)}
+        {copy.faq.items.map((item) => (
+          <Card {...item} />
+        ))}
       </div>
     </section>
   </div>
