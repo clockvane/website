@@ -49,7 +49,7 @@ Positioning: expert support, AI automation, website creation and solutions for c
 
 Avoid: synergy, cutting-edge, world-class, revolutionary, game-changing, best-in-class, next-generation, state-of-the-art, holistic, turnkey, seamless, end-to-end, trusted partner, leading provider and “we are passionate about”.
 
-“Tailored software and technical solutions” is the confirmed offer; follow it with a concrete problem or scope discussion. “Free” needs Q23 confirmation. “Secure”, “guaranteed” and quantified performance need evidence and an approved scope; they are not filler adjectives.
+“Tailored software and technical solutions” is the confirmed offer; follow it with a concrete problem or scope discussion. “Free” describes only the first call (Q23 answered 2026-11-11). “Secure”, “guaranteed” and quantified performance need evidence and an approved scope; they are not filler adjectives.
 
 ## 6. Name-independent identity
 - In copy, the brand is only `{brand}`, mapped to `site.config.ts`. Email, domain, booking and social links also come from config; use tokens, never literal company contact values.
@@ -87,7 +87,7 @@ Avoid: synergy, cutting-edge, world-class, revolutionary, game-changing, best-in
 - Use this website and its documented process as proof. Publish repository and article links only when approved and configured. Real stories require Q22 content and permission; otherwise render no stories section.
 - Label original screen mockups as examples. The AI demo stays **DRAFT · Scripted example**, with fictional input, a draft result and no message sent. Never imply a live integration or measured outcome.
 - Describe time saved through the task removed: “could remove the retyping”. Do not turn illustrative ranges into “typical” savings or recycle old package durations.
-- Confirmed founder names may appear; roles need Q6. Expert areas need Q18. Support format needs Q19. Prices need Q20; solution scope needs Q21. Tools and logo use need Q24.
+- Confirmed founder names may appear; roles need Q6. Expert areas need Q18. Support format needs Q19. Prices are quoted per project after a free first call, with no amounts (Q20); solution scope needs Q21. Tools and logo use need Q24.
 - Unknowns become `[[PLACEHOLDER: question and needed fact]]` in drafts, listed in the PR description for the PRD open questions. Resolve or remove them before launch.
 
 ## 11. Examples

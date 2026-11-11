@@ -28,7 +28,7 @@ export const howWeWork = {
   },
   support: {
     heading: 'If you need an expert',
-    body: 'Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements; Q20 support pricing]].',
+    body: 'Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements]].',
   },
   models: {
     heading: 'Choose how to work together',
@@ -36,12 +36,10 @@ export const howWeWork = {
       'Fixed price for defined project work',
       'A monthly option for ongoing work',
     ],
-    placeholder:
-      '[[PLACEHOLDER: Q20 confirmed scope of monthly support and pricing]].',
   },
   pricing: {
     heading: 'How pricing works',
-    body: 'Defined project work has a fixed price. Starting prices show where that work begins; your quote reflects the agreed scope. Ongoing work can use a monthly arrangement.',
+    body: 'Every project is quoted after a free first call. Defined project work has a fixed price for the agreed scope. Ongoing work can use a monthly arrangement.',
   },
   handover: {
     heading: 'Agree the details before work begins',

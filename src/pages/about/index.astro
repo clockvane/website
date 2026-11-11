@@ -22,14 +22,6 @@ import { aboutCopy as copy } from '../../content/about';
     <section class="measure" aria-labelledby="about-proof">
       <h2 id="about-proof">{copy.proof.heading}</h2>
       <p>{copy.proof.body}</p>
-      {
-        copy.proof.links.map((link) => (
-          <a class="standalone" href={link.href}>
-            {link.label}
-          </a>
-        ))
-      }
-      <p>{copy.proof.linksPlaceholder}</p>
     </section>
   </div>
   <CtaBand />

@@ -47,9 +47,12 @@ test('About follows the copy deck, metadata and sitemap entry', async ({
     aboutCopy.who.body,
     aboutCopy.expertise.body,
     aboutCopy.proof.body,
-    aboutCopy.proof.linksPlaceholder,
   ])
     await expect(main).toContainText(text);
+  await expect(main).not.toContainText('PLACEHOLDER');
+  await expect(
+    page.locator('a[href*="github.com"], a[href*="medium.com"]'),
+  ).toHaveCount(0);
   await expect(main.locator('img')).toHaveCount(0);
   await expect(
     main.getByRole('link', { name: aboutCopy.expertise.link.label }),

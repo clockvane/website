@@ -126,7 +126,7 @@ Shared structure: Home → Services → current service breadcrumb; `intro` h1/l
 - Editorial: [[PLACEHOLDER: Q18 confirm support areas; candidate areas are software development, cloud, DevOps and AI automation]]. Omit the list of areas until confirmed; do not assign credentials to unnamed experts.
 - `process` h2: How to arrange support
 - steps: 1. Tell us what you are trying to do and where you are stuck. 2. We discuss your request and whether we can help. 3. We arrange the support and agree the details with you.
-- Editorial: [[PLACEHOLDER: Q19 session format, duration, channel, expert identity and availability; Q20 support pricing model]]. Do not promise immediate access, a fixed session length or a guaranteed fix.
+- Editorial: [[PLACEHOLDER: Q19 session format, duration, channel, expert identity and availability]]. Pricing: quoted per project after a free first call (Q20, Q23 answered 2026-11-11). Do not promise immediate access, a fixed session length or a guaranteed fix.
 - `for` h2: Who it is for
 - body: Individuals who need help with technical work, and companies that need advice or hands-on support from an expert individual.
 - `example` h2: An example of preparing for support
@@ -209,12 +209,12 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - `how.steps` h2: From first conversation to delivery
 - h3s and body: **Talk about the need.** Tell us what you want to achieve and what is getting in the way. **Agree the work.** We set out the scope, price and review steps before work starts. **Build and review.** You see progress and check it against the agreed requirements. **Prepare the handover.** We agree what you need to use and maintain the result.
 - `how.support` h2: If you need an expert
-- body: Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements; Q20 support pricing]].
+- body: Tell us about the technical work you need help with. We discuss the request and arrange support with you. Session details and pricing are agreed before it starts. [[PLACEHOLDER: Q19 session arrangements]].
 - `how.models` h2: Choose how to work together
-- bullets: Fixed price for defined project work · A monthly option for ongoing work. [[PLACEHOLDER: Q20 confirmed scope of monthly support and pricing]].
+- bullets: Fixed price for defined project work · A monthly option for ongoing work.
 - `how.pricing` h2: How pricing works
-- body: Defined project work has a fixed price. Starting prices show where that work begins; your quote reflects the agreed scope. Ongoing work can use a monthly arrangement.
-- Editorial: [[PLACEHOLDER: Q20 approved “from” amounts and inclusions for the four services, plus support-session pricing model]]. Until supplied, publish the stance above without price cards, amounts or old package timelines.
+- body: Every project is quoted after a free first call. Defined project work has a fixed price for the agreed scope. Ongoing work can use a monthly arrangement.
+- Editorial: Q20 answered (owner, 2026-11-11): every project is quoted after a free first call (Q23). Publish the stance above without price cards, amounts, “from” prices or old package timelines.
 - `how.handover` h2: Agree the details before work begins
 - body: Discuss the accounts, access, documentation and ongoing help the work will need. Ownership and handover terms belong in the agreed scope.
 - Editorial: [[PLACEHOLDER: confirm ownership, licensing, access removal, handover and support commitments; carry into PRD open questions via this PR]]. No promise of full code ownership or indefinite support.
@@ -240,7 +240,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - Editorial: use Q18's confirmed expertise only; do not turn the service list into claims about a founder's credentials.
 - `about.proof` h2: See how we work
 - body: This website is built through written requirements, reviews and tests. Its repository records the process.
-- links: Explore our public repositories → `{github_url}` · Read our articles → `{medium_url}`. [[PLACEHOLDER: Q8 approved public URLs]]. Hide absent links. Real stories follow Q22; do not promise their arrival.
+- links: none at launch (Q5/Q8 answered, owner 2026-11-11). Show no GitHub or Medium links; `socials` in the site config stay placeholders and hidden. Real stories follow Q22; do not promise their arrival.
 - Closing: `closing-cta`. No name story.
 
 ## 6. Contact `/contact/`
@@ -265,7 +265,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - steps: 1. We read your message. 2. We reply within 1 business day using the contact details you supplied. 3. We discuss the request and arrange the next step with you.
 - `contact.privacy-note`: We use your details to respond to your enquiry. Read our privacy notice. Link “privacy notice” → `/privacy/`.
 - `contact.fallback`: You can also email us at {email}. Omit without a configured address.
-- “Book an expert” starts this enquiry path, not payment or a confirmed appointment. Do not describe the first call as free (Q23).
+- “Book an expert” starts this enquiry path, not payment or a confirmed appointment. The first call is free (Q23 answered 2026-11-11); say so only where pricing is explained.
 
 ## 7. Enquiry sent `/contact/thanks/`
 - `seo_title`: Enquiry sent: what happens next
@@ -319,10 +319,10 @@ Thirteen launch/utility pages have unique SEO titles and descriptions above, eac
 ## 13. Open questions for the PRD and PR description
 Use PRD §12's working defaults; none block this draft. Carry these into the PR description so the product owner can update the PRD without expanding this ticket into product decisions.
 - Q18: supported expertise. Q19: support format, duration, channel, named experts and availability. Defaults: general expert help; arrange details after enquiry.
-- Q20: support pricing model, “from” amounts, inclusions and monthly scope. Default: pricing stance without figures or durations.
+- Q20 (answered 2026-11-11): every project is quoted after a free first call; no amounts are published.
 - Q21: solution scope and exclusions. Default: tailored software and technical solutions; candidate examples remain editorial.
 - Q22: genuine stories, attribution, outcomes and media permissions. Q24: confirmed tools and logo permissions. Default: omit stories/tools sections.
-- Q23: first-call price. Default: no “free” claim; no placeholder promise shown to visitors.
-- Q4: booking link and final notification/backup setup. Q8: approved public-work links; fallback email only if configured. Q6: founder roles; names only until answered.
+- Q23 (answered 2026-11-11): the first call is free.
+- Q4: booking link and final notification/backup setup. Q8 (answered 2026-11-11): no public links at launch; fallback email only if configured. Q6: founder roles; names only until answered.
 - Carried-forward items to reopen/extend under Q9: privacy review, operator identity/address, actual data and purposes, recipients/transfers, retention, rights, analytics wording and publication date.
 - Carry-forward ownership/handover question: agreed ownership, licensing, documentation, access removal and ongoing support terms. Recommend recording alongside Q20/Q21; no contractual promises invented here.
