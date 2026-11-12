@@ -42,5 +42,8 @@ State: MVP pages, enquiry flow (HubSpot via Worker), analytics, staging deploys 
 For the owner (see [Owner checklist #164](https://github.com/clockvane/website/issues/164)):
 - B: set the repository variable `ENQUIRY_WORKER_ORIGIN` to `https://enquiry.mohdfarhantech08.workers.dev` (the release fails with a clear error before deploying if it is missing).
 - D: confirm HubSpot's and Cloudflare's data processing terms apply to the free accounts.
-- After merging, tag `v1.0.0` and approve the production deployment in GitHub.
+- Order after merging, per [release.md](../devops/release.md): merge the release PR (version + changelog); wait for CI and staging to pass on that exact main commit; then tag `v1.0.0` is created and you approve the production deployment in GitHub. B and D must be done before the tag.
+- Still open (not claimed done): QA's manual keyboard pass (pre-deploy) and staging evidence on the exact tagged commit. The [checklist](../releases/v1.0.0.md) lists them; QA, security and DevOps sign-offs are recorded through the reviews on this PR.
+- The privacy notice and how-we-work defaults are not legal advice; a qualified review is still recommended (PRD Q9).
+- Config placeholders `phone`, `socials.linkedin` and `socials.github` stay open after go-live (PRD Q8). They are not rendered on the site.
 - Dependabot PR #205 (TypeScript 7) is not part of this release; recommend leaving it open.
