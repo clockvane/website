@@ -40,17 +40,41 @@ export function hubspotPayload(enquiry: Enquiry, pageUri: string) {
   };
 }
 
-/** Posts one submission to HubSpot. Never retries; never exposes HubSpot's response. */
+/** HubSpot's machine-readable error codes only (never messages, which can echo submitted values). */
+async function errorTypes(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as {
+      errors?: { errorType?: unknown }[];
+    };
+    const types = (body.errors ?? [])
+      .map(({ errorType }) => errorType)
+      .filter(
+        (t): t is string => typeof t === 'string' && /^[A-Z_]{1,40}$/.test(t),
+      );
+    return types.length ? ` ${[...new Set(types)].join(',')}` : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Posts one submission to HubSpot. Never retries; never exposes HubSpot's response to the
+ * visitor. `report` receives a short outcome (`status 404`, `status 400 REQUIRED_FIELD`,
+ * `exception TimeoutError`) that the staging Worker returns as a diagnostic header.
+ */
 export async function deliverToHubSpot(
   enquiry: Enquiry,
   env: HubSpotEnv,
   pageUri: string,
   fetcher: typeof fetch = fetch,
+  report: (detail: string) => void = () => {},
 ): Promise<DeliverResult> {
   const portal = env.HUBSPOT_PORTAL_ID?.trim();
   const guid = env.HUBSPOT_FORM_GUID?.trim();
-  if (!portal || !guid || !PORTAL_ID.test(portal) || !FORM_GUID.test(guid))
+  if (!portal || !guid || !PORTAL_ID.test(portal) || !FORM_GUID.test(guid)) {
+    report('unconfigured');
     return 'unconfigured';
+  }
   // Only EU-hosted portals (eu1) use a regional host; every US data centre, na2 included, uses
   // the default host. HubSpot Forms API: https://developers.hubspot.com/docs/api-reference/legacy/marketing/forms/v3-legacy
   const host =
@@ -62,19 +86,29 @@ export async function deliverToHubSpot(
       `https://${host}/submissions/v3/integration/submit/${portal}/${guid}`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Worker subrequests carry no User-Agent by default; edge firewalls may refuse those.
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'enquiry-worker/1.0',
+        },
         body: JSON.stringify(hubspotPayload(enquiry, pageUri)),
         // workerd accepts only "follow" and "manual"; "error" throws a TypeError.
         redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),
       },
     );
-    await response.body?.cancel();
     const redirected =
       response.type === 'opaqueredirect' ||
       (response.status >= 300 && response.status < 400);
-    return response.ok && !redirected ? 'ok' : 'failed';
-  } catch {
+    const ok = response.ok && !redirected;
+    if (ok || redirected) {
+      await response.body?.cancel();
+      report(`${redirected ? 'redirect' : 'status'} ${response.status}`);
+    } else report(`status ${response.status}${await errorTypes(response)}`);
+    return ok ? 'ok' : 'failed';
+  } catch (error) {
+    const name = error instanceof Error ? error.name : 'unknown';
+    report(`exception ${/^\w{1,40}$/.test(name) ? name : 'unknown'}`);
     return 'failed';
   }
 }

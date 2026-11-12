@@ -124,6 +124,62 @@ describe('HubSpot delivery', () => {
     );
     expect((await workerFetch(post(), env(), redirect)).status).toBe(502);
   });
+  it('reports HubSpot outcome codes in a header on staging only, never messages', async () => {
+    const staging = new URL(siteOrigin);
+    const stagingOrigin = `${staging.protocol}//staging.${staging.host}`;
+    const stagingPost = () => {
+      const r = post();
+      const headers = new Headers(r.headers);
+      headers.set('Origin', stagingOrigin);
+      return new Request(r, { headers });
+    };
+    const body = JSON.stringify({
+      message: 'alex@example.test is invalid',
+      errors: [{ errorType: 'INVALID_EMAIL', message: 'alex@example.test' }],
+    });
+    const cases: [ReturnType<typeof vi.fn>, string][] = [
+      [vi.fn(async () => new Response('{}')), 'status 200'],
+      [
+        vi.fn(async () => new Response(body, { status: 400 })),
+        'status 400 INVALID_EMAIL',
+      ],
+      [
+        vi.fn(async () => new Response('not json', { status: 404 })),
+        'status 404',
+      ],
+      [
+        vi.fn(async () => {
+          throw new DOMException('timeout', 'TimeoutError');
+        }),
+        'exception TimeoutError',
+      ],
+    ];
+    for (const [fetcher, detail] of cases) {
+      const res = await workerFetch(
+        stagingPost(),
+        env({ SITE_ENV: 'staging' }),
+        fetcher as unknown as typeof fetch,
+      );
+      expect(res.headers.get('x-enquiry-upstream')).toBe(detail);
+      expect(res.headers.get('access-control-expose-headers')).toBe(
+        'X-Enquiry-Upstream',
+      );
+      expect(await res.text()).not.toContain('alex@example.test');
+    }
+    const prod = await workerFetch(
+      post(),
+      env(),
+      vi.fn(async () => new Response(body, { status: 400 })),
+    );
+    expect(prod.status).toBe(502);
+    expect(prod.headers.get('x-enquiry-upstream')).toBeNull();
+  });
+  it('sends a User-Agent to HubSpot', async () => {
+    const ok = vi.fn(async () => new Response('{}'));
+    await workerFetch(post(), env(), ok);
+    const init = (ok.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(new Headers(init.headers).get('user-agent')).toMatch(/\S/);
+  });
   it('answers 502 without echoing HubSpot on non-2xx, network error or timeout, with no retry', async () => {
     for (const fetcher of [
       vi.fn(async () => new Response('secret hubspot detail', { status: 400 })),
