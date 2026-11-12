@@ -82,4 +82,8 @@ export async function workerFetch(
   return new Response(response.body, { status: response.status, headers });
 }
 
-export default { fetch: workerFetch };
+// The runtime calls fetch(request, env, ctx). Pass only request and env: the third parameter of
+// workerFetch is the HubSpot fetcher, and receiving ctx there made every delivery throw.
+export default {
+  fetch: (request: Request, env: Bindings) => workerFetch(request, env),
+};

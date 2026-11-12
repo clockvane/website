@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { workerFetch } from '../../../infra/cloudflare/enquiry-worker';
+import worker, { workerFetch } from '../../../infra/cloudflare/enquiry-worker';
 import { siteOrigin } from '../../../site.config';
 
 const GUID = '0a1b2c3d-1111-2222-3333-444455556666';
@@ -173,6 +173,26 @@ describe('HubSpot delivery', () => {
     );
     expect(prod.status).toBe(502);
     expect(prod.headers.get('x-enquiry-upstream')).toBeNull();
+  });
+  it('delivers through the global fetch when the runtime passes an execution context', async () => {
+    const real = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}'));
+    const ctx = { waitUntil: () => {}, passThroughOnException: () => {} };
+    try {
+      const res = await (
+        worker.fetch as (
+          r: Request,
+          e: unknown,
+          c: unknown,
+        ) => Promise<Response>
+      )(post(), env(), ctx);
+      expect(res.status).toBe(200);
+      expect(real).toHaveBeenCalledTimes(1);
+      expect(String(real.mock.calls[0]?.[0])).toContain('/submit/12345/');
+    } finally {
+      real.mockRestore();
+    }
   });
   it('sends a User-Agent to HubSpot', async () => {
     const ok = vi.fn(async () => new Response('{}'));
