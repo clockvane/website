@@ -85,6 +85,12 @@ jobs:
             echo "::error::Missing:${missing}. The owner must add them to the 'production' environment (docs/devops/cicd.md, Secrets)."
             exit 1
           fi
+          # Without the production Worker origin the live contact form would post to the placeholder endpoint.
+          case "$ENQUIRY_WORKER_ORIGIN" in
+            https://enquiry-staging.*) echo "::error::ENQUIRY_WORKER_ORIGIN points at the staging Worker; set it to the production 'enquiry' Worker origin (docs/devops/cicd.md)."; exit 1 ;;
+            https://?*) ;;
+            *) echo "::error::Missing or invalid ENQUIRY_WORKER_ORIGIN. The owner must set the repository variable to the production 'enquiry' Worker origin, https://… (docs/devops/cicd.md)."; exit 1 ;;
+          esac
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
