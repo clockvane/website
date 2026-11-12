@@ -37,6 +37,10 @@ export async function workerFetch(
     headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Content-Type');
   }
+  // Staging only: HubSpot's outcome as a header, so a failed test enquiry can be diagnosed
+  // without logs. Production never sets it.
+  let upstream: string | undefined;
+  const staging = env.SITE_ENV?.trim() === 'staging';
   let response: Response;
   const path = new URL(request.url).pathname;
   if (path === '/health' && request.method === 'GET')
@@ -64,11 +68,17 @@ export async function workerFetch(
           env,
           new URL('/contact/', site).href,
           fetcher,
+          (detail) => (upstream = detail),
         );
         return result === 'unconfigured' ? result : result === 'ok';
       },
     });
   for (const [name, value] of response.headers) headers.set(name, value);
+  if (staging && upstream) {
+    headers.set('X-Enquiry-Upstream', upstream);
+    if (origin === site)
+      headers.set('Access-Control-Expose-Headers', 'X-Enquiry-Upstream');
+  }
   return new Response(response.body, { status: response.status, headers });
 }
 
