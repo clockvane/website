@@ -1,6 +1,6 @@
 # Project status
 
-phase: build
+phase: release
 
 The `phase:` line above is read by the scheduler. Only a `gate:N` pull request merged by the
 owner changes it.
@@ -10,7 +10,8 @@ owner changes it.
 |------|------|----|-------|
 | 0 — kickoff | 2026-10-21 | — | Agent team bootstrapped; brief in docs/product/BRIEF.md |
 | 1 — scope approved | 2026-10-22 | — | Initiation artifacts complete; approved |
-| 2 — design approved | 2026-10-27 | this PR | Design artifacts complete; pending owner approval |
+| 2 — design approved | 2026-10-27 | #55 | Design approved |
+| 3 — go-live approved | 2026-11-12 | this PR | MVP merged; v1.0.0 release checklist; pending owner approval |
 
 ## Open questions for the owner
 ## Gate 1 summary (2026-10-22)
@@ -32,3 +33,17 @@ Artifacts:
 Already merged as early-start Sprint 0: scaffold, PR CI, preview deploys, security headers.
 
 For the owner: open the prototype, read both ADRs and the copy deck. Choose the visual direction. Placeholders in the copy deck still depend on the PRD open questions Q1-Q12.
+
+## Gate 3 summary (2026-11-12)
+Artifacts: [v1.0.0 release checklist](../releases/v1.0.0.md), [release process](../devops/release.md), [test strategy](../qa/test-strategy.md), [privacy](../security/privacy.md).
+
+State: MVP pages, enquiry flow (HubSpot via Worker), analytics, staging deploys with E2E and Lighthouse, release and rollback workflows are merged. Staging enquiry evidence is recorded. `npm audit` reports 0 vulnerabilities.
+
+For the owner (see [Owner checklist #164](https://github.com/clockvane/website/issues/164)):
+- B: set the repository variable `ENQUIRY_WORKER_ORIGIN` to `https://enquiry.mohdfarhantech08.workers.dev` (the release fails with a clear error before deploying if it is missing).
+- D: confirm HubSpot's and Cloudflare's data processing terms apply to the free accounts.
+- Order after merging, per [release.md](../devops/release.md): merge the release PR (version + changelog); wait for CI and staging to pass on that exact main commit; then tag `v1.0.0` is created and you approve the production deployment in GitHub. B and D must be done before the tag.
+- Still open (not claimed done): QA's manual keyboard pass (pre-deploy) and staging evidence on the exact tagged commit. The [checklist](../releases/v1.0.0.md) lists them; QA, security and DevOps sign-offs are recorded through the reviews on this PR.
+- The privacy notice and how-we-work defaults are not legal advice; a qualified review is still recommended (PRD Q9).
+- Config placeholders `phone`, `socials.linkedin` and `socials.github` stay open after go-live (PRD Q8). They are not rendered on the site.
+- Dependabot PR #205 (TypeScript 7) is not part of this release; recommend leaving it open.
