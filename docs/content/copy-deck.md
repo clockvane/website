@@ -266,6 +266,7 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - steps: 1. We read your message. 2. We reply within 1 business day using the contact details you supplied. 3. We discuss the request and arrange the next step with you.
 - `contact.privacy-note`: We use your details to respond to your enquiry. Read our privacy notice. Link “privacy notice” → `/privacy/`.
 - `contact.fallback`: You can also email us at {email}. Omit without a configured address.
+- `contact.call` / `contact.callJoin`: Or call us on {phone 1} or {phone 2}. Each number links with `tel:`; omit without configured numbers (`site.config.ts` `phones`).
 - “Book an expert” starts this enquiry path, not payment or a confirmed appointment. The first call is free (Q23 answered 2026-11-11); say so only where pricing is explained.
 
 ## 7. Enquiry sent `/contact/thanks/`

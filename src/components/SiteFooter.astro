@@ -28,11 +28,11 @@ const details = publicDetails(siteConfig);
           {details.email}
         </a>
       )}
-      {details.phone && (
-        <a class="standalone" href={`tel:${details.phone}`}>
-          {details.phone}
+      {details.phones.map((phone) => (
+        <a class="standalone" href={phone.href}>
+          {phone.label}
         </a>
-      )}
+      ))}
     </div>
     <nav aria-labelledby="footer-services">
       <h2 id="footer-services">Services</h2>
@@ -108,6 +108,11 @@ const details = publicDetails(siteConfig);
     margin-block-start: var(--space-2);
     max-inline-size: 24rem;
     color: var(--color-dark-text-muted);
+  }
+  /* Email and each phone number on their own line. */
+  .footer-brand > .standalone {
+    display: flex;
+    inline-size: fit-content;
   }
   h2 {
     margin-block-end: var(--space-2);

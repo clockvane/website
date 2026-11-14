@@ -3,7 +3,8 @@ import { publicDetails } from '../config/public-details';
 
 /** Organization JSON-LD (NFR S-5). Unset details are left out, never published as placeholders. */
 export function organizationJsonLd(config: SiteConfig, origin: string) {
-  const { email, phone, socials } = publicDetails(config);
+  const { email, phones, socials } = publicDetails(config);
+  const telephone = phones.map(({ number }) => number);
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -11,7 +12,10 @@ export function organizationJsonLd(config: SiteConfig, origin: string) {
     slogan: config.tagline,
     url: new URL('/', origin).href,
     ...(email ? { email } : {}),
-    ...(phone ? { telephone: phone } : {}),
+    // JSON-LD repeats a property as an array; one number stays a plain string.
+    ...(telephone.length > 0
+      ? { telephone: telephone.length === 1 ? telephone[0] : telephone }
+      : {}),
     ...(socials.length > 0 ? { sameAs: socials.map(({ href }) => href) } : {}),
   };
 }

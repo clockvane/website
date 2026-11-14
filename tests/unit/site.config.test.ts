@@ -41,7 +41,7 @@ describe('site config', () => {
   });
 
   it('flags placeholder values', () => {
-    expect(isPlaceholder(siteConfig.phone)).toBe(true);
+    expect(isPlaceholder(siteConfig.socials.linkedin)).toBe(true);
     expect(isPlaceholder(siteConfig.brand)).toBe(false);
   });
 
@@ -141,5 +141,13 @@ describe('site config', () => {
     expect(
       siteConfigSchema.safeParse({ ...siteConfig, analyticsId }).success,
     ).toBe(false);
+  });
+
+  it('holds the owner-supplied phone numbers in international format', () => {
+    expect(siteConfig.phones).toEqual(['+91 90633 99157', '+91 94911 25109']);
+    for (const phones of [['90633 99157'], ['+91 9063<script>'], ['']])
+      expect(
+        siteConfigSchema.safeParse({ ...siteConfig, phones }).success,
+      ).toBe(false);
   });
 });
