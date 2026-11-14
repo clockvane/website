@@ -4,7 +4,7 @@ import { publicDetails } from '../config/public-details';
 /** Organization JSON-LD (NFR S-5). Unset details are left out, never published as placeholders. */
 export function organizationJsonLd(config: SiteConfig, origin: string) {
   const { email, phones, socials } = publicDetails(config);
-  const telephone = phones.map(({ label }) => label);
+  const telephone = phones.map(({ number }) => number);
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',

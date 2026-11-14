@@ -7,8 +7,16 @@ describe('public footer details', () => {
     expect(publicDetails(siteConfig)).toEqual({
       email: 'clockvane.support@gmail.com',
       phones: [
-        { label: '+91 90633 99157', href: 'tel:+919063399157' },
-        { label: '+91 94911 25109', href: 'tel:+919491125109' },
+        {
+          number: '+91 90633 99157',
+          label: '+91\u00a090633\u00a099157',
+          href: 'tel:+919063399157',
+        },
+        {
+          number: '+91 94911 25109',
+          label: '+91\u00a094911\u00a025109',
+          href: 'tel:+919491125109',
+        },
       ],
       socials: [],
     });
@@ -34,7 +42,13 @@ describe('public footer details', () => {
       }),
     ).toEqual({
       email: 'hello@example.test',
-      phones: [{ label: '+1 555 0100', href: 'tel:+15550100' }],
+      phones: [
+        {
+          number: '+1 555 0100',
+          label: '+1\u00a0555\u00a00100',
+          href: 'tel:+15550100',
+        },
+      ],
       socials: [
         { label: 'linkedin', href: 'https://example.test/profile' },
         { label: 'github', href: 'http://example.test/code' },

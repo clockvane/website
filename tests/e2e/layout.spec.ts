@@ -77,7 +77,13 @@ test('metadata and empty-safe footer use site config', async ({ page }) => {
     'href',
     `mailto:${siteConfig.email}`,
   );
-  await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
+  const tel = page.locator('footer a[href^="tel:"]');
+  await expect(tel).toHaveCount(siteConfig.phones.length);
+  for (const [index, phone] of siteConfig.phones.entries())
+    await expect(tel.nth(index)).toHaveAttribute(
+      'href',
+      `tel:${phone.replace(/\s+/g, '')}`,
+    );
   await expect(
     page.getByRole('navigation', { name: 'Social links' }),
   ).toHaveCount(0);
