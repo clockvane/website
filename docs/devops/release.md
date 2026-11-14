@@ -14,10 +14,12 @@ Tags are `vMAJOR.MINOR.PATCH`, created on a commit on `main` that already passed
 - Tags are immutable. A bad release is fixed forward with a new tag, or rolled back (cicd.md), never retagged.
 
 ## Changelog
-`CHANGELOG.md` is generated from Conventional Commits (Keep a Changelog layout) by the release tooling (`release-please` or
-`git-cliff`, chosen in the CI ticket; both are free and need no server). Mapping: `feat` → Added, `fix` → Fixed, `perf` → Changed,
+`infra/release/changelog.ts` generates release notes from Conventional Commits (Keep a Changelog layout).
+`release.yml` runs it against the pushed tag and publishes the GitHub Release after deployment succeeds.
+Its optional `--write` mode writes `CHANGELOG.md`; this release PR updates the version and checklist only.
+Mapping: `feat` → Added, `fix` → Fixed, `perf` → Changed,
 `docs`/`ci`/`chore`/`test` → hidden unless marked `!` (breaking → MAJOR). Squash-merge titles must be Conventional Commits, because
-they become the entries. Each release also gets GitHub Release notes with the same text.
+they become the entries.
 
 ## Who does what
 | Step | Owner |
@@ -25,7 +27,7 @@ they become the entries. Each release also gets GitHub Release notes with the sa
 | Decide that a release is due and the version | devops-lead proposes, owner agrees |
 | Fill `docs/releases/vX.Y.Z.md` from the checklist template | devops-lead |
 | QA and security sign-offs | qa, security |
-| Create the tag (via the release PR/automation, not by hand) | devops-lead |
+| Push the tag on the release PR's merge commit after CI and staging pass | maintainer, after devops-lead re-confirms the commit |
 | **Approve the production deployment** | **owner** |
 | Post-release verification and announcement | devops-lead |
 
@@ -39,7 +41,12 @@ they become the entries. Each release also gets GitHub Release notes with the sa
    - Enquiry path tested end to end; 404, `robots.txt`, `sitemap.xml`, OG images present.
    - Placeholders still in use are listed (brand/domain/email), and each is intentional.
 4. **Sign-offs.** QA, security, devops-lead tick the boxes. For `v1.0.0` this is the `gate:3` PR, which the owner merges.
-5. **Tag.** Merge the release PR (changelog + version), then the automation pushes tag `vX.Y.Z` on that commit.
+5. **Tag.** Merge the release PR (version + checklist). Wait for both `ci` and the complete `deploy-staging` workflow
+   to succeed on **that exact merge commit**, and record their run links in the release PR before tagging.
+   No workflow creates or pushes the tag today: a **maintainer** creates an annotated tag and pushes it.
+   For this release, fetch `main`, confirm `RELEASE_COMMIT` is the release PR's full merge SHA (not its branch head or
+   the Gate 3 commit), then run `git tag -a v1.0.0 "$RELEASE_COMMIT" -m "Release v1.0.0"` and
+   `git push origin refs/tags/v1.0.0`. Use the agreed `vX.Y.Z` for later releases; never move an existing tag.
 6. **Production approval.** The tag triggers `release.yml`. The job reaches `environment: production` and **waits**. GitHub emails the owner
    (a "Review deployments" prompt); he opens the run, checks the staging evidence and the commit, then clicks **Approve and deploy** (or **Reject**).
    Only after approval does the job receive the Cloudflare token. Unapproved runs time out after 30 days.
@@ -62,11 +69,13 @@ Steps marked **needs-human** are for the owner only. Agents never create account
 2. **needs-human: Enquiry destination.** The steps (HubSpot form, Worker secrets, `ENQUIRY_WORKER_ORIGIN`,
    `ENQUIRY_STAGING_WORKER_ORIGIN`) are in the `Owner checklist` issue (#164). Paste secret values only in Cloudflare or
    GitHub, never in an issue or PR. Then QA sends one test enquiry on staging.
-3. The agents close the open items, and QA and security sign off on staging. The EM then opens the `gate:3` PR with the
-   checklist and the release PR (version and changelog).
+3. The agents close the open items, and QA and security sign off on staging. The EM opens the `gate:3` PR with the
+   checklist. After Gate 3 is approved, the release PR updates the version and checklist.
 
 **Production deploy**
-4. **needs-human:** merge the `gate:3` PR. The release automation pushes tag `v1.0.0` on that commit.
+4. Gate 3 approval is recorded by the owner's merge of [#212](https://github.com/clockvane/website/pull/212).
+   After the separate release PR merges, a **maintainer** pushes `v1.0.0` on its merge commit only after `ci` and
+   `deploy-staging` succeed on that SHA and DevOps re-confirms it (step 5 above). Tagging is a separate action from this PR.
 5. **needs-human:** when GitHub emails "Review deployments", open the `release.yml` run, check that the commit matches the
    checklist, then click **Approve and deploy**.
 6. The workflow deploys the verified `main` artifact to the Cloudflare production branch (`CF_PAGES_PRODUCTION_BRANCH`).
