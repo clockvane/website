@@ -1,16 +1,21 @@
-# Dependency automation (docs/devops/cicd.md, Dependencies). Weekly, minor and patch updates
-# grouped into one PR per ecosystem. Security updates are raised immediately and are not
-# subject to the schedule. Major upgrades arrive as separate PRs outside the groups and
-# get their own ticket; they are not ignored, so a security fix in a major is never hidden.
+# Dependency automation (docs/devops/cicd.md, Dependencies). Monthly, minor and patch updates
+# grouped into one PR per ecosystem, so routine updates cost one CI run and one review round a
+# month. Major version updates are not raised automatically: they need a planned migration
+# (TypeScript 7 broke `npm ci`, #205) and get their own ticket when the team chooses to upgrade.
+# Security updates are not affected: `update-types` filters version updates only, so security
+# fixes, including ones that need a new major, are still raised immediately.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     commit-message:
       prefix: 'chore(deps)'
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
@@ -18,10 +23,13 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     commit-message:
       prefix: 'ci(deps)'
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       actions-minor-patch:
         update-types: [minor, patch]
