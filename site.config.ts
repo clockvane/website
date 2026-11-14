@@ -17,7 +17,8 @@ export const siteConfigSchema = z.object({
   tagline: z.string().min(1),
   domain: z.string().min(1),
   email: z.string().min(1),
-  phone: z.string().min(1),
+  /** Public phone numbers in international format (+ country code), shown in the order given. */
+  phones: z.array(z.string().regex(/^\+\d[\d ]{6,18}\d$/)),
   socials: z.object({
     linkedin: z.string().min(1),
     github: z.string().min(1),
@@ -47,7 +48,8 @@ export const siteConfig: SiteConfig = siteConfigSchema.parse({
   // Free Cloudflare Pages host until a domain is bought (ADR-002 domain plan step 1).
   domain: 'clockvane-website.pages.dev',
   email: 'clockvane.support@gmail.com',
-  phone: '[[PLACEHOLDER: public phone number, optional]]',
+  // Owner-supplied public numbers, 2026-11-15.
+  phones: ['+91 90633 99157', '+91 94911 25109'],
   socials: {
     linkedin: '[[PLACEHOLDER: LinkedIn URL]]',
     github: '[[PLACEHOLDER: GitHub organisation URL]]',

@@ -27,7 +27,7 @@ describe('organizationJsonLd', () => {
     const placeholders: SiteConfig = {
       ...siteConfig,
       email: '[[PLACEHOLDER: email]]',
-      phone: '[[PLACEHOLDER: phone]]',
+      phones: [],
       socials: {
         linkedin: '[[PLACEHOLDER: LinkedIn]]',
         github: '[[PLACEHOLDER: GitHub]]',
@@ -44,7 +44,7 @@ describe('organizationJsonLd', () => {
     const configured: SiteConfig = {
       ...siteConfig,
       email: 'hello@example.test',
-      phone: '+1 555 0100',
+      phones: ['+1 555 0100'],
       socials: {
         linkedin: 'https://example.test/linkedin',
         github: '[[PLACEHOLDER: GitHub]]',
@@ -55,6 +55,17 @@ describe('organizationJsonLd', () => {
       telephone: '+1 555 0100',
       sameAs: ['https://example.test/linkedin'],
     });
+  });
+});
+
+describe('organizationJsonLd telephone', () => {
+  it('lists every configured number', () => {
+    expect(
+      organizationJsonLd(
+        { ...siteConfig, phones: ['+91 90633 99157', '+91 94911 25109'] },
+        'https://example.test',
+      ).telephone,
+    ).toEqual(['+91 90633 99157', '+91 94911 25109']);
   });
 });
 

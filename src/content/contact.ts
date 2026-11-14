@@ -40,6 +40,8 @@ export const contactCopy = {
   rate: 'You have sent several messages in a short time. Please wait a few minutes and try again.',
   spam: 'We could not send your message. Please try again.',
   fallback: 'You can also email us at',
+  call: 'Or call us on',
+  callJoin: 'or',
   next: 'What happens next',
   steps: [
     'We read your message.',
