@@ -95,7 +95,7 @@ OIDC is used wherever the target supports it. Cloudflare's API does not, so the 
 ## Observability on free tiers
 - **Uptime:** an external free monitor (UptimeRobot or Cloudflare Health Checks) checks `/` and the enquiry worker `/health` every 5 min and emails the owner. Account creation is the owner's (`needs-human`), after Gate 3.
 - **Lighthouse history:** `lighthouse` uploads reports as artifacts on every PR. A scheduled weekly workflow (`lhci-history.yml`) runs LHCI against production, appends scores to `metrics/lighthouse.json` on the `lhci-history` branch, and opens an issue if any score drops under 95.
-- **Dependencies:** `.github/dependabot.yml` for `npm` and `github-actions`, weekly, grouped by minor/patch, security updates immediately. CI must be green to merge; major upgrades get their own ticket.
+- **Dependencies:** `.github/dependabot.yml` for `npm` and `github-actions`, monthly, minor and patch grouped into one PR per ecosystem; security updates immediately (including ones that need a new major). Major version updates are not raised automatically: an upgrade such as TypeScript 7 (#205, which broke `npm ci`) is a planned ticket. CI must be green to merge.
 - **Security alerts:** enable Dependabot alerts, secret scanning and push protection (free on public repos; owner toggles in Settings → Code security).
 - **Deploy visibility:** the GitHub Deployments tab shows each environment's current commit and approver.
 
