@@ -60,6 +60,7 @@ URL rules (NFR-SEO-5): lowercase, hyphenated, trailing slash, no dates, IDs or b
 | Contact | `/contact/` | The conversion page: enquiry form, fallback contact method, response-time promise | All | Send message | MVP (p0) |
 | Enquiry sent | `/contact/thanks/` | On-page confirmation, expected response time, what happens next. Reached via `303` after a successful non-JS submit; with JS the confirmation shows inline and this URL is the same content | All | None (links: How we work, Home) | MVP (p0) |
 | Privacy notice | `/privacy/` | What is collected (enquiry data, analytics) and why (CR-6) | All | None | MVP (p0) |
+| Accessibility statement | `/accessibility/` | The standard (WCAG 2.2 AA), how we check, known limits and how to report a problem; footer link (#227) | All | Contact form | MVP (p3) |
 | Enquiry failed | `/contact/error/` | No-JS fallback only: plain-language message that the enquiry was not sent and the text was not kept, the fallback contact, a link back to the form. `noindex`, not in the sitemap | All | Back to the form | MVP (p0) |
 | 404 | `404.html` (the host serves it for unknown paths; not a routable URL, no trailing-slash rule) | Recover lost visitors | All | Back home, Contact | MVP (p0) |
 | FAQ | `/faq/` (or a section on How we work) | Pricing, timeline, process, ownership answers | All | Book a call | Later (p2) |
