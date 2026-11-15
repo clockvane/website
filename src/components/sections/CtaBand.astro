@@ -11,7 +11,7 @@ interface Props {
 const { content = closingCta, cta = primaryCta } = Astro.props;
 ---
 
-<section class="band-wrap">
+<section class="band-wrap section-band">
   <div class="band">
     <div class="tokens">
       {services.map(({ key }) => (
@@ -29,7 +29,7 @@ const { content = closingCta, cta = primaryCta } = Astro.props;
 
 <style>
   .band-wrap {
-    padding: var(--space-20) var(--space-3) var(--space-12);
+    padding-inline: var(--space-3);
   }
   .band {
     display: flex;
@@ -65,9 +65,6 @@ const { content = closingCta, cta = primaryCta } = Astro.props;
     }
   }
   @media (min-width: 64rem) {
-    .band-wrap {
-      padding-block: var(--space-32) var(--space-16);
-    }
     .band {
       padding-block: var(--space-20);
     }

@@ -54,7 +54,7 @@ Role rules:
 
 ## Space, radius, shadow
 - **Spacing:** 4 px base: `space.1` 4, `2` 8, `3` 12, `4` 16, `5` 20, `6` 24, `8` 32, `10` 40, `12` 48, `16` 64, `20` 80, `32` 128, `40` 160 px.
-- **Section rhythm:** 80 px between sections on phone and tablet, 128 px from 64rem.
+- **Section rhythm:** one padding per section type, from the `section` token group (`tokens.json`), applied to the top and bottom of every section of that type. Content and band sections use `section.content` 40 px and `section.band` 40 px below 64rem, 64 px from 64rem, so the visible gap between two sections is 80 px on phone and tablet and 128 px from 64rem. Hero (the top of a page) uses `section.hero` 48 px, then 64 px from 64rem. Classes: `.section`, `.section-band`, `.section-hero`. Do not add section-level padding elsewhere.
 - **Layout:** content 72rem, stage 85rem, gutter 20 px then 40 px, tap target 44 px.
 - **Radius:** `sm` 8, `md` 12, `lg` 20 (screens), `xl` 24 (bands on phone), `xxl` 32 (bands from 48rem), `pill`.
 - **Shadow:** `shadow.card` 0 8 24 at 4% for resting cards; `shadow.lift` 0 16 40 at 8% for hover and the disclosure panel.

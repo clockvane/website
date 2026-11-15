@@ -53,7 +53,12 @@ import { howWeWork as copy } from '../../content/how-we-work';
   .page {
     display: grid;
     gap: var(--space-20);
-    padding-block-start: var(--space-20);
+    padding-block-start: var(--section-hero);
+  }
+  @media (min-width: 64rem) {
+    .page {
+      padding-block-start: var(--section-hero-wide);
+    }
   }
   .content {
     margin-block-start: var(--space-8);

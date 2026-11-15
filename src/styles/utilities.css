@@ -5,8 +5,15 @@
   padding-inline: var(--gutter);
   --gutter: var(--layout-gutter);
 }
+/* One padding per section type, from docs/design/tokens.json (section group). Wide values come from the responsive template. */
 .section {
-  padding-block: var(--space-20);
+  padding-block: var(--section-content);
+}
+.section-hero {
+  padding-block: var(--section-hero);
+}
+.section-band {
+  padding-block: var(--section-band);
 }
 .measure {
   max-inline-size: var(--layout-text);
