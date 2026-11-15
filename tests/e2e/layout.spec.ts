@@ -16,9 +16,16 @@ for (const width of [320, 480, 768, 1024, 1280]) {
     await page.goto('/');
     await expect(page.getByRole('banner')).toBeVisible();
     await expect(page.getByRole('contentinfo')).toBeVisible();
-    await expect(page.locator('.site-header a.cta')).toBeVisible({
-      visible: true,
-    });
+    // One primary action per phone screen: below md the fixed action bar carries it (#228).
+    const headerCta = page.locator('.site-header a.cta');
+    const barCta = page.locator('aside.action-bar a');
+    if (width < 768) {
+      await expect(headerCta).toBeHidden();
+      await expect(barCta).toBeVisible();
+    } else {
+      await expect(headerCta).toBeVisible();
+      await expect(barCta).toBeHidden();
+    }
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Skip to main content' });
     await expect(skip).toBeFocused();

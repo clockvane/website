@@ -30,6 +30,9 @@ Sticky at `top: 0`, height 64 px, canvas fill, 1 px `light.hairline` below.
 - **Below 64rem:** wordmark, small primary pill and menu button. The menu is a `<details>` with a real `<summary>`, labelled "Menu", opening a panel of 44 px links. Works without JavaScript. Escape closes it and returns focus; a click elsewhere closes it.
 - **From 64rem:** adds nav links (44 px, pill hover in `light.surface`) and the Services disclosure, with the same behaviour as the menu. Panel: `lg` radius, hairline ring, `shadow.lift`, with a token beside each service.
 
+## Action bar
+Fixed to the bottom edge below 48rem (`breakpoint.md`), on the home and service pages only. `light.surface` fill, 1 px `light.hairline` above, `layer.action-bar`. Holds one pill primary at full width with a 44 px (`layout-tap`) target, and respects the bottom safe-area inset. It has no animation, so reduced motion needs no override. It is an `aside` named "Next step". The page reserves matching bottom space so the footer is never covered. Not used on pages with forms.
+
 ## Service token
 A rounded square in a service colour with a white glyph (`service.onService`, 5.09:1 or better).
 - **Sizes:** inline 0.92em of the surrounding text, small 24 px (tabs, disclosure), large 44 px (service heading), closing row 37 px. Radius 26%.

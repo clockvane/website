@@ -106,6 +106,15 @@ const current = (href: string) => (currentPath === href ? 'page' : undefined);
     color: var(--color-light-on-action);
     margin-inline-start: auto;
   }
+  /* One primary action per phone screen: the fixed action bar takes over the CTA. */
+  :global(body.has-action-bar) .site-header a.cta {
+    display: none;
+  }
+  @media (min-width: 48rem) {
+    :global(body.has-action-bar) .site-header a.cta {
+      display: inline-flex;
+    }
+  }
   .site-header a[aria-current='page']:not(.cta, .wordmark) {
     text-decoration: underline;
     text-underline-offset: 0.2em;

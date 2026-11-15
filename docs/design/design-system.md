@@ -58,6 +58,7 @@ Role rules:
 - **Layout:** content 72rem, stage 85rem, gutter 20 px then 40 px, tap target 44 px.
 - **Radius:** `sm` 8, `md` 12, `lg` 20 (screens), `xl` 24 (bands on phone), `xxl` 32 (bands from 48rem), `pill`.
 - **Shadow:** `shadow.card` 0 8 24 at 4% for resting cards; `shadow.lift` 0 16 40 at 8% for hover and the disclosure panel.
+- **Layer:** `layer.action-bar` 20, the fixed phone action bar. Only fixed UI uses a layer token; the header stays in flow.
 
 ## Brand mark and favicon
 - **Mark:** two nodes joined through a centre checkpoint, on a rounded square. It plays on nothing in
