@@ -1861,5 +1861,118 @@ class Failover(unittest.TestCase):
         self.assertEqual(len(ran), 2)
 
 
+class RoleModels(unittest.TestCase):
+    """v9.19: a Claude role on its own model (Fable 5.2) with a GPT fallback used only while that
+    model is at its limit or not on the plan; other Claude roles are not affected."""
+
+    ROLE = "principal-design-engineer"
+    ROOM = {"blocked": None, "left": 50.0, "expected": {"implement": 15, "fix": 8, "review": 5, "plan": 3}}
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._t.name)
+        self.cfg = make_cfg(self.tmp, **{"paths.codex_snapshot_file": str(self.tmp / "codex-snap.json")})
+        self.st = ao.State(self.cfg)
+        self.L = lambda *n: [{"name": x} for x in n]
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def d(self, gh, lane, headroom=None, lanes=("claude", "codex")):
+        return ao.Dispatcher(self.cfg, gh, self.st, NOW, lane=lane, lanes=list(lanes), busy=set(), worker=lane,
+                             headroom=headroom if headroom is not None else {"claude": self.ROOM, "codex": self.ROOM})
+
+    def fake_claude(self, result_text, stderr=""):
+        fake = self.tmp / "fake-claude"
+        fake.write_text("#!/usr/bin/env python3\nimport json, sys\n"
+                        "open(sys.argv[0] + '.args', 'w').write(json.dumps(sys.argv[1:]))\n"
+                        f"sys.stderr.write({stderr!r})\n"
+                        "print(json.dumps({'type':'system','subtype':'init','session_id':'s-pde'}))\n"
+                        "print(json.dumps({'type':'result','subtype':'success','is_error':True,"
+                        f"'result':{result_text!r},'total_cost_usd':0.0,'num_turns':1}}))\n")
+        fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+        self.cfg.d["claude_bin"] = str(fake)
+        return fake
+
+    def test_settings_shipped_in_config(self):
+        self.assertEqual(ao.claude_model_for(self.cfg, self.ROLE), "claude-fable-5-2")
+        self.assertEqual(ao.codex_settings_for(self.cfg, self.ROLE), ("gpt-6-astra", "xhigh"))
+        self.assertEqual(ao.role_claude_family(self.cfg, self.ROLE), "fable")
+        self.assertEqual(ao.engine_for(self.cfg, self.ROLE, ["claude", "codex"]), "claude")
+        # GPT roles keep their own settings; Claude roles without config use their agent file's model
+        self.assertEqual(ao.codex_settings_for(self.cfg, "ux-designer"), ("gpt-6-astra", "high"))
+        self.assertIsNone(ao.claude_model_for(self.cfg, "ux-designer"))
+        self.assertIsNone(ao.claude_model_for(self.cfg, "code-reviewer"))
+        self.assertEqual(ao.role_claude_family(self.cfg, "code-reviewer"), "sonnet")
+        self.assertEqual(ao.codex_settings_for(self.cfg, "code-reviewer"), ("gpt-6.1-sol", "medium"))
+        self.assertEqual(ao.role_run_setting(self.cfg, self.ROLE, "max_turns", "implement", 40), 200)
+        self.assertEqual(ao.role_run_setting(self.cfg, "sde2", "max_turns", "implement", 40), 120)
+        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", None, {"session": 75.0}, role=self.ROLE), 75.0)
+        self.assertEqual(ao.run_budget(self.cfg, self.st, "implement", None, {"session": 75.0}), 15.0)
+
+    def test_agent_file_is_complete(self):
+        self.assertEqual(ao.agent_frontmatter(self.ROLE, "name"), self.ROLE)
+        self.assertEqual(ao.agent_frontmatter(self.ROLE, "model"), "inherit")  # --model from config decides
+        text = (AGENTOPS.parent / ".claude" / "agents" / f"{self.ROLE}.md").read_text()
+        for needle in ("design-quality/SKILL.md", "ACTION=implement", "ACTION=fix", "delivery-protocol",
+                       "rule 9", "Fable 5.2", "GPT-6"):
+            self.assertIn(needle, text)
+        self.assertTrue((AGENTOPS.parent / ".claude" / "skills" / "design-quality" / "SKILL.md").exists())
+        labels = json.loads((AGENTOPS / "github" / "labels.json").read_text())
+        self.assertIn(f"agent:{self.ROLE}", {lb["name"] for lb in labels})
+
+    def test_fable_runs_on_claude_until_its_own_limit(self):
+        gh = FakeGH(issues=[{"number": 300, "labels": self.L("status:ready", f"agent:{self.ROLE}"), "body": ""}])
+        self.assertEqual(self.d(gh, "claude").choose("operate", "m").issue, 300)
+        self.assertIsNone(self.d(gh, "codex").choose("operate", "m"))
+        # Fable at its limit: the ticket goes to GPT; other Claude work is untouched
+        self.st.put("cooldown-model-fable", {"until": NOW + 3600, "reason": "fable limit"})  # dispatcher clock = NOW
+        self.assertEqual(self.d(gh, "codex").choose("operate", "m").issue, 300)
+        self.assertNotEqual(getattr(self.d(gh, "claude").choose("operate", "m"), "issue", None), 300)
+        self.assertEqual(ao.engine_for(self.cfg, "tech-lead", ["claude", "codex"]), "claude")
+        self.assertEqual(self.st.doc("cooldown"), {})
+        # GPT also full (or not set up): the ticket waits instead of hitting the Fable limit again
+        full = {"claude": self.ROOM, "codex": {"blocked": "ChatGPT plan: limit", "left": None, "expected": {}}}
+        self.assertNotEqual(getattr(self.d(gh, "claude", full).choose("operate", "m"), "issue", None), 300)
+        self.assertNotEqual(getattr(self.d(gh, "claude", {}, lanes=("claude",)).choose("operate", "m"), "issue", None), 300)
+        # after the reset it is back on Fable
+        self.st.put("cooldown-model-fable", {"until": NOW - 1})
+        self.assertEqual(self.d(gh, "claude").choose("operate", "m").issue, 300)
+
+    def test_run_claude_passes_model_and_fable_limit_pauses_only_fable(self):
+        fake = self.fake_claude("You've hit your Fable limit · resets 3:45pm")
+        rec = ao.run_claude(self.cfg, self.st, ao.Work(self.ROLE, "implement", 300, note="x"), "operate")
+        args = json.loads(Path(str(fake) + ".args").read_text())
+        self.assertEqual(args[args.index("--model") + 1], "claude-fable-5-2")
+        self.assertEqual(args[args.index("--max-turns") + 1], "200")
+        self.assertEqual(args[args.index("--max-budget-usd") + 1], "75.0")
+        self.assertEqual(rec["outcome"], "usage-limit")
+        self.assertGreater(ao.model_cooldown(self.st, "fable").get("until", 0), time.time())
+        self.assertEqual(self.st.doc("cooldown"), {})  # the rest of the Claude plan keeps working
+        # roles without a configured model get no --model flag
+        ao.run_claude(self.cfg, self.st, ao.Work("sde2", "implement", 3, note="x"), "build")
+        self.assertNotIn("--model", json.loads(Path(str(fake) + ".args").read_text()))
+
+    def test_unavailable_model_falls_back_for_12_hours(self):
+        self.fake_claude("API Error", stderr="There's an issue with the selected model (claude-fable-5-2). "
+                                             "It may not exist or you may not have access to it.\n")
+        rec = ao.run_claude(self.cfg, self.st, ao.Work(self.ROLE, "implement", 300, note="x"), "operate")
+        self.assertEqual(rec["outcome"], "model-unavailable")
+        until = ao.model_cooldown(self.st, "fable").get("until", 0)
+        self.assertGreater(until, time.time() + 11 * 3600)
+        self.assertEqual(self.st.doc("cooldown"), {})
+        # an ordinary failure of a role without a configured model sets nothing
+        self.st.put("cooldown-model-fable", {})
+        self.fake_claude("tests failed")
+        ao.run_claude(self.cfg, self.st, ao.Work("sde2", "implement", 3, note="x"), "build")
+        self.assertEqual(ao.model_cooldown(self.st, "fable"), {})
+
+    def test_codex_fallback_prompt_names_the_gpt_model(self):
+        text = ao.render_codex_prompt(ao.Work(self.ROLE, "implement", 300, note="Implement issue #300."), "operate",
+                                      self.cfg)
+        self.assertIn("running on gpt-6-astra", text)
+        self.assertIn("Principal Design Engineer", text)
+
+
 if __name__ == "__main__":
     unittest.main()

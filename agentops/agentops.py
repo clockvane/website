@@ -543,9 +543,11 @@ def team_share_live(state: "State", now: float) -> float:
 
 
 def run_budget(cfg: "Config", state: "State", action: str, live: Optional[Dict[str, Any]],
-               limits: Dict[str, float]) -> float:
-    """Per-run spending cap: the configured cap, lowered so the run ends near the owner's limit."""
-    base = float((cfg.get("run", "max_budget_usd", default={}) or {}).get(action, 2.0))
+               limits: Dict[str, float], role: Optional[str] = None) -> float:
+    """Per-run spending cap: the configured cap (a role's own, if set), lowered so the run ends near
+    the owner's limit."""
+    base = float(role_run_setting(cfg, role, "max_budget_usd", action, 2.0) if role
+                 else (cfg.get("run", "max_budget_usd", default={}) or {}).get(action, 2.0))
     usd_per_pct = state.doc("run_costs").get("usd_per_pct")
     if not live or not usd_per_pct:
         return base
@@ -583,6 +585,67 @@ def lane_doc(name: str, lane: str) -> str:
 def role_settings(cfg: "Config", role: str) -> Dict[str, Any]:
     v = (cfg.get("roles", default={}) or {}).get(role)
     return dict(v) if isinstance(v, dict) else {}
+
+
+# Models per role (v9.19). A Claude role may name its model in config (`roles.<role>.model`, passed to
+# Claude Code as --model) and the GPT model it uses when its Claude model is at a limit
+# (`codex_model` / `codex_effort`). A GPT role uses `model` / `effort` on Codex, as before.
+MODEL_FAMILY_RX = re.compile(r"(fable|mythos|opus|sonnet|haiku)", re.I)
+
+
+def model_family(model: Optional[str]) -> Optional[str]:
+    m = MODEL_FAMILY_RX.search(model or "")
+    return m.group(1).lower() if m else None
+
+
+def agent_frontmatter(role: str, key: str, root: Optional[Path] = None) -> Optional[str]:
+    """A value from the frontmatter of .claude/agents/<role>.md (None when missing)."""
+    try:
+        text = ((root or REPO_ROOT) / ".claude" / "agents" / f"{role}.md").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not text.startswith("---"):
+        return None
+    m = re.search(rf"(?m)^{re.escape(key)}:\s*(\S+)\s*$", text.split("---", 2)[1] if text.count("---") >= 2 else "")
+    return m.group(1) if m else None
+
+
+def claude_model_for(cfg: "Config", role: str) -> Optional[str]:
+    """The model passed to Claude Code for this role, or None to use the model in its agent file."""
+    rs = role_settings(cfg, role)
+    if rs.get("engine", "claude") == "codex":
+        return rs.get("claude_model") or None
+    return rs.get("model") or None
+
+
+def codex_settings_for(cfg: "Config", role: str) -> Tuple[str, str]:
+    """(model, reasoning effort) when this role runs on Codex: its own for a GPT role, the configured
+    failover model for a Claude role, else the Codex default."""
+    rs = role_settings(cfg, role)
+    default = cfg.get("engines", "codex", "default_model", default="gpt-6.1-sol")
+    if rs.get("engine") == "codex":
+        return rs.get("model") or default, rs.get("effort") or "medium"
+    return rs.get("codex_model") or default, rs.get("codex_effort") or "medium"
+
+
+def role_claude_family(cfg: "Config", role: str) -> Optional[str]:
+    return model_family(claude_model_for(cfg, role) or agent_frontmatter(role, "model"))
+
+
+def model_cooldown(state: "State", family: Optional[str], now: Optional[float] = None) -> Dict[str, Any]:
+    """The active limit on one Claude model family (`hit your fable limit`), or {}."""
+    if not family:
+        return {}
+    doc = state.doc(f"cooldown-model-{family}")
+    return doc if float(doc.get("until", 0)) > (now if now is not None else time.time()) else {}
+
+
+def role_run_setting(cfg: "Config", role: str, key: str, action: str, default: Any) -> Any:
+    """`roles.<role>.<key>.<action>` (max_turns, max_budget_usd) overriding `run.<key>.<action>`."""
+    own = role_settings(cfg, role).get(key)
+    if isinstance(own, dict) and action in own:
+        return own[action]
+    return (cfg.get("run", key, default={}) or {}).get(action, default)
 
 
 def codex_roles(cfg: "Config") -> List[str]:
@@ -1662,8 +1725,23 @@ class Dispatcher:
         """Engines that can't take a run of this kind now (plan at your limit)."""
         return {ln for ln, h in self.headroom.items() if not lane_fits(h, action)}
 
+    def model_blocked(self, role: Optional[str]) -> bool:
+        """This role's Claude model family is at its own limit (e.g. `hit your fable limit`)."""
+        return bool(role) and bool(model_cooldown(self.state, role_claude_family(self.cfg, role), self.now))
+
     def mine(self, role: Optional[str], action: Optional[str] = None) -> bool:
-        return bool(role) and engine_for(self.cfg, role, self.lanes, self.avoid(action)) == self.lane
+        """Does this worker's engine run the role now? A role whose Claude model is at its limit runs on
+        GPT (its `codex_model`) while that has room, and waits otherwise — never on the limited model."""
+        if not role:
+            return False
+        avoid = set(self.avoid(action))
+        blocked = self.model_blocked(role)
+        if blocked:
+            avoid.add("claude")
+        eng = engine_for(self.cfg, role, self.lanes, avoid)
+        if blocked and eng == "claude":
+            return False
+        return eng == self.lane
 
     def escalates(self, role: Optional[str]) -> bool:
         return self.first and self.mine(role)
@@ -1993,7 +2071,31 @@ class Dispatcher:
 
 
 # --------------------------------------------------------------------------- running claude
-LIMIT_RX = re.compile(r"hit your (session|weekly|opus|sonnet|fable)\s+limit", re.I)
+LIMIT_RX = re.compile(r"hit your (session|weekly|opus|sonnet|fable|mythos)\s+limit", re.I)
+MODEL_LIMIT_FAMILIES = {"opus", "sonnet", "fable", "mythos"}
+MODEL_UNAVAILABLE_RX = re.compile(r"issue with the selected model|may not exist or you may not have access|"
+                                  r"not_found_error[^\n]{0,120}model|model[^\n]{0,120}(?:not found|not available|"
+                                  r"does not exist|not_found_error)", re.I)
+
+
+def model_unavailable(log_path: Path) -> bool:
+    """Did Claude Code refuse the --model of this run (unknown, or not on the owner's plan)?"""
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace")[-20000:]
+    except OSError:
+        return False
+    return bool(MODEL_UNAVAILABLE_RX.search(text))
+
+
+def set_model_cooldown(cfg: "Config", state: "State", family: str, reason: str, limit_text: str = "",
+                       resets_at: Optional[float] = None) -> float:
+    """Pause one Claude model family (not the whole plan) until its limit resets."""
+    until = resets_at or parse_reset(limit_text, time.time(), cfg.tz)
+    if not until:
+        until = time.time() + (12 * HOUR if "weekly" in (limit_text or "").lower() else HOUR)
+    until = min(until, time.time() + 7 * DAY) + 120
+    state.put(f"cooldown-model-{family}", {"until": until, "reason": reason, "set_at": time.time()})
+    return until
 RESETS_RX = re.compile(r"resets\s+([^·\n]+)", re.I)
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
@@ -2047,13 +2149,17 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
     rcfg = cfg.get("run", default={})
     port = worker_port(worker)
     prompt = render_prompt(work, phase, cfg["repo"], port)
+    model = claude_model_for(cfg, work.role)
     cmd = [cfg.get("claude_bin", default="claude"), "-p", prompt,
            "--agent", work.role,
            "--output-format", "stream-json", "--verbose",
-           "--max-turns", str(rcfg.get("max_turns", {}).get(work.action, 40)),
-           "--max-budget-usd", str(budget if budget is not None else rcfg.get("max_budget_usd", {}).get(work.action, 2.0)),
+           "--max-turns", str(role_run_setting(cfg, work.role, "max_turns", work.action, 40)),
+           "--max-budget-usd", str(budget if budget is not None
+                                   else role_run_setting(cfg, work.role, "max_budget_usd", work.action, 2.0)),
            "--permission-mode", "dontAsk",
            "--settings", str(HERE / "claude-run-settings.json")]
+    if model:
+        cmd += ["--model", model]
     cmd += rcfg.get("extra_claude_args", [])
     env = dict(os.environ, AGENTOPS_RUN="1", AGENTOPS_ROLE=work.role, AGENTOPS_ACTION=work.action,
                AGENTOPS_PR=str(work.pr or ""), AGENTOPS_ISSUE=str(work.issue or ""),
@@ -2192,10 +2298,24 @@ def run_claude(cfg: Config, state: State, work: Work, phase: str, dry: bool = Fa
             if a and b and a.get("resets_at") == b.get("resets_at"):
                 delta[name] = round(max(0.0, b["pct"] - a["pct"]), 1)
         rec["usage_delta"] = delta
-    if limit_text or killed == "throttled":
+    lm = LIMIT_RX.search(limit_text or "")
+    family = (lm.group(1) or "").lower() if lm else ""
+    if family in MODEL_LIMIT_FAMILIES:
+        # one model family's own limit (e.g. Fable): only roles on that model move to GPT; the rest of
+        # the Claude plan keeps working
+        rec["cooldown_until"] = set_model_cooldown(cfg, state, family, f"{family} limit", limit_text,
+                                                   rec.get("limit_resets_at"))
+        rec["outcome"] = "usage-limit"
+    elif limit_text or killed == "throttled":
         rec["cooldown_until"] = set_limit_cooldown(cfg, state, limit_text, rec.get("limit_resets_at"),
                                                    throttled=killed == "throttled")
         rec["outcome"] = "usage-limit" if limit_text else "throttled"
+    elif model and (rec.get("outcome") != "success" or rec.get("is_error")) and model_unavailable(log_path):
+        # the configured model is not on this plan (or not reachable): use the GPT fallback for 12 hours
+        fam = model_family(model) or model
+        rec["cooldown_until"] = set_model_cooldown(cfg, state, fam, f"{model} unavailable", "",
+                                                   time.time() + 12 * HOUR)
+        rec["outcome"] = "model-unavailable"
     return rec
 
 
@@ -2233,8 +2353,8 @@ def render_codex_prompt(work: Work, phase: str, cfg: Config, worker: str = "code
             return strip_frontmatter(path.read_text(encoding="utf-8"))
         except OSError:
             return ""
-    rs = role_settings(cfg, work.role)
-    parts = [f"You are the `{work.role}` agent of the Clockvane website team, running on {rs.get('model', 'GPT')} "
+    parts = [f"You are the `{work.role}` agent of the Clockvane website team, running on "
+             f"{codex_settings_for(cfg, work.role)[0]} "
              f"through the Codex CLI. AGENTS.md and CLAUDE.md in this repository are your rules: CLAUDE.md is the team "
              f"constitution and applies to you exactly as written. Read both before you start.",
              f"=== YOUR ROLE (.claude/agents/{work.role}.md) ===\n" + read(REPO_ROOT / ".claude" / "agents" / f"{work.role}.md")]
@@ -2278,10 +2398,10 @@ def run_codex(cfg: Config, state: State, work: Work, phase: str, limits: Optiona
               model: Optional[str] = None, effort: Optional[str] = None, worker: str = "codex") -> Dict[str, Any]:
     rcfg = cfg.get("run", default={})
     ccfg = cfg.get("engines", "codex", default={}) or {}
-    rs = role_settings(cfg, work.role)
     root = root or REPO_ROOT
-    model = model or rs.get("model") or ccfg.get("default_model", "gpt-6.1-sol")
-    effort = effort or rs.get("effort", "medium")
+    own_model, own_effort = codex_settings_for(cfg, work.role)
+    model = model or own_model
+    effort = effort or own_effort
     port = worker_port(worker)
     started = time.time()
     stamp = dt.datetime.fromtimestamp(started).strftime("%Y%m%d-%H%M%S")
@@ -2962,8 +3082,10 @@ def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool
             claim(state, worker, work)
     if work and engine_for(cfg, work.role, lanes) != engine:
         own = engine_for(cfg, work.role, lanes)
-        log(f"switching: {work.role} runs on {'GPT' if engine == 'codex' else 'Claude'} this time — "
-            f"{(headroom.get(own) or {}).get('blocked') or 'its own plan has no room for this run now'}")
+        mcd = model_cooldown(state, role_claude_family(cfg, work.role), now) if own == "claude" else {}
+        why = (f"{mcd.get('reason')} until {clock(mcd.get('until'), cfg.tz, now)}" if mcd
+               else (headroom.get(own) or {}).get('blocked') or 'its own plan has no room for this run now')
+        log(f"switching: {work.role} runs on {'GPT' if engine == 'codex' else 'Claude'} this time — {why}")
     for a in disp.actions:
         log(f"housekeeping: {a}")
     if disp.actions and not args.dry_run:
@@ -3006,7 +3128,7 @@ def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool
             main_sha = sync_clone(branch)
         phase = read_phase()
         limits = effective_limits(cfg, read_window(cfg, now), engine)
-        budget = run_budget(cfg, state, work.action, info.get("live"), limits)
+        budget = run_budget(cfg, state, work.action, info.get("live"), limits, role=work.role)
         if work.attempt_key:
             state.bump(work.attempt_key)
         if work.action == "implement" and work.issue:
@@ -3014,7 +3136,7 @@ def tick_step(args: argparse.Namespace, cfg: Config, state: State, chained: bool
                 gh.add_labels(work.issue, ["status:in-progress"])
                 gh.remove_label(work.issue, "status:ready")
         live = info.get("live") or {}
-        model = role_settings(cfg, work.role).get("model") if engine == "codex" else ""
+        model = codex_settings_for(cfg, work.role)[0] if engine == "codex" else (claude_model_for(cfg, work.role) or "")
         busy = f", {len(others)} other agent(s) working" if others else ""
         log(f"running {work.role} ({work.action}){f' on {model}' if model else ''}{' back-to-back' if chained else ''} … "
             f"{'ChatGPT' if engine == 'codex' else 'session'} usage {live.get('five_hour', '?')}%, your limit "
@@ -3419,7 +3541,9 @@ def cmd_codex_check(args: argparse.Namespace) -> int:
         all_checks += [(f"{w}: {label}", ok) for label, ok in checks]
         if not ok_all:
             break
-    for model in sorted({role_settings(cfg, r).get("model") for r in codex_roles(cfg)} - {None}):
+    fallback_models = {v.get("codex_model") for v in (cfg.get("roles", default={}) or {}).values()
+                       if isinstance(v, dict) and v.get("engine", "claude") != "codex"}
+    for model in sorted(({role_settings(cfg, r).get("model") for r in codex_roles(cfg)} | fallback_models) - {None}):
         ok = codex_model_ok(cfg, state, model)
         print(f"  {'✔' if ok else '✘'} model {model} is available on your ChatGPT plan")
         all_checks.append((f"model {model} is available on your ChatGPT plan", ok))
@@ -3540,6 +3664,11 @@ def cmd_status(args: argparse.Namespace) -> int:
     cd = state.doc("cooldown")
     if cd.get("until", 0) > now:
         print(f"  cooldown until {clock(cd['until'], tz, now)} ({cd.get('reason')})")
+    for fam in sorted({role_claude_family(cfg, r) for r in (cfg.get("roles", default={}) or {})} - {None}):
+        mcd = model_cooldown(state, fam, now)
+        if mcd:
+            print(f"  {fam} paused until {clock(mcd['until'], tz, now)} ({mcd.get('reason')}): "
+                  f"its roles run on GPT meanwhile")
     print(f"  gate: {'OPEN' if ok else 'CLOSED'}")
     for r in reasons:
         print(f"    - {r}")
