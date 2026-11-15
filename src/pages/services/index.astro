@@ -48,7 +48,7 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
     />
   </div>
 
-  <div class="container section">
+  <div class="container section service-list">
     {services.map((service) => (
       <section
         class="service"
@@ -135,11 +135,15 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
     padding-inline-start: var(--space-2);
     font-size: var(--font-size-small);
   }
+  /* Services and the help block share the section rhythm: two section steps between items. */
+  .service-list {
+    display: grid;
+    gap: calc(2 * var(--section-content));
+  }
   .service {
     display: grid;
     gap: var(--space-8);
     align-items: center;
-    padding-block: var(--space-12);
   }
   .service > * {
     min-inline-size: 0;
@@ -182,7 +186,6 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-5);
-    margin-block-start: var(--space-8);
     padding-block-start: var(--space-8);
     border-block-start: 1px solid var(--color-light-hairline);
   }
@@ -197,10 +200,12 @@ const thumbSizes = '(min-width: 64rem) 16rem, (min-width: 48rem) 40vw, 85vw';
     }
   }
   @media (min-width: 64rem) {
+    .service-list {
+      gap: calc(2 * var(--section-content-wide));
+    }
     .service {
       grid-template-columns: repeat(2, 1fr);
       gap: var(--space-16);
-      padding-block: var(--space-16);
     }
     /* Alternate sides on wide screens only; the copy stays first in the DOM. */
     .service:nth-of-type(odd) .stage {

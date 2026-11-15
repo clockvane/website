@@ -6,7 +6,7 @@ import { aboutCopy as copy } from '../../content/about';
 ---
 
 <BaseLayout title={copy.title} description={copy.description}>
-  <div class="container page">
+  <div class="container page section">
     <PageHeader title={copy.heading} lede={copy.lede} />
     <section class="measure" aria-labelledby="about-who">
       <h2 id="about-who">{copy.who.heading}</h2>
@@ -28,10 +28,10 @@ import { aboutCopy as copy } from '../../content/about';
 </BaseLayout>
 
 <style>
-  /* Sections are one rhythm step apart; the closing band brings its own space above. */
+  /* Hero top from the section tokens; .section supplies the bottom, so the band is two steps away. */
   .page {
     display: grid;
-    gap: var(--space-20);
+    gap: calc(2 * var(--section-content));
     padding-block-start: var(--section-hero);
   }
   section > .standalone {
@@ -40,7 +40,7 @@ import { aboutCopy as copy } from '../../content/about';
   @media (min-width: 64rem) {
     .page {
       padding-block-start: var(--section-hero-wide);
-      gap: var(--space-32);
+      gap: calc(2 * var(--section-content-wide));
     }
   }
 </style>
