@@ -30,6 +30,8 @@ const canonical = new URL(currentPath, siteOrigin).href;
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={siteConfig.brand} />
     <meta property="og:title" content={title} />
