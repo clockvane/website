@@ -11,6 +11,10 @@
 .measure {
   max-inline-size: var(--layout-text);
 }
+/* Running text in a measure block stays at the body measure; headings keep the full width. */
+.measure p {
+  max-inline-size: var(--layout-measure);
+}
 .visually-hidden {
   position: absolute;
   inline-size: 1px;

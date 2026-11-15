@@ -36,15 +36,21 @@ One self-hosted file: Public Sans variable, 26.8 kB, OFL (`font-display: swap`, 
 
 | Role | Token | Phone | From 64rem | Weight | Line height | Tracking |
 |------|-------|-------|------------|--------|-------------|----------|
-| h1 | `font.size.hero`, `.heroWide` | 40 px | 68 px | 680 | 1.04 | −0.035em |
+| h1 | `font.size.hero`, `.heroWide` | 40 px | 68 px | 680 | 1.08 | −0.03em |
 | h2 | `font.size.h2`, `.h2Wide` | 32 px | 44 px | 680 | 1.1 | −0.025em |
 | Closing h2 | `font.size.h2`, `.closingWide` | 32 px | 56 px | 680 | 1.1 | −0.025em |
-| Statement | `font.size.statement`, `.statementWide` | 28 px | 36 px | 600 | 1.1 | −0.025em |
-| h3 | `font.size.h3` | 24 px | 24 px | 600 | 1.3 | −0.025em |
-| Lead | `font.size.lead` | 20 px | 20 px | 400 | 1.3 | 0 |
-| Body | `font.size.body` | 16 px | 16 px | 400 | 1.5 | 0 |
+| Statement | `font.size.statement`, `.statementWide` | 28 px | 36 px | 600 | 1.15 | 0 |
+| h3 | `font.size.h3` | 24 px | 24 px | 600 | 1.3 | 0 |
+| Lead | `font.size.lead` | 20 px | 20 px | 400 | 1.5 | 0 |
+| Body | `font.size.body` | 16 px | 16 px | 400 | 1.6 | 0 |
 | Small | `font.size.small` | 14 px | 14 px | 400–600 | 1.5 | 0 |
 | Micro | `font.size.micro` | 12 px | 12 px | 400–600 | 1.3 | 0 |
+
+Role rules:
+- **Display** (h1, statement, closing) is for short text: a headline or one sentence. A paragraph is never set in a display role.
+- **Negative tracking** only on h1 and h2 at 32 px and above. Every other role uses 0.
+- **Lead** is for the intro paragraph under a heading: a few short sentences, set at up to `layout.text` (44 rem, 60–75 characters per line at 20 px and 1440 px). Inside a measure block (for example the page header, which carries `.measure`) the lead is capped at `layout.measure` (38 rem, about 60 characters per line at 20 px), so the header lede and body share one measure.
+- **Body** is for running text: 16 px, 1.6 line height, set at `layout.measure` (38 rem, 60–75 characters per line). Headings in a measure block are not narrowed.
 
 ## Space, radius, shadow
 - **Spacing:** 4 px base: `space.1` 4, `2` 8, `3` 12, `4` 16, `5` 20, `6` 24, `8` 32, `10` 40, `12` 48, `16` 64, `20` 80, `32` 128, `40` 160 px.

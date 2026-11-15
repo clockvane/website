@@ -51,8 +51,8 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   <section class="section" aria-labelledby="problem-heading">
     <div class="container problem">
       <h2 id="problem-heading">{problemSolution.heading}</h2>
-      <p class="statement">
-        <span class="statement-muted">{problemSolution.body}</span>{' '}
+      <p class="problem-text">
+        <span class="problem-muted">{problemSolution.body}</span>{' '}
         {problemSolution.solution}
       </p>
       <a class="standalone" href={problemSolution.link.href}>
@@ -94,14 +94,16 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   .problem {
     margin-block-end: var(--space-12);
   }
-  .statement {
+  /* Multi-sentence text is lead or body, never a display statement. */
+  .problem-text {
+    max-inline-size: var(--layout-text);
     margin-block: var(--space-6);
-    font-size: var(--font-size-statement);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--font-line-height-heading);
-    letter-spacing: var(--font-tracking-heading);
+    font-size: var(--font-size-lead);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--font-line-height-lead);
+    text-wrap: pretty;
   }
-  .statement-muted {
+  .problem-muted {
     color: var(--color-light-text-muted);
   }
   .services-head {
@@ -116,9 +118,6 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   @media (min-width: 64rem) {
     .hero {
       padding-block: var(--space-20) var(--space-16);
-    }
-    .statement {
-      font-size: var(--font-size-statement-wide);
     }
   }
 </style>
