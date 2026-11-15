@@ -106,15 +106,4 @@ const canonical = new URL(currentPath, siteOrigin).href;
   .skip:focus {
     transform: none;
   }
-  /* Keeps the footer clear of the fixed action bar on phone widths. */
-  body.has-action-bar {
-    padding-block-end: calc(
-      var(--layout-tap) + var(--space-8) + env(safe-area-inset-bottom)
-    );
-  }
-  @media (min-width: 48rem) {
-    body.has-action-bar {
-      padding-block-end: 0;
-    }
-  }
 </style>

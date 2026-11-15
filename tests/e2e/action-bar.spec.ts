@@ -44,6 +44,22 @@ test.describe('phone widths', () => {
     expect(footer!.y + footer!.height).toBeLessThanOrEqual(barBox!.y);
   });
 
+  test('a focused link at the end of the page is not hidden under the bar (WCAG 2.4.11)', async ({
+    page,
+  }) => {
+    await page.goto('/services/ai-automation/');
+    const link = page.locator('main a:visible').last();
+    // Put the link's top just inside the bar's area, so it is in the viewport but covered.
+    await link.evaluate((el) => {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, top - (window.innerHeight - 40));
+    });
+    await link.focus();
+    const barBox = await bar(page).boundingBox();
+    const linkBox = await link.boundingBox();
+    expect(linkBox!.y + linkBox!.height).toBeLessThanOrEqual(barBox!.y);
+  });
+
   test('the bar passes axe', async ({ page }) => {
     await page.goto('/');
     const results = await new AxeBuilder({ page })
