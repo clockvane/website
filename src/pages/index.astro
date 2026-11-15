@@ -51,10 +51,10 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   <section class="section" aria-labelledby="problem-heading">
     <div class="container problem">
       <h2 id="problem-heading">{problemSolution.heading}</h2>
-      <p class="problem-text">
-        <span class="problem-muted">{problemSolution.body}</span>{' '}
-        {problemSolution.solution}
-      </p>
+      <div class="problem-body">
+        <p>{problemSolution.body}</p>
+        <p>{problemSolution.solution}</p>
+      </div>
       <a class="standalone" href={problemSolution.link.href}>
         {problemSolution.link.label}
       </a>
@@ -90,17 +90,22 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
     margin-block: var(--space-6) var(--space-8);
     margin-inline: auto;
   }
-  /* Multi-sentence text is lead or body, never a display statement. */
-  .problem-text {
-    max-inline-size: var(--layout-text);
+  .problem {
+    margin-block-end: var(--space-12);
+  }
+  /* Multi-sentence text is body or lead, never a display statement. */
+  .problem-body {
+    max-inline-size: var(--layout-measure);
     margin-block: var(--space-6);
-    font-size: var(--font-size-lead);
+  }
+  .problem-body p {
+    font-size: var(--font-size-body);
     font-weight: var(--font-weight-regular);
-    line-height: var(--font-line-height-lead);
+    line-height: var(--font-line-height-body);
     text-wrap: pretty;
   }
-  .problem-muted {
-    color: var(--color-light-text-muted);
+  .problem-body p + p {
+    margin-block-start: var(--space-4);
   }
   .services-head {
     max-inline-size: var(--layout-text);

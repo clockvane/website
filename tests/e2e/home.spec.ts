@@ -46,9 +46,10 @@ test('sections follow the copy deck order without JavaScript', async ({
   ]);
   await expect(main).toContainText(siteConfig.tagline);
   await expect(main).toContainText(hero.lede);
-  await expect(main).toContainText(
-    `${problemSolution.body} ${problemSolution.solution}`,
-  );
+  await expect(main.locator('.problem-body p')).toHaveText([
+    problemSolution.body,
+    problemSolution.solution,
+  ]);
   await expect(main).toContainText(onePlace.intro);
   await context.close();
 });
