@@ -49,7 +49,7 @@ One self-hosted file: Public Sans variable, 26.8 kB, OFL (`font-display: swap`, 
 Role rules:
 - **Display** (h1, statement, closing) is for short text: a headline or one sentence. A paragraph is never set in a display role.
 - **Negative tracking** only on h1 and h2 at 32 px and above. Every other role uses 0.
-- **Lead** is for the intro paragraph under a heading: a few short sentences, set at up to `layout.text` (44 rem, 60–75 characters per line at 20 px and 1440 px).
+- **Lead** is for the intro paragraph under a heading: a few short sentences, set at up to `layout.text` (44 rem, 60–75 characters per line at 20 px and 1440 px). Inside a measure block (for example the page header, which carries `.measure`) the lead is capped at `layout.measure` (38 rem, about 60 characters per line at 20 px), so the header lede and body share one measure.
 - **Body** is for running text: 16 px, 1.6 line height, set at `layout.measure` (38 rem, 60–75 characters per line). Headings in a measure block are not narrowed.
 
 ## Space, radius, shadow
