@@ -37,14 +37,12 @@ test('About follows the copy deck, metadata and sitemap entry', async ({
     aboutCopy.heading,
   );
   await expect(main.locator('h2')).toHaveText([
-    aboutCopy.who.heading,
     aboutCopy.expertise.heading,
     aboutCopy.proof.heading,
     'What would you like to get done?',
   ]);
   for (const text of [
     aboutCopy.lede,
-    aboutCopy.who.body,
     aboutCopy.expertise.body,
     aboutCopy.proof.body,
   ])

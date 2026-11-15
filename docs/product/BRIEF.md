@@ -1,6 +1,6 @@
 # Project brief (owner-written, read-only for agents)
 
-**Owner:** Mohammed Farhan (@MohammedAbdulFarhan08) — Cloud/GCP and DevOps engineer.
+**Owner:** @MohammedAbdulFarhan08 — Cloud/GCP and DevOps engineer.
 
 ## What we offer
 We automate the boring stuff for businesses. We build websites and applications for businesses.
@@ -42,7 +42,7 @@ and contact details, languages, legal/company details.
 
 **Q5 Proof:** No testimonials or client logos at launch. Use honest proof — this website and its SDLC process, public GitHub repos, founders' Medium articles. Real case studies added later.
 
-**Q6 About / founders:** Founder-led. Three founders: Mohammed Farhan, Adnan Sameer, Syed Zoheb Ali. No invented team size. Bios minimal at launch (names + roles); photos and years added later.
+**Q6 About / founders:** Founder-led. Founder names are not published on the site (owner decision 2026-11-15). No invented team size, bios or photos.
 
 **Q7 Languages:** English only at launch.
 

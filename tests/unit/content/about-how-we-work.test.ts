@@ -60,10 +60,10 @@ describe('About and How we work', () => {
     expect(aboutCopy.description).not.toBe(howWeWork.description);
   });
 
-  it('read the brand from config and name only the approved founders', () => {
-    expect(aboutCopy.who.body).toBe(
-      `${siteConfig.brand} was started by Mohammed Farhan, Adnan Sameer and Syed Zoheb Ali.`,
-    );
+  it('publish no founder names (owner decision 2026-11-15)', () => {
+    const text = copyStrings(aboutCopy).join(' ');
+    expect(aboutCopy).not.toHaveProperty('who');
+    expect(text).not.toMatch(/farhan|sameer|zoheb|adnan|syed|mohammed/i);
   });
 
   it('show no public links and no placeholders for answered Q5, Q8 and Q20', () => {

@@ -87,7 +87,7 @@ Avoid: synergy, cutting-edge, world-class, revolutionary, game-changing, best-in
 - Use this website and its documented process as proof. Publish repository and article links only when approved and configured. Real stories require Q22 content and permission; otherwise render no stories section.
 - Label original screen mockups as examples. The AI demo stays **DRAFT · Scripted example**, with fictional input, a draft result and no message sent. Never imply a live integration or measured outcome.
 - Describe time saved through the task removed: “could remove the retyping”. Do not turn illustrative ranges into “typical” savings or recycle old package durations.
-- Confirmed founder names may appear; roles need Q6. Expert areas need Q18. Support format needs Q19. Prices are quoted per project after a free first call, with no amounts (Q20); solution scope needs Q21. Tools and logo use need Q24.
+- Founder names are not published (Q6, owner 2026-11-15). Expert areas need Q18. Support format needs Q19. Prices are quoted per project after a free first call, with no amounts (Q20); solution scope needs Q21. Tools and logo use need Q24.
 - Unknowns become `[[PLACEHOLDER: question and needed fact]]` in drafts, listed in the PR description for the PRD open questions. Resolve or remove them before launch.
 
 ## 11. Examples
