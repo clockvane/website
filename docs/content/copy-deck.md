@@ -58,8 +58,8 @@ Use this order and wording on Home, the overview, navigation and footer. Each se
 
 ### `home.problem-solution`
 - h2: Move past the work that holds you up
-- body: A technical issue can leave you unsure what to try next. Repeated data entry can take time away from other work. A confusing website can make it hard for people to find what they need.
-- solution: Get help with the problem in front of you. We bring expert support, AI automation, website creation and technical solutions together, with a clear scope before work begins.
+- body (paragraph 1): A technical issue can leave you unsure what to try next. Repeated data entry takes time from other work. A confusing website makes things hard to find.
+- solution (paragraph 2): Get expert help, with a clear scope before work begins.
 - link: See how we work → `/how-we-work/`.
 
 ### `home.services`

@@ -20,9 +20,8 @@ export const hero = {
 
 export const problemSolution = {
   heading: 'Move past the work that holds you up',
-  body: 'A technical issue can leave you unsure what to try next. Repeated data entry can take time away from other work. A confusing website can make it hard for people to find what they need.',
-  solution:
-    'Get help with the problem in front of you. We bring expert support, AI automation, website creation and technical solutions together, with a clear scope before work begins.',
+  body: 'A technical issue can leave you unsure what to try next. Repeated data entry takes time from other work. A confusing website makes things hard to find.',
+  solution: 'Get expert help, with a clear scope before work begins.',
   link: { label: 'See how we work', href: '/how-we-work/' },
 };
 
