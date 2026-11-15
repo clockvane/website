@@ -128,6 +128,9 @@ const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
     min-inline-size: 0;
     max-inline-size: var(--layout-text);
   }
+  .row-body p {
+    max-inline-size: var(--layout-measure);
+  }
   ul,
   ol {
     padding-inline-start: var(--space-6);
@@ -141,7 +144,7 @@ const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
   .caption {
     max-inline-size: var(--layout-text);
     font-size: var(--font-size-lead);
-    line-height: var(--font-line-height-snug);
+    line-height: var(--font-line-height-lead);
   }
   .note {
     color: var(--color-light-text-muted);
