@@ -25,6 +25,7 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
 <BaseLayout
   {...homeSeo}
   structuredData={organizationJsonLd(siteConfig, siteOrigin)}
+  actionBar={primaryCta}
 >
   <section class="container section-hero hero">
     <p class="tagline">{siteConfig.tagline}</p>

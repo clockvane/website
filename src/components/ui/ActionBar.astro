@@ -1,0 +1,44 @@
+---
+import { newTabAttrs, type CtaLink } from '../../lib/config/booking';
+import { newTabHint } from '../../content/navigation';
+
+interface Props {
+  /** The page's primary action, kept in reach on phone widths. */
+  link: CtaLink;
+}
+const { link } = Astro.props;
+---
+
+<aside class="action-bar" aria-label="Next step">
+  <a
+    class="pill pill--primary action-bar-link"
+    href={link.href}
+    {...newTabAttrs(link)}
+  >
+    {link.label}
+    {link.newTab && <span class="visually-hidden"> ({newTabHint})</span>}
+  </a>
+</aside>
+
+<style>
+  .action-bar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--layer-action-bar);
+    padding: var(--space-3) var(--space-4)
+      calc(var(--space-3) + env(safe-area-inset-bottom));
+    background: var(--color-light-surface);
+    border-block-start: 1px solid var(--color-light-hairline);
+  }
+  .action-bar-link {
+    inline-size: 100%;
+    min-block-size: var(--layout-tap);
+  }
+  /* Phone widths only. From the md breakpoint (token breakpoint.md) the header carries the action. */
+  @media (min-width: 48rem) {
+    .action-bar {
+      display: none;
+    }
+  }
+</style>

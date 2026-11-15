@@ -13,6 +13,7 @@ import {
   servicesOverview,
   type Service,
 } from '../../content/services';
+import { primaryCta } from '../../content/navigation';
 import { breadcrumbJsonLd } from '../../lib/seo/breadcrumbs';
 import { siteConfig, siteOrigin } from '../../../site.config';
 
@@ -42,6 +43,7 @@ const shotSizes = '(min-width: 64rem) 340px, (min-width: 48rem) 28vw, 85vw';
     [...ancestors, { label: service.label, href: service.href }],
     siteOrigin,
   )}
+  actionBar={primaryCta}
 >
   <div class="container section">
     <PageHeader

@@ -25,6 +25,27 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-padding-block-start: var(--space-20);
+  /* Space the fixed action bar takes at phone widths, so focus never lands under it (WCAG 2.4.11). */
+  scroll-padding-block-end: var(--action-bar-reserve, 0);
+}
+/* One source for the bar's reserved space: the footer padding and the focus scroll offset both read it. */
+:root:has(body.has-action-bar) {
+  --action-bar-reserve: calc(
+    var(--layout-tap) + var(--space-8) + env(safe-area-inset-bottom)
+  );
+}
+@media (min-width: 48rem) {
+  :root:has(body.has-action-bar) {
+    --action-bar-reserve: 0;
+  }
+}
+/* Keeps the footer clear of the fixed action bar on phone widths. */
+body.has-action-bar {
+  padding-block-end: var(--action-bar-reserve);
+}
+/* An open mobile menu panel reaches the viewport bottom on short screens, so the bar steps aside while it is open. */
+body.has-action-bar:has(.menu[open]) .action-bar {
+  display: none;
 }
 body {
   min-block-size: 100svh;
