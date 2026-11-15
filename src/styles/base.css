@@ -43,6 +43,10 @@ html {
 body.has-action-bar {
   padding-block-end: var(--action-bar-reserve);
 }
+/* An open mobile menu panel reaches the viewport bottom on short screens, so the bar steps aside while it is open. */
+body.has-action-bar:has(.menu[open]) .action-bar {
+  display: none;
+}
 body {
   min-block-size: 100svh;
   display: flex;
