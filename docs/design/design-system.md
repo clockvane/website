@@ -53,6 +53,14 @@ One self-hosted file: Public Sans variable, 26.8 kB, OFL (`font-display: swap`, 
 - **Radius:** `sm` 8, `md` 12, `lg` 20 (screens), `xl` 24 (bands on phone), `xxl` 32 (bands from 48rem), `pill`.
 - **Shadow:** `shadow.card` 0 8 24 at 4% for resting cards; `shadow.lift` 0 16 40 at 8% for hover and the disclosure panel.
 
+## Brand mark and favicon
+- **Mark:** two nodes joined through a centre checkpoint, on a rounded square. It plays on nothing in
+  the company name (rule 5 and the no-clockwork rule). Source: `public/favicon.svg`.
+- **Colours:** `#141414` (`light.action`), `#FFFFFF` (`light.on-action`), `#A8B8FF` (`dark.focus`).
+  SVG cannot read CSS custom properties, so the values are copied. Change them in both places.
+- **Fallback:** `public/favicon.ico` (16, 32, 48 px) is rendered from the SVG, so `/favicon.ico`
+  never 404s (audit F-10, #225). Regenerate both whenever the mark changes.
+
 ## Breakpoints
 Mobile first. `breakpoint.sm` 30rem, `md` 48rem (768 px), `lg` 64rem (1024 px), `xl` 90rem (1440 px). Layouts change at `md` and `lg`; `sm` and `xl` are reserved for production fine-tuning. Checked at 320, 390, 768 and 1440 px, without horizontal page overflow.
 

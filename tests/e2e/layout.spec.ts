@@ -92,6 +92,27 @@ test('metadata and empty-safe footer use site config', async ({ page }) => {
   );
 });
 
+test('favicon is linked and served so no 404 is logged (#225)', async ({
+  page,
+}) => {
+  const failed: string[] = [];
+  page.on('response', (response) => {
+    if (response.status() >= 400) failed.push(response.url());
+  });
+  await page.goto('/');
+  await expect(
+    page.locator('head link[rel="icon"][type="image/svg+xml"]'),
+  ).toHaveAttribute('href', '/favicon.svg');
+  await expect(
+    page.locator('head link[rel="icon"][sizes="any"]'),
+  ).toHaveAttribute('href', '/favicon.ico');
+  const ico = await page.request.get('/favicon.ico');
+  expect(ico.status()).toBe(200);
+  expect(ico.headers()['content-type']).toMatch(/icon|octet-stream|x-icon/);
+  expect((await page.request.get('/favicon.svg')).status()).toBe(200);
+  expect(failed).toEqual([]);
+});
+
 for (const width of [320, 1280]) {
   test(`axe, targets and enlarged text at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
