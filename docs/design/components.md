@@ -41,6 +41,7 @@ A rounded square in a service colour with a white glyph (`service.onService`, 5.
 `<figure>` with `<picture>` and a `<figcaption>` label.
 - **Image:** AVIF with WebP fallback, `srcset` at 320, 640 and 960 w, `sizes`, `width`, `height`, `alt`, lazy, async decoding. Pre-rendered at twice the display size so text stays crisp.
 - **Card:** `lg` radius, `shadow.card`, white behind the image.
+- **Caption:** the `figcaption` label uses the Caption role (14 px, 600, `lineHeight.caption` 1.4), not micro.
 - **Label:** pill at bottom left: `light.card` fill, `light.text`, 12 px weight 600, hairline ring. Reads "Example website", "Example support request", "DRAFT · Scripted example" and so on (copy deck §3.5). Always HTML, on every copy.
 - **States:** static instances lift by 4 px with `shadow.lift` on hover, where the device has hover. Screens in a moving track don't, and are never interactive. No focus state, since they aren't controls. If an image fails, the white card and the label remain, and the browser shows the alt text.
 - **Loading:** the card holds its space through `width` and `height`, so there is no layout shift.

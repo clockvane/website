@@ -99,10 +99,12 @@ const { copy = aiDemo } = Astro.props;
     font-size: var(--font-size-micro);
     font-weight: var(--font-weight-semibold);
   }
+  /* Helper sentences are body role: 16 px, at the body measure. */
   .explain,
   .closing {
     color: var(--color-light-text-muted);
-    font-size: var(--font-size-small);
+    font-size: var(--font-size-body);
+    max-inline-size: var(--layout-measure);
   }
   .controls {
     justify-content: flex-start;
@@ -138,7 +140,8 @@ const { copy = aiDemo } = Astro.props;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     background: var(--color-light-surface);
-    font-size: var(--font-size-small);
+    font-size: var(--font-size-body);
+    max-inline-size: var(--layout-measure);
   }
   .prompt :global(.is-typing-rest) {
     opacity: 0;
@@ -211,7 +214,7 @@ const { copy = aiDemo } = Astro.props;
     padding: var(--space-4);
     border-radius: var(--radius-md);
     box-shadow: inset 0 0 0 1px var(--color-light-control-border);
-    font-size: var(--font-size-small);
+    font-size: var(--font-size-body);
     transition:
       opacity var(--motion-duration-slow) var(--motion-ease-standard),
       transform var(--motion-duration-slow) var(--motion-ease-standard);
@@ -227,6 +230,7 @@ const { copy = aiDemo } = Astro.props;
     flex-wrap: wrap;
     gap: var(--space-1) var(--space-6);
     margin-block-start: var(--space-3);
+    font-size: var(--font-size-small);
   }
   .facts dt {
     color: var(--color-light-text-muted);
