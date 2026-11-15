@@ -12,7 +12,13 @@
     --gutter: var(--layout-gutter-wide);
   }
   .section {
-    padding-block: var(--space-32);
+    padding-block: var(--section-content-wide);
+  }
+  .section-hero {
+    padding-block: var(--section-hero-wide);
+  }
+  .section-band {
+    padding-block: var(--section-band-wide);
   }
   h1 {
     font-size: var(--font-size-hero-wide);

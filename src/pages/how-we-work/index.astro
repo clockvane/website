@@ -8,7 +8,7 @@ import { howWeWork as copy } from '../../content/how-we-work';
 ---
 
 <BaseLayout title={copy.title} description={copy.description}>
-  <div class="container page">
+  <div class="container page section">
     <PageHeader title={copy.heading} lede={copy.lede} />
     <section aria-labelledby="how-steps">
       <h2 id="how-steps">{copy.steps.heading}</h2>
@@ -49,11 +49,17 @@ import { howWeWork as copy } from '../../content/how-we-work';
 </BaseLayout>
 
 <style>
-  /* Sections are one rhythm step apart; the closing band brings its own space above. */
+  /* Hero top from the section tokens; .section supplies the bottom, so the band is two steps away. */
   .page {
     display: grid;
-    gap: var(--space-20);
-    padding-block-start: var(--space-20);
+    gap: calc(2 * var(--section-content));
+    padding-block-start: var(--section-hero);
+  }
+  @media (min-width: 64rem) {
+    .page {
+      padding-block-start: var(--section-hero-wide);
+      gap: calc(2 * var(--section-content-wide));
+    }
   }
   .content {
     margin-block-start: var(--space-8);
@@ -72,11 +78,6 @@ import { howWeWork as copy } from '../../content/how-we-work';
   @media (min-width: 48rem) {
     .faq {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  @media (min-width: 64rem) {
-    .page {
-      gap: var(--space-32);
     }
   }
 </style>

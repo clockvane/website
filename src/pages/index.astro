@@ -26,7 +26,7 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   {...homeSeo}
   structuredData={organizationJsonLd(siteConfig, siteOrigin)}
 >
-  <section class="container hero">
+  <section class="container section-hero hero">
     <p class="tagline">{siteConfig.tagline}</p>
     <TokenHeadline animate lines={hero.lines} />
     <p class="lead hero-lede">{hero.lede}</p>
@@ -77,7 +77,6 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
 
 <style>
   .hero {
-    padding-block: var(--space-16) var(--space-12);
     text-align: center;
   }
   .tagline {
@@ -116,10 +115,5 @@ import { organizationJsonLd } from '../lib/seo/structured-data';
   }
   .services-head .lead {
     margin-block-start: var(--space-4);
-  }
-  @media (min-width: 64rem) {
-    .hero {
-      padding-block: var(--space-20) var(--space-16);
-    }
   }
 </style>
