@@ -229,13 +229,11 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - Closing: `closing-cta`. FAQ stays here; `/faq/` remains a later page, with no separate launch deck or route.
 
 ## 5. About `/about/`
-- `seo_title`: About our founders and approach
-- `meta_description`: Meet the founders behind our expert support, AI automation, websites and technical solutions. Based in India, working with clients worldwide.
+- `seo_title`: About us and our approach
+- `meta_description`: The team behind our expert support, AI automation, websites and technical solutions. Founder-led, based in India, working with clients worldwide.
 - `about.intro` h1: People behind the technical work
 - lede: You need to know who you are working with. We are founder-led, based in India and working with individuals and companies worldwide.
-- `about.who` h2: Meet the founders
-- body: {brand} was started by Mohammed Farhan, Adnan Sameer and Syed Zoheb Ali.
-- Editorial: [[PLACEHOLDER: Q6 approved role beside each founder name]]. Default: names only. No invented bios, portraits, team size or credentials.
+- Editorial: no founder names, roles, bios, portraits or team size are published (owner decision 2026-11-15, Q6).
 - `about.expertise` h2: How we can help
 - body: Expert individuals provide advice and hands-on help. We also build AI automations, websites and technical solutions for companies. Explore our services → `/services/`.
 - Editorial: use Q18's confirmed expertise only; do not turn the service list into claims about a founder's credentials.
@@ -339,6 +337,6 @@ Use PRD §12's working defaults; none block this draft. Carry these into the PR 
 - Q21: solution scope and exclusions. Default: tailored software and technical solutions; candidate examples remain editorial.
 - Q22: genuine stories, attribution, outcomes and media permissions. Q24: confirmed tools and logo permissions. Default: omit stories/tools sections.
 - Q23 (answered 2026-11-11): the first call is free.
-- Q4: booking link and final notification/backup setup. Q8 (answered 2026-11-11): no public links at launch; fallback email only if configured. Q6: founder roles; names only until answered.
+- Q4: booking link and final notification/backup setup. Q8 (answered 2026-11-11): no public links at launch; fallback email only if configured. Q6 (owner, 2026-11-15): founder names are not published.
 - Q9 privacy details and Q19 session arrangements: recommended defaults in §4 and §9 (#198), pending owner approval at Gate 3. Still open: a qualified review of the notice.
 - Carry-forward ownership/handover question: agreed ownership, licensing, documentation, access removal and ongoing support terms. Recommend recording alongside Q20/Q21; no contractual promises invented here.
