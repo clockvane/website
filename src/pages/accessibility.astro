@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/sections/PageHeader.astro';
+import { accessibilityCopy as copy } from '../content/accessibility';
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <article class="container section">
+    <PageHeader title={copy.heading} lede={copy.intro} />
+    <div class="measure">
+      <p class="reviewed">{copy.reviewed}</p>
+      {copy.sections.map(({ heading, paragraphs }) => (
+        <section class="statement-section">
+          <h2>{heading}</h2>
+          {paragraphs.map((parts) => (
+            <p>
+              {parts.map((part) =>
+                typeof part === 'string' ? (
+                  part
+                ) : (
+                  <a href={part.href}>{part.label}</a>
+                ),
+              )}
+            </p>
+          ))}
+        </section>
+      ))}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .measure {
+    margin-block-start: var(--space-6);
+  }
+  .reviewed {
+    color: var(--color-light-text-muted);
+  }
+  .statement-section {
+    margin-block-start: var(--space-10);
+  }
+</style>

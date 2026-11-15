@@ -7,6 +7,7 @@ export const routes = [
   '/',
   '/about/',
   '/privacy/',
+  '/accessibility/',
   '/how-we-work/',
   '/contact/',
   '/services/',

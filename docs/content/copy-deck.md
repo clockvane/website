@@ -316,8 +316,21 @@ Shared motion controls: Pause examples · Resume examples. All captions and usef
 - Decorative inline tokens and duplicate marquee screens: empty alt; they add no words to the headline or reading order.
 - Skip link: Skip to main content. Menu controls: Menu · Close menu. Service disclosure: Show services · Hide services. Breadcrumb label: Breadcrumb.
 
+## 14. Accessibility statement `/accessibility/`
+- `seo_title`: Accessibility statement: standard and how to report issues
+- `meta_description`: The standard this website is built to, how we check it, what is still limited and how to tell us about an access problem.
+- Editorial status: drafted for the owner's approval (PRD Q26, #227). Claims are limited to checks the site runs (axe in CI, contrast, keyboard, widths, reduced motion). No certification, audit or date beyond the review date.
+- Last reviewed: {accessibility_reviewed} (`ACCESSIBILITY_REVIEWED` in `src/content/accessibility.ts`; change it whenever the checks or this statement change).
+- h1: Accessibility statement. Lede: We want everyone who uses this website to read it, move around it and contact us. This statement says which standard we build to, how we check our work and where it still falls short.
+- h2: Our standard. Body: {brand} builds this website to meet the Web Content Accessibility Guidelines (WCAG) 2.2 at level AA. Level AA covers colour contrast, keyboard use, visible focus, text that scales, clear page structure and motion that a visitor can reduce.
+- h2: How we check. Body: Every page is tested with an automated accessibility checker (axe) before a change is merged. We also check colour contrast, keyboard navigation and the layout at phone, tablet and desktop widths. / The site follows the reduced-motion and forced-colours settings in your browser. Where a short animation plays, the same words are available as plain text.
+- h2: What automated checks miss. Body: Automated checks find only part of the problems that people meet. We have not had this website independently audited, and we do not hold an accessibility certificate. We would rather tell you that than imply otherwise.
+- h2: Known limits. Body: The booking page is run by HubSpot Meetings, so its accessibility is set by HubSpot. Pages we link to outside this website are also outside our control. / We keep this statement up to date as the site changes. If a part of the site does not work for you, we want to know, even if it is not listed here.
+- h2: Report a problem. Body: Tell us which page you were on, what you were trying to do and what happened. Send it through our contact form → `/contact/`, or email us at {email} → `mailto:`. We reply to accessibility reports within 1 business day (the enquiry reply promise in PRD Q4; the owner confirms it with Q26).
+- No placeholders. In `sitemap.xml`; no `noindex`.
+
 ## 12. Editorial verification
-Thirteen launch/utility pages have unique SEO titles and descriptions above, each within 60/155 characters. Each has one H1 with logical H2/H3 sections. FAQ is a How we work section; future blog, case studies, portal and apps have no launch copy or reserved routes.
+Fourteen launch/utility pages have unique SEO titles and descriptions above, each within 60/155 characters. Each has one H1 with logical H2/H3 sections. FAQ is a How we work section; future blog, case studies, portal and apps have no launch copy or reserved routes.
 
 ## 13. Open questions for the PRD and PR description
 Use PRD §12's working defaults; none block this draft. Carry these into the PR description so the product owner can update the PRD without expanding this ticket into product decisions.
