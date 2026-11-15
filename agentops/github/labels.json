@@ -11,6 +11,7 @@
   {"name": "agent:security-reviewer", "color": "82071e", "description": "Owned by the Security agent"},
   {"name": "agent:devops-lead",       "color": "0550ae", "description": "Owned by the DevOps Lead agent"},
   {"name": "agent:devops-engineer",   "color": "218bff", "description": "Owned by the DevOps Engineer agent"},
+  {"name": "agent:principal-design-engineer", "color": "6f42c1", "description": "Owned by the Principal Design Engineer (master UI/UX + engineering agent)"},
   {"name": "status:ready",            "color": "0e8a16", "description": "Groomed and ready to pick up"},
   {"name": "status:in-progress",      "color": "fbca04", "description": "An agent is working on it"},
   {"name": "status:blocked",          "color": "b60205", "description": "Blocked by a dependency or decision"},

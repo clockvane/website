@@ -159,7 +159,21 @@
     }
   },
   "roles": {
-    "_readme": "Which engine and model runs each agent. Roles not listed run on Claude Code with the model in their .claude/agents file.",
+    "_readme": "Which engine and model runs each agent. Roles not listed run on Claude Code with the model in their .claude/agents file. A Claude role may set `model` (passed as --model) and `codex_model`/`codex_effort`: the GPT model it switches to only while its own Claude model is at a limit or not on your plan. `max_turns`/`max_budget_usd` per action override the run defaults for that role.",
+    "principal-design-engineer": {
+      "engine": "claude",
+      "model": "claude-fable-5-2",
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "xhigh",
+      "max_turns": {
+        "implement": 200,
+        "fix": 120
+      },
+      "max_budget_usd": {
+        "implement": 75.0,
+        "fix": 40.0
+      }
+    },
     "ux-designer": {
       "engine": "codex",
       "model": "gpt-6-astra",

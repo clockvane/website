@@ -33,6 +33,7 @@ your plans have room left.
 | `security-reviewer` | Sonnet · high, read-only in reviews | Threat model, headers/CSP, privacy | deps, pipelines, server code, forms |
 | `devops-lead` | GPT-6 Astra · high (Claude fallback: **Opus** · high) | ADR-002 hosting, CI/CD design, environments, releases, exit plan | pipeline and infra PRs |
 | `devops-engineer` | Sonnet · medium | Workflows, Dockerfile, IaC, Lighthouse CI, Dependabot | — |
+| `principal-design-engineer` | **Fable 5.2** · high (only while Fable is at its limit or not on your plan: GPT-6 Astra · extra high) | Master UI/UX + front-end engineering: audits the live site, raises it to enterprise grade through the design system, builds selected features | — (reviewed by UX, code, QA, PO) |
 
 Why SDE3 vs SDE2 still matters with agents: the SDE3 gets the pattern-setting and tricky work at
 higher effort; the SDE2 gets well-specified tickets at lower effort and must reuse existing
@@ -265,6 +266,13 @@ and claims its work under a shared lock, so two agents never take the same ticke
   Claude, the reviewers, manager and writers move to GPT. They switch back by themselves as soon as their
   own plan has room again. When both plans are at your limits, the agents wait and start again by
   themselves when the first one resets. Off: `"run": {"failover": false}` in your local config.
+- **One model at its limit (v9.19).** Claude limits some model families on their own ("You've hit your
+  Fable limit"). Then only the roles on that model switch: the `principal-design-engineer` runs on its
+  `codex_model` (GPT-6 Astra · extra high) until Fable resets, while every other Claude role keeps
+  working. The same happens for 12 hours if Claude Code says the configured model is not on your plan.
+  `agents status` shows "fable paused until …". Set a role's models in `config.json` → `roles`:
+  `model` (Claude, passed as `--model`), `codex_model` and `codex_effort` (its GPT fallback), and per-action
+  `max_turns` / `max_budget_usd`.
 - **Codex updates.** When Codex updates itself, the scheduler runs its safety test again by itself (at
   most once an hour); the GPT agents switch back on only when it passes. When GPT work moved to Claude
   only because ChatGPT usage is unknown, it asks Codex for a reading (at most every 20 minutes) so the
