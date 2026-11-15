@@ -11,8 +11,9 @@
 .measure {
   max-inline-size: var(--layout-text);
 }
-/* Running text in a measure block stays at the body measure; headings keep the full width. */
-.measure p {
+/* Running text stays at the body measure everywhere; headings keep the full width and leads
+   keep their own cap. :where() keeps specificity at zero so components can still override it. */
+:where(p:not(.lead)) {
   max-inline-size: var(--layout-measure);
 }
 .visually-hidden {

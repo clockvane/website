@@ -50,8 +50,8 @@ One self-hosted file: Public Sans variable, 26.8 kB, OFL (`font-display: swap`, 
 Role rules:
 - **Display** (h1, statement, closing) is for short text: a headline or one sentence. A paragraph is never set in a display role.
 - **Negative tracking** only on h1 and h2 at 32 px and above. Every other role uses 0.
-- **Lead** is for the intro paragraph under a heading: a few short sentences, set at up to `layout.text` (44 rem, 60–75 characters per line at 20 px and 1440 px). Inside a measure block (for example the page header, which carries `.measure`) the lead is capped at `layout.measure` (38 rem, about 60 characters per line at 20 px), so the header lede and body share one measure.
-- **Body** is for running text: 16 px, 1.6 line height, set at `layout.measure` (38 rem, 60–75 characters per line). Headings in a measure block are not narrowed.
+- **Lead** is for the intro paragraph under a heading: a few short sentences, set at up to `layout.text` (44 rem, 60–75 characters per line at 20 px and 1440 px). Inside a measure block (for example the page header, which carries `.measure`) the lead is capped at `layout.measure` (34 rem, about 50 characters per line at 20 px), so the header lede and body share one measure.
+- **Body** is for running text: 16 px, 1.6 line height, set at `layout.measure` (34 rem, 60–75 characters per line; the measured maximum is set in the PR). Headings in a measure block are not narrowed.
 - **Helper text** (form hints, notes under a demo, closing remarks, the "For:" line) is body role: 16 px, never smaller when it is a sentence. Small (14 px) is for labels and meta, not sentences.
 - **Caption** labels a figure or screen mockup: 14 px, 600, line height `lineHeight.caption` (1.4), with at least 4.5:1 contrast. Micro (12 px) is for tags and fact labels only, never captions.
 
